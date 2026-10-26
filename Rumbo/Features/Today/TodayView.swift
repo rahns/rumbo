@@ -295,18 +295,9 @@ struct TaskCardView: View {
                         }
                     }
                     Spacer()
-                    if finished {
-                        Button(action: onUndo) {
-                            Label("Undo", systemImage: "arrow.uturn.backward")
-                                .font(.rounded(.subheadline, weight: .heavy))
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(Palette.secondaryText)
-                    } else {
-                        Text(TaskCopy.minutesLabel(task.minutesPlanned))
-                            .font(.rounded(.subheadline, weight: .heavy))
-                            .foregroundStyle(color)
-                    }
+                    Text(TaskCopy.minutesLabel(task.minutesPlanned))
+                        .font(.rounded(.subheadline, weight: .heavy))
+                        .foregroundStyle(finished ? Palette.secondaryText : color)
                 }
                 if !task.prompt.isEmpty && !finished {
                     Text(task.prompt)
