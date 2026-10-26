@@ -32,7 +32,7 @@ struct TodayView: View {
             .background(Palette.background.ignoresSafeArea())
             ConfettiView(trigger: model.confettiBursts)
         }
-        .navigationTitle("Today")
+        .navigationTitle(model.isWorkingAhead ? model.planDay.formatted(.dateTime.weekday(.wide)) : "Today")
         .navigationBarTitleDisplayMode(.inline)
         .fullScreenCover(item: $openTask) { task in
             TaskSessionView(task: task)
@@ -125,11 +125,11 @@ struct TodayView: View {
     private var budgetPrompt: some View {
         RaisedCard(accent: Palette.coral) {
             VStack(alignment: .leading, spacing: 14) {
-                Text(model.wantsNextSession ? "Another session? How long?" : "How much time today?")
+                Text(model.isWorkingAhead ? "Getting ahead! How long?" : "How much time today?")
                     .font(.rounded(.title3, weight: .black))
                     .foregroundStyle(Palette.ink)
-                Text(model.wantsNextSession
-                     ? "Today's work is counted, so this session balances it out."
+                Text(model.isWorkingAhead
+                     ? "This is \(model.planDay.formatted(.dateTime.weekday(.wide)))'s session. Everything you've done so far is counted, so it balances out."
                      : "Pick honestly. Ten minutes still counts.")
                     .font(.rounded(.subheadline, weight: .medium))
                     .foregroundStyle(Palette.secondaryText)
@@ -154,10 +154,9 @@ struct TodayView: View {
 
     private func planSection(_ plan: DayPlanRecord) -> some View {
         let tasks = plan.sortedTasks
-        let done = tasks.filter { $0.status == .done }.count
         return VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text(done == tasks.count && !tasks.isEmpty ? "All done today 🎉" : "Today's plan")
+                Text(plan.isComplete ? (model.isWorkingAhead ? "Done early! 🎉" : "Day complete! 🎉") : "Today's plan")
                     .font(.rounded(.title3, weight: .black))
                     .foregroundStyle(Palette.ink)
                 Spacer()
@@ -170,9 +169,9 @@ struct TodayView: View {
             }
             if plan.isComplete {
                 Button {
-                    withAnimation { model.wantsNextSession = true }
+                    withAnimation { model.workAhead() }
                 } label: {
-                    Label("Keep going: start another session", systemImage: "forward.fill")
+                    Label("Keep going: do \(nextDayName) now", systemImage: "forward.fill")
                 }
                 .buttonStyle(ChunkyButtonStyle(color: Palette.sky))
             }
@@ -198,6 +197,12 @@ struct TodayView: View {
 }
 
 extension TodayView {
+    /// "tomorrow", or the weekday when already working ahead.
+    var nextDayName: String {
+        let next = Calendar.current.date(byAdding: .day, value: 1, to: model.planDay) ?? .now
+        return Calendar.current.isDateInTomorrow(next) ? "tomorrow" : next.formatted(.dateTime.weekday(.wide))
+    }
+
     /// Extra listening logged today, each with an undo.
     @ViewBuilder
     var bonusSection: some View {

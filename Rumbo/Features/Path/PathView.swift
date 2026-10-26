@@ -1,8 +1,8 @@
 import RumboCore
 import SwiftUI
 
-/// Home: a winding path with one node per session, grouped into units of 7, running on into the
-/// future with projected level-ups. See docs/03-experience.md §3.4 "Path".
+/// Home: a winding path with one node per calendar day, in units of 7, running on into the future
+/// with projected level-ups. Finishing today opens tomorrow early. See docs/03-experience.md §3.4 "Path".
 struct PathView: View {
     @Environment(AppModel.self) private var model
     @Namespace private var zoom
@@ -12,7 +12,7 @@ struct PathView: View {
 
     var body: some View {
         let map = model.pathMap
-        let focus = map.focusNode
+        let todayDone = map.todayNode?.status == .done
         NavigationStack {
             ScrollViewReader { proxy in
                 ScrollView {
@@ -22,9 +22,9 @@ struct PathView: View {
                                 .padding(.top, unit.number == 1 ? 8 : 28)
                                 .padding(.bottom, 18)
                             ForEach(unit.nodes) { node in
-                                nodeRow(node)
+                                nodeRow(node, todayDone: todayDone)
                                     .id(node.id)
-                                if node.id == focus?.id && model.isGateOpen {
+                                if node.isToday && model.isGateOpen {
                                     gateRow(after: node.number)
                                 }
                                 ForEach(map.milestones.filter { $0.afterNode == node.number }) { milestone in
@@ -37,11 +37,11 @@ struct PathView: View {
                     .padding(.bottom, 40)
                 }
                 .onAppear {
-                    if let focus { proxy.scrollTo(focus.id, anchor: .center) }
+                    if let today = map.todayNode { proxy.scrollTo(today.id, anchor: .center) }
                 }
             }
             .background(Palette.background.ignoresSafeArea())
-            .safeAreaInset(edge: .top) { header }
+            .safeAreaInset(edge: .top) { header(todayDone: todayDone) }
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(isPresented: $showingToday) {
                 TodayView()
@@ -59,8 +59,8 @@ struct PathView: View {
 
     // MARK: Header
 
-    private var header: some View {
-        HStack(spacing: 10) {
+    private func header(todayDone: Bool) -> some View {
+        HStack(spacing: 8) {
             if let profile = model.profile {
                 Text("\(profile.band.label) · \(profile.band.rawValue)")
                     .font(.rounded(.subheadline, weight: .heavy))
@@ -69,6 +69,15 @@ struct PathView: View {
                     .padding(.horizontal, 12)
                     .background(Capsule().fill(Palette.coral))
             }
+            if todayDone {
+                Label("Day done", systemImage: "checkmark.circle.fill")
+                    .font(.rounded(.subheadline, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 10)
+                    .background(Capsule().fill(Palette.leaf))
+                    .transition(.scale.combined(with: .opacity))
+            }
             Spacer()
             StatPill(symbol: "flame.fill", value: "\(model.streak.streak)", color: Palette.sun, bounce: model.streak.streak)
             StatPill(symbol: "star.fill", value: "\(model.xp)", color: Palette.sky)
@@ -76,6 +85,7 @@ struct PathView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 10)
         .background(.bar)
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: todayDone)
     }
 
     // MARK: Rows
@@ -86,45 +96,60 @@ struct PathView: View {
     }
 
     @ViewBuilder
-    private func nodeRow(_ node: PathNode) -> some View {
+    private func nodeRow(_ node: PathNode, todayDone: Bool) -> some View {
         let offset = xOffset(node.number)
-        let isFocus = node.status == .current || node.status == .unlocked
+        let highlighted = node.isToday || node.status == .unlocked
         ZStack {
-            if isFocus {
-                Button {
-                    if node.status == .unlocked { model.wantsNextSession = true }
-                    showingToday = true
-                } label: {
-                    PathNodeView(status: node.status)
+            Button {
+                open(node)
+            } label: {
+                VStack(spacing: 6) {
+                    PathNodeView(status: node.status, isToday: node.isToday)
+                    Text(node.isToday ? "Today" : node.date.formatted(.dateTime.weekday(.abbreviated).day()))
+                        .font(.rounded(.caption, weight: node.isToday ? .black : .bold))
+                        .foregroundStyle(node.isToday ? Palette.ink : Palette.secondaryText)
                 }
-                .buttonStyle(PathNodeButtonStyle())
-                .matchedTransitionSource(id: "focus", in: zoom)
-                .overlay(alignment: .top) {
-                    StartBubble(text: bubbleText(for: node), color: node.status == .unlocked ? Palette.sky : Palette.coral)
+            }
+            .buttonStyle(PathNodeButtonStyle())
+            .disabled(node.status == .upcoming)
+            .modifier(FocusSource(active: node.isToday, zoom: zoom))
+            .overlay(alignment: .top) {
+                if let tag = bubble(for: node) {
+                    StartBubble(text: tag.text, color: tag.color)
                         .offset(y: -46)
                 }
+            }
+            if node.isToday {
                 // Mirror first, then move: Pico faces the node from whichever side has room.
-                PicoView(mood: model.picoMood, size: 76, celebrate: model.celebrations)
+                PicoView(mood: todayDone ? .cheering : model.picoMood, size: 84, celebrate: model.celebrations)
                     .scaleEffect(x: offset > 0 ? 1 : -1, y: 1)
-                    .offset(x: offset > 0 ? -112 : 112, y: -6)
-            } else {
-                Button {
-                    if let date = node.date { selectedDate = SelectedDay(date: date) }
-                } label: {
-                    PathNodeView(status: node.status)
-                }
-                .buttonStyle(PathNodeButtonStyle())
-                .disabled(node.date == nil)
+                    .offset(x: offset > 0 ? -118 : 118, y: -10)
             }
         }
         .offset(x: offset)
         .frame(maxWidth: .infinity)
-        .padding(.vertical, isFocus ? 32 : 10)
+        .padding(.vertical, highlighted ? 30 : 8)
     }
 
-    private func bubbleText(for node: PathNode) -> String {
-        if node.status == .unlocked { return "Keep going" }
-        return model.todayPlan == nil ? "Start" : "Today"
+    private func bubble(for node: PathNode) -> (text: String, color: Color)? {
+        if node.isToday {
+            if node.status == .done { return ("¡Hecho!", Palette.leaf) }
+            return (model.session(for: node.date) == nil ? "Start" : "Continue", Palette.coral)
+        }
+        if node.status == .unlocked { return ("Keep going", Palette.sky) }
+        return nil
+    }
+
+    private func open(_ node: PathNode) {
+        if node.isToday {
+            model.showToday()
+            showingToday = true
+        } else if node.status == .unlocked {
+            model.selectedPlanDay = node.date
+            showingToday = true
+        } else {
+            selectedDate = SelectedDay(date: node.date)
+        }
     }
 
     private func gateRow(after number: Int) -> some View {
@@ -145,6 +170,20 @@ struct PathView: View {
     }
 }
 
+/// Today's node is the source of the zoom into Today.
+private struct FocusSource: ViewModifier {
+    let active: Bool
+    let zoom: Namespace.ID
+
+    func body(content: Content) -> some View {
+        if active {
+            content.matchedTransitionSource(id: "focus", in: zoom)
+        } else {
+            content
+        }
+    }
+}
+
 private struct SelectedDay: Identifiable {
     let date: Date
     var id: Date { date }
@@ -158,19 +197,13 @@ struct UnitBanner: View {
 
     var body: some View {
         let color = unit.isComplete ? Palette.leaf : isFuture ? Palette.secondaryText.opacity(0.55) : Palette.sky
-        let dates = unit.nodes.compactMap(\.date)
+        let dates = unit.nodes.map(\.date)
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Unidad \(unit.number)")
                     .font(.rounded(.title3, weight: .black))
                 if let first = dates.first, let last = dates.last {
-                    Text(first == last
-                         ? first.formatted(.dateTime.day().month(.abbreviated))
-                         : "\(first.formatted(.dateTime.day().month(.abbreviated))) – \(last.formatted(.dateTime.day().month(.abbreviated)))")
-                        .font(.rounded(.subheadline, weight: .bold))
-                        .opacity(0.85)
-                } else {
-                    Text("Sessions \(unit.nodes.first?.number ?? 0)–\(unit.nodes.last?.number ?? 0)")
+                    Text("\(first.formatted(.dateTime.day().month(.abbreviated))) – \(last.formatted(.dateTime.day().month(.abbreviated)))")
                         .font(.rounded(.subheadline, weight: .bold))
                         .opacity(0.85)
                 }
@@ -190,9 +223,11 @@ struct UnitBanner: View {
     }
 }
 
-/// A round "3D" node: a face over a darker edge. The focus node pulses; upcoming nodes are flat and locked.
+/// A round "3D" node: a face over a darker edge. Today and the open day pulse; a finished today
+/// gets a gold ring and sparkles so it's obvious the day is complete. Upcoming nodes are flat and locked.
 struct PathNodeView: View {
     let status: PathNode.Status
+    var isToday = false
     var isGate = false
 
     @State private var pulse = false
@@ -205,6 +240,7 @@ struct PathNodeView: View {
         switch status {
         case .done: return Palette.leaf
         case .partial: return Palette.sun
+        case .missed: return Palette.lilac
         case .current: return Palette.coral
         case .unlocked: return Palette.sky
         case .upcoming: return Palette.lilac
@@ -216,6 +252,7 @@ struct PathNodeView: View {
         switch status {
         case .done: return "checkmark"
         case .partial: return "circle.lefthalf.filled"
+        case .missed: return "moon.zzz.fill"
         case .current: return "star.fill"
         case .unlocked: return "forward.fill"
         case .upcoming: return "lock.fill"
@@ -223,15 +260,32 @@ struct PathNodeView: View {
     }
 
     private var size: CGFloat {
-        isGate ? 86 : (status == .current || status == .unlocked) ? 82 : 66
+        if isGate { return 86 }
+        if isToday { return 88 }
+        return status == .unlocked ? 76 : 64
     }
 
     private var pulses: Bool { isGate || status == .current || status == .unlocked }
+    private var finishedToday: Bool { isToday && status == .done }
 
     var body: some View {
-        let raised = status != .upcoming
+        let raised = status != .upcoming && status != .missed
         ZStack {
-            if pulses {
+            if finishedToday {
+                // A gold ring with sparkles: today is complete.
+                Circle()
+                    .stroke(Palette.sun, lineWidth: 6)
+                    .frame(width: size + 20, height: size + 20)
+                    .offset(y: Self.edge / 2)
+                ForEach(0..<6, id: \.self) { index in
+                    Image(systemName: "sparkle")
+                        .font(.system(size: 13, weight: .black))
+                        .foregroundStyle(Palette.sun)
+                        .offset(y: -(size / 2 + 22))
+                        .rotationEffect(.degrees(Double(index) * 60 + (pulse ? 15 : 0)))
+                        .offset(y: Self.edge / 2)
+                }
+            } else if pulses {
                 // Centred on face + edge together, so the ring sits evenly around the whole node.
                 Circle()
                     .stroke(color.opacity(0.35), lineWidth: 6)
@@ -241,8 +295,8 @@ struct PathNodeView: View {
                     .opacity(pulse ? 0.3 : 0.9)
             }
             Image(systemName: symbol)
-                .font(.system(size: size * 0.36, weight: .black))
-                .foregroundStyle(status == .upcoming ? Palette.secondaryText : .white)
+                .font(.system(size: size * (finishedToday ? 0.44 : 0.36), weight: .black))
+                .foregroundStyle(status == .upcoming || status == .missed ? Palette.secondaryText : .white)
                 .frame(width: size, height: size)
                 .background(Circle().fill(color))
                 .background(Circle().fill(color.edge()).offset(y: raised ? Self.edge : 0))
@@ -250,7 +304,7 @@ struct PathNodeView: View {
         .padding(.bottom, Self.edge)
         .opacity(status == .upcoming ? 0.55 : 1)
         .onAppear {
-            guard !reduceMotion, pulses else { return }
+            guard !reduceMotion, pulses || finishedToday else { return }
             withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) { pulse = true }
         }
         .accessibilityElement(children: .ignore)
@@ -260,11 +314,12 @@ struct PathNodeView: View {
     private var accessibilityText: String {
         if isGate { return "Level-up check" }
         switch status {
-        case .done: return "Finished session"
-        case .partial: return "Unfinished session"
-        case .current: return "Today's session"
-        case .unlocked: return "Next session, open early"
-        case .upcoming: return "Locked session"
+        case .done: return isToday ? "Today, complete" : "Day complete"
+        case .partial: return "Day partly done"
+        case .missed: return "Missed day"
+        case .current: return "Today"
+        case .unlocked: return "Next day, open early"
+        case .upcoming: return "Locked day"
         }
     }
 }
@@ -334,37 +389,52 @@ struct StartBubble: View {
     }
 }
 
-/// What happened on a past day.
+/// What happened on a day: its plan (even if done early) and any other practice logged that day.
 struct DaySummarySheet: View {
     let date: Date
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        let logs = model.logs(on: date)
+        let plan = model.session(for: date)
+        let planned = plan?.sortedTasks.filter { $0.status == .done } ?? []
+        let plannedIDs = Set(planned.compactMap(\.logID))
+        let others = model.logs(on: date).filter { !plannedIDs.contains($0.id) }
+        let logs = model.logs
+        let minutes = planned.compactMap { task in logs.first { $0.id == task.logID }?.minutes }.reduce(0, +)
+            + others.reduce(0) { $0 + $1.minutes }
         VStack(alignment: .leading, spacing: 14) {
             Text(date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
                 .font(.rounded(.title2, weight: .black))
                 .foregroundStyle(Palette.ink)
-            Text(logs.isEmpty ? "Nothing logged that day." : "\(logs.reduce(0) { $0 + $1.minutes }) minutes")
+            Text(minutes == 0 ? "Nothing logged that day." : "\(minutes) minutes\(plan?.isComplete == true ? " · day complete" : "")")
                 .font(.rounded(.headline, weight: .bold))
-                .foregroundStyle(Palette.secondaryText)
-            ForEach(logs) { log in
-                HStack(spacing: 12) {
-                    Image(systemName: log.isBonus ? "ear.fill" : TaskCopy.symbol(for: log.task))
-                        .foregroundStyle(log.task.strand.color)
-                        .frame(width: 28)
-                    Text(log.isBonus ? "Extra listening" : TaskCopy.title(for: log.task))
-                        .font(.rounded(.body, weight: .semibold))
-                        .foregroundStyle(Palette.ink)
-                    Spacer()
-                    Text("\(log.minutes) min")
-                        .font(.rounded(.subheadline, weight: .heavy))
-                        .foregroundStyle(Palette.secondaryText)
-                }
+                .foregroundStyle(plan?.isComplete == true ? Palette.leaf : Palette.secondaryText)
+            ForEach(planned) { task in
+                row(symbol: TaskCopy.symbol(for: task.task), color: task.task.strand.color, title: TaskCopy.title(for: task.task),
+                    minutes: logs.first { $0.id == task.logID }?.minutes ?? task.minutesPlanned)
+            }
+            ForEach(others) { log in
+                row(symbol: log.isBonus ? "ear.fill" : TaskCopy.symbol(for: log.task), color: log.task.strand.color,
+                    title: log.isBonus ? "Extra listening" : TaskCopy.title(for: log.task), minutes: log.minutes)
             }
             Spacer()
         }
         .padding(24)
         .background(Palette.background.ignoresSafeArea())
+    }
+
+    private func row(symbol: String, color: Color, title: String, minutes: Int) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: symbol)
+                .foregroundStyle(color)
+                .frame(width: 28)
+            Text(title)
+                .font(.rounded(.body, weight: .semibold))
+                .foregroundStyle(Palette.ink)
+            Spacer()
+            Text("\(minutes) min")
+                .font(.rounded(.subheadline, weight: .heavy))
+                .foregroundStyle(Palette.secondaryText)
+        }
     }
 }

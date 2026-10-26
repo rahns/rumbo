@@ -1,36 +1,36 @@
 import Foundation
 
-/// The scrolling path: one node per session (a full daily plan), like lessons on a Duolingo path,
-/// grouped into units of 7, continuing into the future with projected level-ups.
+/// The scrolling path: one node per calendar day since onboarding, in units of 7, running on into
+/// the future with projected level-ups. Finishing today opens tomorrow early.
 /// See docs/03-experience.md §3.4 "Path".
 public struct PathNode: Equatable, Sendable, Identifiable {
     public enum Status: Equatable, Sendable {
-        /// A finished session.
+        /// The day's session is finished (or, with no saved session, ≥ 10 minutes were logged).
         case done
-        /// A session from an earlier day that was started but not finished.
+        /// A past day with some practice but an unfinished session.
         case partial
-        /// The session to do now (not started or in progress).
+        case missed
+        /// Today, not finished yet.
         case current
-        /// Today's session is finished: the next one is open early, if the learner wants more.
+        /// A future day, open early because every day up to it is finished.
         case unlocked
         case upcoming
     }
 
-    /// 1-based position on the path.
+    /// 1-based day number since onboarding.
     public let number: Int
-    public let status: Status
-    /// When the session happened (past nodes only).
-    public let date: Date?
+    public let date: Date
     public let minutes: Int
+    public let status: Status
+    public let isToday: Bool
 
     public var id: Int { number }
 }
 
-/// A projected level-up, shown after the node where it's expected.
+/// A projected level-up, shown after the day it's expected.
 public struct PathMilestone: Equatable, Sendable, Identifiable {
     public let band: Band
     public let expectedDate: Date
-    /// The node it follows.
     public let afterNode: Int
 
     public var id: String { band.rawValue }
@@ -48,75 +48,89 @@ public struct PathMap: Equatable, Sendable {
     public let units: [PathUnit]
     public let milestones: [PathMilestone]
 
+    public init(units: [PathUnit], milestones: [PathMilestone]) {
+        self.units = units
+        self.milestones = milestones
+    }
+
     public var allNodes: [PathNode] { units.flatMap(\.nodes) }
+    /// Today if it's unfinished, otherwise the day open early.
     public var focusNode: PathNode? { allNodes.first { $0.status == .current || $0.status == .unlocked } }
+    public var todayNode: PathNode? { allNodes.first(where: \.isToday) }
 }
 
 public enum PathLayout {
     public static let nodesPerUnit = 7
-    /// Always show at least this many units ahead of the learner.
+    /// Always show at least this many units after today's.
     public static let minimumUnitsAhead = 4
-    /// Never draw more than this many units ahead (about two years).
+    /// Never draw more than this many units after today's (about two years).
     public static let maximumUnitsAhead = 104
 
-    public struct Session: Equatable, Sendable {
-        public let date: Date
-        public let minutes: Int
-        public let isComplete: Bool
+    public enum SessionState: Equatable, Sendable {
+        case none
+        case unfinished
+        case finished
+    }
 
-        public init(date: Date, minutes: Int, isComplete: Bool) {
-            self.date = date
+    public struct Day: Equatable, Sendable {
+        public let minutes: Int
+        public let session: SessionState
+
+        public init(minutes: Int, session: SessionState) {
             self.minutes = minutes
-            self.isComplete = isComplete
+            self.session = session
         }
     }
 
     /// - Parameters:
-    ///   - sessions: past and today's sessions, oldest first. Earlier days' unfinished sessions show as partial.
-    ///   - todayInProgress: today's latest session exists but isn't finished (it becomes the current node).
-    ///   - arrivals: projected dates for upcoming bands; at about one session a day, they set where milestones sit.
-    public static func map(
-        sessions: [Session],
-        todayInProgress: Bool,
-        arrivals: [Band: Date],
-        today: Date,
-        calendar: Calendar = .current
-    ) -> PathMap {
-        var nodes: [PathNode] = []
+    ///   - days: what happened on each day, keyed by start of day. A session done early is keyed by the day it's for.
+    ///   - arrivals: projected dates for upcoming bands.
+    public static func map(start: Date, today: Date, days: [Date: Day], arrivals: [Band: Date], calendar: Calendar = .current) -> PathMap {
+        let first = calendar.startOfDay(for: min(start, today))
         let todayStart = calendar.startOfDay(for: today)
+        let todayIndex = calendar.dateComponents([.day], from: first, to: todayStart).day ?? 0
 
-        for session in sessions {
-            let status: PathNode.Status = session.isComplete ? .done : .partial
-            nodes.append(PathNode(number: nodes.count + 1, status: status, date: session.date, minutes: session.minutes))
-        }
+        func date(at index: Int) -> Date { calendar.date(byAdding: .day, value: index, to: first)! }
+        func number(of day: Date) -> Int { (calendar.dateComponents([.day], from: first, to: calendar.startOfDay(for: day)).day ?? 0) + 1 }
 
-        let finishedToday = sessions.last.map { $0.isComplete && calendar.startOfDay(for: $0.date) == todayStart } ?? false
-        if todayInProgress, let last = nodes.popLast() {
-            // Today's unfinished session is the current node, not a partial one.
-            nodes.append(PathNode(number: last.number, status: .current, date: last.date, minutes: last.minutes))
-        } else {
-            nodes.append(PathNode(number: nodes.count + 1, status: finishedToday ? .unlocked : .current, date: nil, minutes: 0))
-        }
-        let focus = nodes.count
-
-        // Milestones at roughly one session per day from today.
         var milestones: [PathMilestone] = []
         for band in Band.allCases {
-            guard let date = arrivals[band] else { continue }
-            let days = max(1, calendar.dateComponents([.day], from: todayStart, to: calendar.startOfDay(for: date)).day ?? 1)
-            milestones.append(PathMilestone(band: band, expectedDate: date, afterNode: focus + days - 1))
+            guard let expected = arrivals[band] else { continue }
+            milestones.append(PathMilestone(band: band, expectedDate: expected, afterNode: max(number(of: expected), todayIndex + 1)))
         }
 
-        // Draw ahead to the last milestone (plus a unit), within limits.
-        let lastMilestoneNode = milestones.map(\.afterNode).max() ?? focus
-        let minimumEnd = (focus / nodesPerUnit + 1 + minimumUnitsAhead) * nodesPerUnit
-        let maximumEnd = (focus / nodesPerUnit + 1 + maximumUnitsAhead) * nodesPerUnit
-        var end = max(minimumEnd, ((lastMilestoneNode / nodesPerUnit) + 2) * nodesPerUnit)
-        end = min(end, maximumEnd)
-        milestones = milestones.filter { $0.afterNode <= end }
+        let todayUnit = todayIndex / nodesPerUnit
+        let lastMilestoneUnit = milestones.map { ($0.afterNode - 1) / nodesPerUnit }.max() ?? todayUnit
+        let lastUnit = min(max(todayUnit + minimumUnitsAhead, lastMilestoneUnit + 1), todayUnit + maximumUnitsAhead)
+        milestones = milestones.filter { $0.afterNode <= (lastUnit + 1) * nodesPerUnit }
 
-        while nodes.count < end {
-            nodes.append(PathNode(number: nodes.count + 1, status: .upcoming, date: nil, minutes: 0))
+        var nodes: [PathNode] = []
+        var chainUnbroken = true
+        var unlockedOne = false
+        for index in 0..<((lastUnit + 1) * nodesPerUnit) {
+            let day = date(at: index)
+            let info = days[day] ?? Day(minutes: 0, session: .none)
+            let status: PathNode.Status
+            if info.session == .finished {
+                status = .done
+            } else if index < todayIndex {
+                switch info.session {
+                case .unfinished: status = .partial
+                case .none: status = info.minutes >= StreakCalculator.minutesForStreakDay ? .done : info.minutes > 0 ? .partial : .missed
+                case .finished: status = .done
+                }
+            } else if index == todayIndex {
+                status = .current
+            } else if chainUnbroken && !unlockedOne {
+                status = .unlocked
+                unlockedOne = true
+            } else {
+                status = .upcoming
+            }
+            if index >= todayIndex && status != .done {
+                chainUnbroken = false
+            }
+            nodes.append(PathNode(number: index + 1, date: day, minutes: info.minutes, status: status, isToday: index == todayIndex))
         }
 
         let units = stride(from: 0, to: nodes.count, by: nodesPerUnit).map { start in

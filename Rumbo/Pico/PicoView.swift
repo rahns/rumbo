@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Pico's moods. See docs/03-experience.md §3.3.
 enum PicoMood: Equatable {
@@ -67,235 +68,261 @@ struct PicoBadge: View {
     }
 }
 
-/// Pico's artwork on a 100 × 100 canvas. Previewed with a Python render of the same geometry
-/// before porting, so the shapes here match that reference.
+/// Pico the toucan (*pico* is Spanish for "beak"), drawn on a 100 × 100 canvas.
+/// The geometry matches the reference render in docs/art/pico-render.py point for point.
 enum PicoDrawing {
-    static let green = Color(red: 0.18, green: 0.77, blue: 0.55)
-    static let greenDark = Color(red: 0.09, green: 0.55, blue: 0.43)
-    static let teal = Color(red: 0.09, green: 0.59, blue: 0.55)
-    static let mint = Color(red: 0.82, green: 0.96, blue: 0.88)
-    static let blush = Color(red: 1.0, green: 0.55, blue: 0.59)
-    static let ink = Color(red: 0.12, green: 0.16, blue: 0.29)
-    static let brown = Color(red: 0.55, green: 0.36, blue: 0.20)
+    private static func hex(_ value: UInt32, _ alpha: Double = 1) -> Color {
+        Color(uiColor: UIColor(hex: value)).opacity(alpha)
+    }
+
+    static let navyHigh = hex(0x3E5290)
+    static let navy = hex(0x1E2A4A)
+    static let navyLow = hex(0x121A33)
+    static let wingTop = hex(0x2E3F72)
+    static let featherLine = hex(0x4A5C94)
+    static let outline = hex(0x0B1124)
+    static let cream = hex(0xFFF3C4)
+    static let amber = hex(0xFFC93C)
+    static let amberLine = hex(0xE0A82E)
+    static let bibEdge = hex(0xC9922A)
+    static let orange = hex(0xFF8A3D)
+    static let coral = hex(0xF25C4A)
+    static let coralDark = hex(0xC8392B)
+    static let sky = hex(0x6CC4FA)
+    static let skyDark = hex(0x2F7FCC)
+    static let feet = hex(0x5B7FA8)
+    static let iris = hex(0x8A5A2E)
+    static let irisDark = hex(0x6B4423)
+    static let blush = hex(0xFF8C96, 0.65)
+    static let leather = hex(0xB07A45)
+    static let leatherDark = hex(0x7E5230)
+    static let khaki = hex(0xE2C48A)
+    static let khakiDark = hex(0xB8975A)
+
+    static let wingPivot = CGPoint(x: 31, y: 48)
 
     static func draw(in context: inout GraphicsContext, size: CGSize, time t: Double, mood: PicoMood, still: Bool) {
         context.scaleBy(x: size.width / 100, y: size.height / 100)
+        let happy = mood == .cheering || mood == .proud
         let sleepy = mood == .sleepy
-        let excited = mood == .cheering || mood == .proud
+        let feetPoint = CGPoint(x: 43, y: 90)
 
-        if sleepy {
-            drawBranch(in: context)
-            context.translateBy(x: 0, y: 6)
-        } else if !still {
-            context.translateBy(x: 0, y: sin(t * (excited ? 4.5 : 2.4)) * 3)
-        }
-
-        // Tail: three fanned feathers, the middle one tipped in coral.
-        context.fill(feather(from: CGPoint(x: 36, y: 66), length: 26, width: 8, degrees: -15), with: .color(greenDark))
-        context.fill(feather(from: CGPoint(x: 36, y: 66), length: 25, width: 8, degrees: -50), with: .color(greenDark))
-        let middle = feather(from: CGPoint(x: 36, y: 66), length: 30, width: 8, degrees: -32)
-        context.fill(middle, with: .color(teal))
-        var tip = context
-        tip.clip(to: Path(ellipseIn: CGRect(x: 4, y: 74, width: 16, height: 16)))
-        tip.fill(middle, with: .color(Palette.coral))
-
-        if mood == .backpacker {
-            let pack = Path(roundedRect: CGRect(x: 30, y: 42, width: 17, height: 20), cornerRadius: 5)
-                .applying(rotation(degrees: -32, around: CGPoint(x: 38.5, y: 52)))
-            context.fill(pack, with: .color(brown))
-        }
-
-        // Body (with a darker edge underneath for depth) and belly.
-        context.fill(ellipse(center: CGPoint(x: 50, y: 61), width: 46, height: 29, degrees: -32), with: .color(greenDark))
-        context.fill(ellipse(center: CGPoint(x: 50, y: 59.5), width: 44, height: 27, degrees: -32), with: .color(green))
-        context.fill(ellipse(center: CGPoint(x: 56, y: 66), width: 24, height: 12, degrees: -32), with: .color(mint))
-
-        if sleepy {
-            for x in [50.0, 56.0] {
-                var leg = Path()
-                leg.move(to: CGPoint(x: x, y: 70))
-                leg.addLine(to: CGPoint(x: x + 1, y: 78))
-                context.stroke(leg, with: .color(ink), style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
+        // Ground shadow stays put while the body breathes or sways above it.
+        context.fill(ellipse(43, 94, 42, 6), with: .color(navy.opacity(0.12)))
+        if !still {
+            if sleepy {
+                rotate(&context, degrees: sin(t * 1.2) * 2, around: feetPoint)
+            } else {
+                let breathe = 1 + sin(t * 2.2) * 0.012
+                context.translateBy(x: feetPoint.x, y: feetPoint.y)
+                context.scaleBy(x: 1 / breathe, y: breathe)
+                context.translateBy(x: -feetPoint.x, y: -feetPoint.y)
             }
         }
 
+        // Feet
+        for footX in [37.0, 49.0] {
+            for toe in [-3.0, 0, 3] {
+                var toeLine = Path()
+                toeLine.move(to: p(footX, 84))
+                toeLine.addLine(to: p(footX + toe * 1.3, 91))
+                context.stroke(toeLine, with: .color(feet), style: line(2.4))
+            }
+        }
+
+        // Tail
+        let tail = shape(p(14, 66), .l(p(26, 66)), .l(p(26, 86)), .c(p(26, 92), p(14, 92), p(14, 86)), .l(p(14, 66)))
+            .applying(rotation(38, around: p(20, 70)))
+        context.fill(tail, with: linear(p(20, 66), p(20, 92), [navy, navyLow]))
+        context.stroke(tail, with: .color(outline), style: line(2.2))
+
+        // Body with a soft radial sheen
+        let body = shape(p(40, 24), .c(p(56, 24), p(64, 38), p(64, 54)), .c(p(64, 72), p(54, 88), p(40, 88)),
+                         .c(p(26, 88), p(16, 74), p(16, 56)), .c(p(16, 38), p(26, 24), p(40, 24)))
+        context.fill(body, with: .radialGradient(Gradient(stops: [.init(color: navyHigh, location: 0), .init(color: navy, location: 0.45), .init(color: navyLow, location: 1)]),
+                                                 center: p(32, 38), startRadius: 0, endRadius: 52))
+
         if mood == .backpacker {
-            var strap = Path()
-            strap.move(to: CGPoint(x: 44, y: 44))
-            strap.addQuadCurve(to: CGPoint(x: 57, y: 63), control: CGPoint(x: 58, y: 48))
-            context.stroke(strap, with: .color(brown), lineWidth: 2.5)
+            let pack = shape(p(12, 50), .c(p(12, 44), p(16, 42), p(22, 42)), .l(p(26, 42)), .c(p(30, 42), p(31, 46), p(31, 50)), .l(p(31, 70)),
+                             .c(p(31, 74), p(28, 76), p(24, 76)), .l(p(16, 76)), .c(p(12, 76), p(11, 73), p(11, 70)), .l(p(12, 50)))
+            context.fill(pack, with: linear(p(12, 44), p(30, 76), [leather, leatherDark]))
+            context.stroke(pack, with: .color(outline), style: line(2))
+            let flap = shape(p(11, 52), .c(p(16, 49), p(26, 49), p(31, 52)), .l(p(31, 58)), .c(p(26, 61), p(16, 61), p(11, 58)), .l(p(11, 52)))
+            context.fill(flap, with: .color(leatherDark))
+            context.stroke(flap, with: .color(outline), style: line(1.6))
+            context.fill(ellipse(21, 59, 3, 3), with: .color(amber))
+            context.stroke(ellipse(21, 59, 3, 3), with: .color(outline), style: line(1))
+        } else {
+            // Crest: three tufts
+            for (base, peak, end) in [(p(34, 26), p(30, 12), p(39, 24)), (p(38, 25), p(37, 9), p(44, 24)), (p(42, 25), p(46, 12), p(48, 26))] {
+                let tuft = shape(base, .c(p(base.x - 2, 18), p(peak.x - 2, peak.y + 2), peak), .c(p(peak.x + 3, peak.y + 3), p(end.x, 18), end))
+                context.fill(tuft, with: .color(navy))
+                context.stroke(tuft, with: .color(outline), style: line(1.8))
+            }
         }
+        context.stroke(body, with: .color(outline), style: line(2.4))
 
-        // Head with a soft highlight.
-        context.fill(Path(ellipseIn: CGRect(x: 49, y: 19.5, width: 34, height: 33)), with: .color(greenDark))
-        context.fill(Path(ellipseIn: CGRect(x: 50, y: 19.5, width: 32, height: 31)), with: .color(green))
-        context.fill(Path(ellipseIn: CGRect(x: 55, y: 23, width: 11, height: 6)), with: .color(.white.opacity(0.22)))
-
-        // Crest sweeping back, middle tuft coral (hidden under the hat when travelling).
-        if mood != .backpacker {
-            context.fill(feather(from: CGPoint(x: 62, y: 23), length: 13, width: 6, degrees: 35), with: .color(greenDark))
-            context.fill(feather(from: CGPoint(x: 62, y: 23), length: 15, width: 6, degrees: 60), with: .color(Palette.coral))
-            context.fill(feather(from: CGPoint(x: 62, y: 23), length: 11, width: 6, degrees: 85), with: .color(greenDark))
+        // Chest bib with scalloped feathers, and a coral sash
+        let bib = shape(p(47, 29), .c(p(60, 31), p(65, 45), p(61, 58)), .c(p(57, 66), p(46, 66), p(41, 58)), .c(p(38, 48), p(38, 34), p(47, 29)))
+        context.fill(bib, with: linear(p(50, 30), p(50, 64), [cream, amber]))
+        for (row, y) in [44.0, 50, 56].enumerated() {
+            for index in 0..<3 {
+                let x = 44 + Double(index) * 5 + Double(row % 2) * 2.5
+                guard x > 40 && x < 60 else { continue }
+                let scallop = shape(p(x - 2.2, y), .c(p(x - 2.2, y + 2.5), p(x + 2.2, y + 2.5), p(x + 2.2, y)))
+                context.stroke(scallop, with: .color(amberLine), style: line(0.9))
+            }
         }
+        let sash = shape(p(39, 57), .c(p(46, 64), p(56, 63), p(61, 56)), .c(p(62, 60), p(61, 64), p(58, 66)), .c(p(51, 71), p(43, 69), p(38, 62)), .l(p(39, 57)))
+        context.fill(sash, with: linear(p(40, 58), p(60, 66), [coral, coralDark]))
+        context.stroke(bib, with: .color(bibEdge), style: line(1))
+        context.fill(ellipse(27, 36, 10, 6), with: .color(.white.opacity(0.13)))
 
-        // Shiny coral throat.
-        context.fill(ellipse(center: CGPoint(x: 67, y: 47.5), width: 20, height: 11, degrees: -12), with: .color(Palette.coral))
-        context.fill(ellipse(center: CGPoint(x: 71, y: 45.5), width: 5, height: 2.4, degrees: -20), with: .color(Palette.sun))
+        // Wing: hangs at the side, waves when happy
+        let up = happy && !still ? 100 + sin(t * 2 * .pi * 2.2) * 25 : happy ? 100 : 0
+        let turn = rotation(up, around: wingPivot)
+        let wing = shape(p(30, 45), .c(p(38, 45), p(41, 58), p(38, 70)), .c(p(35, 78), p(26, 80), p(21, 73)), .c(p(17, 63), p(21, 48), p(30, 45)))
+            .applying(turn)
+        context.fill(wing, with: linear(p(30, 44).applying(turn), p(30, 80).applying(turn), [wingTop, navyLow]))
+        for (from, to, control) in [(p(25, 55), p(32, 70), p(31, 59)), (p(22, 61), p(28, 74), p(25, 67)), (p(29, 51), p(36, 64), p(35, 54))] {
+            context.stroke(shape(from, .c(control, control, to)).applying(turn), with: .color(featherLine), style: line(1))
+        }
+        for (x, y) in [(22.5, 73.0), (27.5, 77.0), (33.0, 75.5)] {
+            let tip = ellipse(x, y, 6, 4).applying(turn)
+            context.fill(tip, with: .color(sky))
+            context.stroke(tip, with: .color(outline), style: line(1))
+        }
+        context.stroke(wing, with: .color(outline), style: line(2.2))
 
-        // Long beak.
-        var beak = Path()
-        beak.move(to: CGPoint(x: 80, y: 35.5))
-        beak.addLine(to: CGPoint(x: 99, y: 34))
-        beak.addLine(to: CGPoint(x: 99.5, y: 35.5))
-        beak.addLine(to: CGPoint(x: 80, y: 40.5))
-        beak.closeSubpath()
-        context.fill(beak, with: .color(ink))
+        // Eye ring, eye and brow
+        context.fill(ellipse(54, 36, 23, 23), with: .color(sky))
+        context.stroke(ellipse(54, 36, 23, 23), with: .color(outline), style: line(1.6))
+        let blinking = !still && mood != .sleepy && !happy && t.truncatingRemainder(dividingBy: 4) < 0.12
+        if sleepy {
+            context.stroke(shape(p(48, 36), .c(p(51, 41), p(57, 41), p(60, 36))), with: .color(outline), style: line(2.2))
+        } else if happy {
+            context.stroke(shape(p(48, 39), .c(p(51, 31), p(57, 31), p(60, 39))), with: .color(outline), style: line(2.4))
+        } else if blinking {
+            context.stroke(shape(p(48, 36), .l(p(61, 36))), with: .color(outline), style: line(2.2))
+        } else {
+            context.fill(ellipse(55, 35.5, 15, 17), with: .color(.white))
+            context.stroke(ellipse(55, 35.5, 15, 17), with: .color(outline), style: line(1))
+            context.fill(ellipse(57.2, 36.5, 9.5, 11), with: .radialGradient(Gradient(colors: [iris, irisDark]), center: p(57, 35), startRadius: 0, endRadius: 7))
+            context.fill(ellipse(58, 37, 5.2, 6.2), with: .color(outline))
+            context.fill(ellipse(59.8, 33.4, 3.4, 3.4), with: .color(.white))
+            context.fill(ellipse(55.8, 40, 1.6, 1.6), with: .color(.white))
+        }
+        context.stroke(shape(p(44, 23), .c(p(49, 20), p(56, 19.5), p(61, 22))), with: .color(outline), style: line(2.6))
+        context.fill(ellipse(51, 49, 7, 3.8), with: .color(blush))
 
-        drawEye(in: context, time: t, mood: mood, still: still)
-        context.fill(Path(ellipseIn: CGRect(x: 74, y: 40.25, width: 6, height: 3.5)), with: .color(blush.opacity(excited ? 0.95 : 0.75)))
+        if mood == .backpacker {
+            let strap = shape(p(40, 30), .c(p(46, 44), p(46, 60), p(40, 72)))
+            context.stroke(strap, with: .color(leatherDark), style: line(3.2))
+            context.stroke(strap, with: .color(outline), style: line(0.8))
+            context.fill(ellipse(40, 23, 40, 8), with: .color(khakiDark))
+            context.stroke(ellipse(40, 23, 40, 8), with: .color(outline), style: line(1.8))
+            let crown = shape(p(28, 22), .c(p(28, 12), p(34, 8), p(40, 8)), .c(p(46, 8), p(52, 12), p(52, 22)), .l(p(28, 22)))
+            context.fill(crown, with: linear(p(40, 8), p(40, 22), [khaki, khakiDark]))
+            context.stroke(crown, with: .color(outline), style: line(1.8))
+            let band = Path(CGRect(x: 28, y: 17, width: 24, height: 4))
+            context.fill(band, with: .color(coral))
+            context.stroke(band, with: .color(outline), style: line(1))
+        }
 
         if mood == .listening {
-            var band = Path()
-            band.move(to: CGPoint(x: 53, y: 38))
-            band.addQuadCurve(to: CGPoint(x: 80, y: 30), control: CGPoint(x: 64, y: 4))
-            context.stroke(band, with: .color(ink), style: StrokeStyle(lineWidth: 3, lineCap: .round))
-            context.fill(Path(roundedRect: CGRect(x: 48, y: 30, width: 9, height: 13), cornerRadius: 4), with: .color(Palette.coral))
-        }
-
-        if mood == .backpacker {
-            context.fill(Path(ellipseIn: CGRect(x: 51, y: 18, width: 32, height: 7)), with: .color(brown))
-            context.fill(Path(roundedRect: CGRect(x: 58, y: 9, width: 18, height: 12), cornerRadius: 4), with: .color(brown))
-            context.fill(Path(CGRect(x: 58, y: 16, width: 18, height: 2.5)), with: .color(Palette.coral))
-        }
-
-        // Wing: three feathers from the shoulder. Flaps fast with ghost copies for blur; folded when asleep.
-        let shoulder = CGPoint(x: 52, y: 50)
-        if sleepy {
-            drawWing(in: context, at: shoulder, degrees: -18, opacity: 1)
-        } else if still {
-            drawWing(in: context, at: shoulder, degrees: 45, opacity: 1)
-        } else {
-            let flap = 47 + sin(t * 2 * .pi * (excited ? 10 : 7)) * 32
-            drawWing(in: context, at: shoulder, degrees: flap - 24, opacity: 0.22)
-            drawWing(in: context, at: shoulder, degrees: flap + 24, opacity: 0.22)
-            drawWing(in: context, at: shoulder, degrees: flap, opacity: 1)
-        }
-
-        if excited && !still {
-            drawSparkles(in: context, time: t)
-        }
-        if sleepy {
-            drawZzz(in: context, time: still ? 0 : t)
-        }
-    }
-
-    // MARK: Pieces
-
-    private static func drawEye(in context: GraphicsContext, time t: Double, mood: PicoMood, still: Bool) {
-        let closedLine = StrokeStyle(lineWidth: 2.3, lineCap: .round)
-        switch mood {
-        case .sleepy:
-            var lid = Path()
-            lid.move(to: CGPoint(x: 66.5, y: 33))
-            lid.addQuadCurve(to: CGPoint(x: 76.5, y: 33), control: CGPoint(x: 71.5, y: 39))
-            context.stroke(lid, with: .color(ink), style: closedLine)
-        case .cheering, .proud:
-            // Happy squint: ^
-            var squint = Path()
-            squint.move(to: CGPoint(x: 66.5, y: 36))
-            squint.addQuadCurve(to: CGPoint(x: 76.5, y: 36), control: CGPoint(x: 71.5, y: 27))
-            context.stroke(squint, with: .color(ink), style: closedLine)
-        default:
-            if !still && t.truncatingRemainder(dividingBy: 4) < 0.12 {
-                var lid = Path()
-                lid.move(to: CGPoint(x: 66, y: 33.5))
-                lid.addLine(to: CGPoint(x: 77, y: 33.5))
-                context.stroke(lid, with: .color(ink), style: closedLine)
-            } else {
-                context.fill(Path(ellipseIn: CGRect(x: 65.5, y: 26.5, width: 12, height: 13)), with: .color(.white))
-                context.fill(Path(ellipseIn: CGRect(x: 69.75, y: 29.75, width: 7.5, height: 8.5)), with: .color(ink))
-                context.fill(Path(ellipseIn: CGRect(x: 73.6, y: 30.1, width: 2.8, height: 2.8)), with: .color(.white))
-                context.fill(Path(ellipseIn: CGRect(x: 71.3, y: 35.8, width: 1.4, height: 1.4)), with: .color(.white))
+            let arc = shape(p(32, 34), .c(p(28, 6), p(58, 2), p(62, 20)))
+            context.stroke(arc, with: .color(outline), style: line(4.6))
+            context.stroke(arc, with: .color(coral), style: line(2.6))
+            let cup = shape(p(27, 30), .c(p(27, 26), p(30, 25), p(33, 25)), .l(p(37, 25)), .c(p(40, 25), p(41, 28), p(41, 31)), .l(p(41, 39)),
+                            .c(p(41, 42), p(39, 44), p(36, 44)), .l(p(32, 44)), .c(p(29, 44), p(27, 42), p(27, 39)), .l(p(27, 30)))
+            context.fill(cup, with: linear(p(34, 25), p(34, 44), [coral, coralDark]))
+            context.stroke(cup, with: .color(outline), style: line(1.8))
+            for (index, note) in [p(70, 14), p(78, 8)].enumerated() {
+                let rise = still ? 0 : sin(t * 3 + Double(index)) * 2
+                context.fill(ellipse(note.x, note.y + rise, 4, 3), with: .color(skyDark))
+                context.stroke(shape(p(note.x + 1.8, note.y + rise), .l(p(note.x + 1.8, note.y + rise - 7))), with: .color(skyDark), style: line(1.2))
             }
-            // A slightly raised eyebrow gives Pico a cheeky, curious look.
-            var brow = Path()
-            brow.move(to: CGPoint(x: 66.5, y: 24.5))
-            brow.addLine(to: CGPoint(x: 76.5, y: 23))
-            context.stroke(brow, with: .color(greenDark), style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
+        }
+
+        // The beak: big, sun to coral on top, sky blue underneath. Opens a little when happy.
+        var lower = shape(p(61, 43), .c(p(76, 43), p(90, 45), p(98, 47)), .c(p(90, 52), p(74, 53), p(62, 50)), .l(p(61, 43)))
+        if happy {
+            lower = lower.applying(rotation(8, around: p(61, 46)))
+        }
+        context.fill(lower, with: linear(p(62, 46), p(98, 46), [sky, skyDark]))
+        context.stroke(lower, with: .color(outline), style: line(2))
+        let upper = shape(p(59, 29), .c(p(74, 21), p(93, 29), p(99, 46)), .c(p(92, 45), p(78, 43), p(61, 44)), .l(p(59, 29)))
+        context.fill(upper, with: .linearGradient(Gradient(stops: [.init(color: amber, location: 0), .init(color: orange, location: 0.5),
+                                                                   .init(color: coral, location: 0.82), .init(color: coralDark, location: 1)]),
+                                                  startPoint: p(59, 36), endPoint: p(99, 40)))
+        context.stroke(shape(p(64, 28.5), .c(p(76, 24.5), p(88, 29), p(94, 37))), with: .color(.white.opacity(0.55)), style: line(2))
+        context.fill(ellipse(65, 32, 2.4, 1.4), with: .color(outline))
+        context.stroke(upper, with: .color(outline), style: line(2.2))
+
+        if happy {
+            for (index, star) in [(p(14, 22), 3.0), (p(86, 14), 3.5), (p(90, 70), 2.5), (p(8, 52), 2.5)].enumerated() {
+                let r = star.1 * (still ? 1 : 0.8 + 0.3 * sin(t * 6 + Double(index)))
+                let c = star.0
+                context.fill(shape(p(c.x, c.y - r * 2), .l(p(c.x + r * 0.6, c.y)), .l(p(c.x, c.y + r * 2)), .l(p(c.x - r * 0.6, c.y)), .l(p(c.x, c.y - r * 2))),
+                             with: .color(amber))
+            }
+        }
+
+        if sleepy {
+            for (index, z) in [(p(76, 16), 3.0), (p(84, 9), 4.0)].enumerated() {
+                let phase = still ? 0 : (t * 0.5 + Double(index) * 0.5).truncatingRemainder(dividingBy: 1)
+                var zContext = context
+                zContext.opacity = still ? 1 : 1 - phase
+                let o = p(z.0.x + phase * 4, z.0.y - phase * 8)
+                let zs = z.1
+                zContext.stroke(shape(o, .l(p(o.x + zs, o.y)), .l(p(o.x, o.y + zs)), .l(p(o.x + zs, o.y + zs))), with: .color(skyDark), style: line(1.4))
+            }
         }
     }
 
-    private static func drawWing(in context: GraphicsContext, at shoulder: CGPoint, degrees: Double, opacity: Double) {
-        var wing = context
-        wing.opacity = opacity
-        wing.fill(feather(from: shoulder, length: 36, width: 13, degrees: degrees), with: .color(greenDark))
-        wing.fill(feather(from: shoulder, length: 30, width: 11, degrees: degrees + 7), with: .color(teal))
-        wing.fill(feather(from: shoulder, length: 24, width: 9, degrees: degrees + 14), with: .color(green))
+    // MARK: Geometry helpers
+
+    private enum Segment {
+        case c(CGPoint, CGPoint, CGPoint)
+        case l(CGPoint)
     }
 
-    private static func drawBranch(in context: GraphicsContext) {
-        var branch = Path()
-        branch.move(to: CGPoint(x: 10, y: 86))
-        branch.addQuadCurve(to: CGPoint(x: 94, y: 82), control: CGPoint(x: 50, y: 90))
-        context.stroke(branch, with: .color(brown), style: StrokeStyle(lineWidth: 5, lineCap: .round))
-        context.fill(ellipse(center: CGPoint(x: 22, y: 80), width: 13, height: 6, degrees: -30), with: .color(green))
-        context.fill(ellipse(center: CGPoint(x: 86, y: 77), width: 11, height: 5, degrees: 25), with: .color(green))
-    }
+    private static func p(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: x, y: y) }
 
-    private static func drawSparkles(in context: GraphicsContext, time t: Double) {
-        for index in 0..<5 {
-            let angle = t * 1.6 + Double(index) * (2 * .pi / 5)
-            let center = CGPoint(x: 52 + cos(angle) * 46, y: 50 + sin(angle) * 42)
-            let pulse = 2.5 + sin(t * 6 + Double(index)) * 1.2
-            var star = Path()
-            star.move(to: CGPoint(x: center.x, y: center.y - pulse * 2))
-            star.addLine(to: CGPoint(x: center.x + pulse * 0.6, y: center.y))
-            star.addLine(to: CGPoint(x: center.x, y: center.y + pulse * 2))
-            star.addLine(to: CGPoint(x: center.x - pulse * 0.6, y: center.y))
-            star.closeSubpath()
-            context.fill(star, with: .color(Palette.sun))
-        }
-    }
-
-    private static func drawZzz(in context: GraphicsContext, time t: Double) {
-        for index in 0..<2 {
-            let phase = (t * 0.5 + Double(index) * 0.5).truncatingRemainder(dividingBy: 1)
-            var z = context
-            z.opacity = 1 - phase
-            z.draw(
-                Text("z").font(.system(size: 10 + Double(index) * 4, weight: .black, design: .rounded)).foregroundStyle(Palette.sky),
-                at: CGPoint(x: 86 + phase * 8, y: 18 - phase * 14)
-            )
-        }
-    }
-
-    // MARK: Geometry
-
-    /// A teardrop feather from `pivot`, pointing left and then rotated clockwise by `degrees`.
-    static func feather(from pivot: CGPoint, length: CGFloat, width: CGFloat, degrees: Double) -> Path {
-        let steps = 24
-        var top: [CGPoint] = []
-        var bottom: [CGPoint] = []
-        for step in 0...steps {
-            let t = CGFloat(step) / CGFloat(steps)
-            let half = width * sin(.pi * t) * (1 - 0.35 * t) / 2
-            top.append(CGPoint(x: pivot.x - length * t, y: pivot.y - half))
-            bottom.append(CGPoint(x: pivot.x - length * t, y: pivot.y + half))
-        }
+    private static func shape(_ start: CGPoint, _ segments: Segment...) -> Path {
         var path = Path()
-        path.addLines(top + bottom.reversed())
-        path.closeSubpath()
-        return path.applying(rotation(degrees: degrees, around: pivot))
+        path.move(to: start)
+        for segment in segments {
+            switch segment {
+            case .c(let c1, let c2, let end): path.addCurve(to: end, control1: c1, control2: c2)
+            case .l(let end): path.addLine(to: end)
+            }
+        }
+        return path
     }
 
-    private static func ellipse(center: CGPoint, width: CGFloat, height: CGFloat, degrees: Double) -> Path {
-        Path(ellipseIn: CGRect(x: center.x - width / 2, y: center.y - height / 2, width: width, height: height))
-            .applying(rotation(degrees: degrees, around: center))
+    private static func ellipse(_ cx: Double, _ cy: Double, _ width: Double, _ height: Double) -> Path {
+        Path(ellipseIn: CGRect(x: cx - width / 2, y: cy - height / 2, width: width, height: height))
     }
 
-    private static func rotation(degrees: Double, around point: CGPoint) -> CGAffineTransform {
+    private static func linear(_ start: CGPoint, _ end: CGPoint, _ colors: [Color]) -> GraphicsContext.Shading {
+        .linearGradient(Gradient(colors: colors), startPoint: start, endPoint: end)
+    }
+
+    private static func line(_ width: Double) -> StrokeStyle {
+        StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round)
+    }
+
+    /// Clockwise rotation (y points down), matching the reference render.
+    private static func rotation(_ degrees: Double, around point: CGPoint) -> CGAffineTransform {
         CGAffineTransform(translationX: -point.x, y: -point.y)
             .concatenating(CGAffineTransform(rotationAngle: degrees * .pi / 180))
             .concatenating(CGAffineTransform(translationX: point.x, y: point.y))
+    }
+
+    private static func rotate(_ context: inout GraphicsContext, degrees: Double, around point: CGPoint) {
+        context.translateBy(x: point.x, y: point.y)
+        context.rotate(by: .degrees(degrees))
+        context.translateBy(x: -point.x, y: -point.y)
     }
 }

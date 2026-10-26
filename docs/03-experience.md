@@ -42,20 +42,18 @@ Brand names, logos, mascots and exact colors from either app are never used.
 
 ## 3.3 The mascot: Pico 🐦
 
-Pico is a **colibrí** (hummingbird), common across Latin America. Hummingbirds are small, fast and tireless, which fits short daily sessions.
+Pico is a chubby cartoon **toucan**. *Pico* is Spanish for "beak", and toucans are an icon of Latin America, so the big gradient beak (sun yellow to coral on top, sky blue underneath) is the character. Navy body with a radial sheen, a three-tuft crest, a cream-to-amber chest with scalloped feathers and a coral sash, a feathered wing with sky-blue tips, a sky-blue eye ring around a big brown eye with highlights, a cheeky brow, blush, little blue feet. Dark outlines and gradients give it a proper cartoon look.
 
-| State | When | Animation |
+| Mood | When | Look and motion |
 |---|---|---|
-| Hovering | Idle on the path | Fast wing blur, gentle bob |
-| Cheering | A card is completed | Loop-de-loop, sparkle trail |
-| Proud | Level-up gate passed | Spins, confetti burst from wings |
-| Backpacker | Travel mode on | Tiny backpack and hat |
-| Sleepy | Late in the day with nothing logged | Perched, slow blink. Never sad or guilt-tripping. |
-| Reading/Listening | During a timer | Headphones or a book |
+| Idle | Default | Breathes, blinks every few seconds |
+| Cheering | A task is done; today's node once the day is complete | Wing up and waving, happy squint, beak open, twinkling stars; loop-de-loop on each completed task |
+| Proud | Level-up gate passed | Like cheering |
+| Backpacker | Travel mode on | Leather backpack, safari hat with a coral band (replaces the crest) |
+| Sleepy | After 8 pm with nothing logged | Eyes closed, gentle sway, floating z's |
+| Listening | Input and Language Transfer sessions | Coral headphones, bobbing music notes |
 
-**Built in code** (`Rumbo/Pico/PicoView.swift`; reference render in `docs/art/pico-preview.png`, made with `docs/art/pico-render.py`): drawn on a 100 × 100 `Canvas` (emerald body, Rumbo-coral throat, long beak), animated by a `TimelineView` (wing flap with ghost wings for blur, bob, blink) and a `keyframeAnimator` loop-de-loop whenever a task is completed. Moods: hovering (default), cheering/proud (faster flap, orbiting sparkles), backpacker (Travel mode: backpack and hat), sleepy (after 8 pm with nothing logged: perched on a branch, eyes closed, floating z's), listening (headphones, during input and Language Transfer sessions). Reduce Motion freezes the animation. No third-party runtime; could move to Rive later.
-
-Pico also appears in the Live Activity and widgets as a small static pose.
+**Built in code** (`Rumbo/Pico/PicoView.swift`): a 100 × 100 `Canvas` of cubic Bézier shapes with gradient fills and round-capped outlines, animated by `TimelineView`, plus a `keyframeAnimator` hop-and-spin. The geometry matches a reference render (`docs/art/pico-preview.png`, made with `docs/art/pico-render.py`) point for point, so the design can be iterated on as an image first. Reduce Motion freezes the animation.
 
 ## 3.4 Screens
 
@@ -81,13 +79,13 @@ The first screen also offers "Restore from a backup". Without a backup, onboardi
 ### Path (home tab)
 Implemented in `Rumbo/Features/Path/PathView.swift`, laid out by `PathLayout` in RumboCore.
 
-- **One node per session**, like lessons on a Duolingo path. A session is one day's plan. Missed days leave no gaps; the streak (calendar days) lives in the header instead.
-- 7 nodes per unit ("Unidad N", with the dates it covered). Finished session = green tick, started-but-unfinished on an earlier day = yellow, upcoming = locked and faded.
-- **Focus node:** today's session is coral with a bobbing "START"/"TODAY" bubble; Pico hovers beside it facing the node. Tapping it zooms into Today.
-- **Finishing today** turns that node into a tick and unlocks the next node (blue, "KEEP GOING"). Tapping it, or "Keep going" on Today, starts another session now. That session is planned as if it were tomorrow, so today's work counts toward the strand balance and the anchors.
-- **The future:** the path continues with locked units at least 4 units ahead, and as far as the last projected level-up (up to about two years). Trophy markers show roughly where each level-up should land ("Viajero · A2.2, around February 2027"), assuming about one session a day at the forecast pace: the learner's own pace after a week of history, the weekly goal before that.
-- **Gate node:** when the hours for the next band are reached (and no failed check in the last 14 days), a golden trophy node appears right after the focus node. Today also shows a "Level-up check ready" banner.
-- Tapping a past node shows that day's summary. Days with practice but no saved session (restored backups, extra listening only) still get a node.
+- **One node per calendar day** since onboarding, labelled with its weekday and date; 7 nodes per unit ("Unidad N", with its dates). Day complete (its plan finished, or ≥ 10 minutes logged with no plan) = green tick; partly done = yellow; missed = grey moon; upcoming = locked and faded.
+- **Today** is the big node with Pico beside it. Unfinished: coral star, pulsing, with a "START"/"CONTINUE" bubble; tapping zooms into Today.
+- **Finished today is unmistakable:** the node turns into a big green tick inside a gold ring with sparkles, the bubble says "¡HECHO!", Pico cheers, and the header shows a green "Day done" badge.
+- **Working ahead:** finishing today opens tomorrow (blue, pulsing, "KEEP GOING"). Tapping it, or "Keep going: do tomorrow now" on Today, plans tomorrow's session now. It's planned for that day, so everything done so far counts toward the balance, and finishing it marks tomorrow's node complete in advance and opens the day after.
+- **The future:** locked units continue at least 4 units after today's, and as far as the last projected level-up (up to about two years). Trophy markers sit on the day each level-up is expected ("Viajero · A2.2, around February 2027"), at the forecast pace: the learner's own after a week of history, the weekly goal before that.
+- **Gate node:** when the hours for the next band are reached (and no failed check in the last 14 days), a golden trophy node appears right after today. Today also shows a "Level-up check ready" banner.
+- Tapping a past (or early-finished) node shows that day's plan and any other practice.
 - The pulse ring is centred on the node's face and its 3D edge together.
 
 ### Level-up check

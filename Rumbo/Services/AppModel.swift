@@ -55,24 +55,43 @@ final class AppModel {
         return (profile?.baselineInputHours ?? 0) + Double(minutes) / 60
     }
 
-    /// Set by tapping the unlocked node after finishing today: Today then offers a fresh session.
-    var wantsNextSession = false
+    /// The day Today is showing. Normally today; a later day when working ahead after finishing today.
+    var selectedPlanDay: Date?
 
-    /// Every session (a day's plan), oldest first. `day` is when the session was created.
+    var planDay: Date {
+        let today = calendar.startOfDay(for: .now)
+        guard let selected = selectedPlanDay.map({ calendar.startOfDay(for: $0) }), selected > today else { return today }
+        return selected
+    }
+
+    var isWorkingAhead: Bool { planDay > calendar.startOfDay(for: .now) }
+
+    /// Every day's plan, oldest first. `day` is the start of the calendar day the plan is for.
     var sessions: [DayPlanRecord] {
         _ = revision
         return (try? context.fetch(FetchDescriptor<DayPlanRecord>(sortBy: [SortDescriptor(\.day)]))) ?? []
     }
 
-    private var sessionsToday: [DayPlanRecord] {
-        sessions.filter { calendar.isDateInToday($0.day) }
+    func session(for day: Date) -> DayPlanRecord? {
+        sessions.last { calendar.isDate($0.day, inSameDayAs: day) }
     }
 
-    /// The session Today shows: the latest one created today, unless the learner asked for the next one.
+    /// The plan Today shows: the one for `planDay`.
     var todayPlan: DayPlanRecord? {
-        let latest = sessionsToday.last
-        if wantsNextSession, latest?.isComplete == true { return nil }
-        return latest
+        session(for: planDay)
+    }
+
+    /// Opens the first unfinished day after `day` (finishing today unlocks tomorrow, and so on).
+    func workAhead(after day: Date? = nil) {
+        var next = calendar.startOfDay(for: day ?? planDay)
+        repeat {
+            next = calendar.date(byAdding: .day, value: 1, to: next)!
+        } while session(for: next)?.isComplete == true
+        selectedPlanDay = next
+    }
+
+    func showToday() {
+        selectedPlanDay = nil
     }
 
     func snapshot(for profile: LearnerProfile) -> LearnerSnapshot {
@@ -196,18 +215,15 @@ final class AppModel {
         if let existing = todayPlan {
             context.delete(existing)
         }
-        let now = Date.now
-        // A second session today plans as if it were tomorrow, so today's work counts toward the balance.
-        let finishedEarlier = sessionsToday.contains { $0.isComplete && $0 !== todayPlan }
-        let today = finishedEarlier ? calendar.date(byAdding: .day, value: 1, to: now)! : now
+        // Working ahead plans for that later day, so everything done up to now counts toward the balance.
+        let today = planDay
         let plan = DayPlanner(calendar: calendar).plan(
             budget: budget,
             learner: snapshot(for: profile),
             history: history,
             today: today
         )
-        wantsNextSession = false
-        let record = DayPlanRecord(day: now, budgetMinutes: budget, band: profile.band)
+        let record = DayPlanRecord(day: today, budgetMinutes: budget, band: profile.band)
         context.insert(record)
         for (index, task) in plan.tasks.enumerated() {
             let taskRecord = PlannedTaskRecord(task: task, order: index, prompt: prompt(for: task.kind, band: profile.band, focus: plan.focus, on: today))
@@ -408,38 +424,33 @@ final class AppModel {
     }
 
     var pathMap: PathMap {
+        guard let profile else { return PathMap(units: [], milestones: []) }
         let allLogs = logs
         let minutesByLog = Dictionary(allLogs.map { ($0.id, $0.minutes) }, uniquingKeysWith: +)
-        var summaries: [PathLayout.Session] = []
-        var daysWithSessions: Set<Date> = []
-        let today = sessionsToday.last
-        var todayInProgress = false
+        var days: [Date: PathLayout.Day] = [:]
+        var plannedLogIDs: Set<UUID> = []
 
+        // Days with a plan: finished or not, credited to the day the plan is for (even if done early).
         for session in sessions {
             let done = session.sortedTasks.filter { $0.status == .done }
+            let ids = done.compactMap(\.logID)
+            plannedLogIDs.formUnion(ids)
             guard !done.isEmpty else { continue }
-            let minutes = done.compactMap { $0.logID.flatMap { minutesByLog[$0] } }.reduce(0, +)
-            summaries.append(PathLayout.Session(date: session.day, minutes: minutes, isComplete: session.isComplete))
-            daysWithSessions.insert(calendar.startOfDay(for: session.day))
-            if session === today && !session.isComplete { todayInProgress = true }
+            let day = calendar.startOfDay(for: session.day)
+            let minutes = ids.compactMap { minutesByLog[$0] }.reduce(0, +)
+            days[day] = PathLayout.Day(minutes: minutes, session: session.isComplete ? .finished : .unfinished)
         }
 
-        // Days with practice but no saved session (restored backups, extra listening only) still get a node.
-        var looseMinutes: [Date: Int] = [:]
-        for log in allLogs where !daysWithSessions.contains(calendar.startOfDay(for: log.date)) && !calendar.isDateInToday(log.date) {
-            looseMinutes[calendar.startOfDay(for: log.date), default: 0] += log.minutes
+        // Other practice (extra listening, restored backups) adds minutes to the day it happened.
+        for log in allLogs where !plannedLogIDs.contains(log.id) {
+            let day = calendar.startOfDay(for: log.date)
+            let existing = days[day] ?? PathLayout.Day(minutes: 0, session: .none)
+            days[day] = PathLayout.Day(minutes: existing.minutes + log.minutes, session: existing.session)
         }
-        for (day, minutes) in looseMinutes {
-            summaries.append(PathLayout.Session(date: day, minutes: minutes, isComplete: minutes >= StreakCalculator.minutesForStreakDay))
-        }
-        summaries.sort { $0.date < $1.date }
 
-        let pace = forecastWeeklyHours.hours
-        var arrivals = Projection(calendar: calendar).arrivalDates(inputHours: inputHours, weeklyHours: pace, from: .now)
-        if let band = profile?.band {
-            arrivals = arrivals.filter { $0.key > band }
-        }
-        return PathLayout.map(sessions: summaries, todayInProgress: todayInProgress, arrivals: arrivals, today: .now, calendar: calendar)
+        var arrivals = Projection(calendar: calendar).arrivalDates(inputHours: inputHours, weeklyHours: forecastWeeklyHours.hours, from: .now)
+        arrivals = arrivals.filter { $0.key > profile.band }
+        return PathLayout.map(start: profile.createdAt, today: .now, days: days, arrivals: arrivals, calendar: calendar)
     }
 
     func acceptDifficultySuggestion() {
