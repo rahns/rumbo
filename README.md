@@ -40,7 +40,7 @@ Every source can be turned off. The planner reallocates its time to whatever els
 
 ## Install
 
-Every push to `main` builds an **unsigned** `Rumbo.ipa` on GitHub Actions (macOS runner, Xcode 27). Download it from the latest run on the [Actions tab](../../actions) (artifact `Rumbo-0.1.<build>`) or from [Releases](../../releases), and sign/install it with your own certificate. The artifact also contains the two `.entitlements` files in case your signing tool asks for them.
+The **Build** workflow (run manually from the Actions tab, or on `v*` tags) builds an **unsigned** `Rumbo.ipa` on GitHub Actions (macOS runner, Xcode 27). Download it from the latest run on the [Actions tab](../../actions) (artifact `Rumbo-0.1.<build>`) or from [Releases](../../releases), and sign/install it with your own certificate. The artifact also contains the two `.entitlements` files in case your signing tool asks for them.
 
 See [docs/05-architecture.md](docs/05-architecture.md#57-signing-and-entitlements) for which features depend on the entitlements your certificate supports. The app's **Diagnostics** screen tells you what works on your phone.
 

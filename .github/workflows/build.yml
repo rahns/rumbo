@@ -1,11 +1,10 @@
 name: Build
 
+# Builds run only when asked for (Actions tab → Build → Run workflow), or for release tags.
 on:
-  push:
-    branches: [main]
-    tags: ["v*"]
-  pull_request:
   workflow_dispatch:
+  push:
+    tags: ["v*"]
 
 permissions:
   contents: write

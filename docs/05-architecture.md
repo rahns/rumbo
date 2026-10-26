@@ -96,7 +96,7 @@ URL schemes are confirmed during implementation and listed in `LSApplicationQuer
 
 ## 5.6 CI: unsigned IPA
 
-`.github/workflows/build.yml`, on every push to `main` and on tags `v*`:
+`.github/workflows/build.yml`, run manually (workflow_dispatch) when a build is wanted, and on tags `v*`:
 
 1. `runs-on: xcode-27`
 2. Install XcodeGen (Homebrew), run `xcodegen generate`.
