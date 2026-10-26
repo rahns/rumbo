@@ -44,8 +44,7 @@ enum CheckID: String, CaseIterable, Identifiable {
     case cloudModel = "Apple cloud model (PCC)"
     case languageTool = "LanguageTool"
     case urlSchemes = "Source apps installed"
-    case driveFolder = "iCloud Drive backup folder"
-    case driveExport = "Save backup file to Files"
+    case backupFile = "iCloud Drive backup file"
 
     var id: String { rawValue }
 }
@@ -55,11 +54,10 @@ enum CheckID: String, CaseIterable, Identifiable {
 final class DiagnosticsModel {
     var results: [CheckID: CheckStatus] = [:]
     var modelSample: String?
-    var cloudModelSample: String?
     var isRunning = false
 
     private let profile = ProvisioningProfile.embedded()
-    private static let driveBookmarkKey = "backup.folderBookmark"
+    private static let backupBookmarkKey = "backup.fileBookmark"
 
     func status(_ id: CheckID) -> CheckStatus {
         results[id] ?? .pending
@@ -81,13 +79,11 @@ final class DiagnosticsModel {
         results[.notifications] = await checkNotifications()
         results[.onDeviceModel] = checkOnDeviceModel()
         results[.cloudModel] = CloudModelProbe.isAvailable
-            ? .pass("Available")
-            : .fail("Not available. Will use the on-device model instead.")
+            ? .warn("Reports available, but requests crash a sideloaded build (needs Apple's managed entitlement). Not used.")
+            : .fail("Not available")
         results[.languageTool] = await checkLanguageTool()
         results[.urlSchemes] = checkURLSchemes()
-        if results[.driveFolder] == nil {
-            results[.driveFolder] = checkSavedDriveFolder()
-        }
+        results[.backupFile] = rewriteSavedBackup()
     }
 
     // MARK: - Checks
@@ -144,10 +140,11 @@ final class DiagnosticsModel {
     }
 
     private func checkKeychainShare(status: OSStatus) -> CheckStatus {
+        let group = KeychainShare.defaultGroup ?? "unknown"
         guard status == errSecSuccess else {
-            return .fail("Write failed: \(KeychainShare.describe(status))")
+            return .fail("Write failed: \(KeychainShare.describe(status)). App's default group: \(group)")
         }
-        return .pass("Wrote to \(KeychainShare.accessGroup ?? "?"). The diagnostics widget should show a ✓ for Keychain.")
+        return .pass("Wrote to the default group \(group). The diagnostics widget should show a ✓ for Keychain and the same group.")
     }
 
     private func checkPush() -> CheckStatus {
@@ -184,29 +181,10 @@ final class DiagnosticsModel {
     }
 
     private func checkLanguageTool() async -> CheckStatus {
-        struct Response: Decodable {
-            struct Match: Decodable { let message: String }
-            let matches: [Match]
-        }
-
-        var request = URLRequest(url: URL(string: "https://api.languagetool.org/v2/check")!)
-        request.httpMethod = "POST"
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        var form = URLComponents()
-        form.queryItems = [
-            URLQueryItem(name: "language", value: "es"),
-            URLQueryItem(name: "text", value: "Ella son muy alto y yo tengo veinte año."),
-        ]
-        request.httpBody = form.percentEncodedQuery?.data(using: .utf8)
-
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            guard (response as? HTTPURLResponse)?.statusCode == 200 else {
-                return .fail("HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)")
-            }
-            let decoded = try JSONDecoder().decode(Response.self, from: data)
-            let first = decoded.matches.first?.message ?? "none"
-            return .pass("\(decoded.matches.count) errors found. First: \(first)")
+            let matches = try await LanguageToolProbe.check("Ella son muy alto y yo tengo veinte año.")
+            let first = matches.first?.message ?? "none"
+            return .pass("\(matches.count) errors found. First: \(first)")
         } catch {
             return .fail("Offline or blocked: \(error.localizedDescription)")
         }
@@ -220,65 +198,63 @@ final class DiagnosticsModel {
             : .pass("Opens: \(found.joined(separator: ", "))")
     }
 
-    private func checkSavedDriveFolder() -> CheckStatus {
-        guard let data = UserDefaults.standard.data(forKey: Self.driveBookmarkKey) else {
+    // MARK: - Backup file
+
+    /// A new test backup in a temporary location, ready to be moved into place by the picker.
+    func makeBackupFileToPlace() -> URL? {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Rumbo Backup.json")
+        do {
+            try backupPayload().write(to: url, options: .atomic)
+            return url
+        } catch {
+            results[.backupFile] = .fail("Couldn't create the file: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    func backupPlaced(at url: URL?) {
+        guard let url else {
+            results[.backupFile] = .warn("Cancelled")
+            return
+        }
+        let accessing = url.startAccessingSecurityScopedResource()
+        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let bookmark = try url.bookmarkData()
+            UserDefaults.standard.set(bookmark, forKey: Self.backupBookmarkKey)
+            results[.backupFile] = .pass("Saved \(url.lastPathComponent) in \(url.deletingLastPathComponent().lastPathComponent). Tap Run (or relaunch) to test rewriting it.")
+        } catch {
+            results[.backupFile] = .fail("Saved, but couldn't remember the location: \(error.localizedDescription)")
+        }
+    }
+
+    /// Rewrites the backup at its remembered location. This is what real automatic backups will do.
+    private func rewriteSavedBackup() -> CheckStatus {
+        guard let bookmark = UserDefaults.standard.data(forKey: Self.backupBookmarkKey) else {
             return .pending
         }
         var stale = false
-        guard let url = try? URL(resolvingBookmarkData: data, bookmarkDataIsStale: &stale) else {
-            return .fail("Saved folder can't be resolved. Pick it again.")
+        guard let url = try? URL(resolvingBookmarkData: bookmark, bookmarkDataIsStale: &stale) else {
+            return .fail("Remembered location can't be found. Choose it again.")
         }
-        return writeTestFile(in: url)
-    }
-
-    // MARK: - Actions
-
-    func folderPickerFinished(_ url: URL?) {
-        guard let url else {
-            results[.driveFolder] = .warn("Picker closed without a folder (cancelled)")
-            return
-        }
-        useDriveFolder(url)
-    }
-
-    func exportFinished(_ result: Result<URL, Error>) {
-        switch result {
-        case .success(let url):
-            results[.driveExport] = .pass("Saved \(url.lastPathComponent) in \(url.deletingLastPathComponent().lastPathComponent)")
-        case .failure(let error):
-            results[.driveExport] = .fail(error.localizedDescription)
-        }
-    }
-
-    var backupTestDocument: BackupTestDocument {
-        let payload = #"{"app":"Rumbo","test":true,"date":"\#(Date.now.ISO8601Format())"}"#
-        return BackupTestDocument(data: Data(payload.utf8))
-    }
-
-    func useDriveFolder(_ url: URL) {
-        guard url.startAccessingSecurityScopedResource() else {
-            results[.driveFolder] = .fail("No permission for that folder")
-            return
-        }
-        defer { url.stopAccessingSecurityScopedResource() }
-        if let bookmark = try? url.bookmarkData() {
-            UserDefaults.standard.set(bookmark, forKey: Self.driveBookmarkKey)
-        }
-        results[.driveFolder] = writeTestFile(in: url)
-    }
-
-    private func writeTestFile(in folder: URL) -> CheckStatus {
-        let accessing = folder.startAccessingSecurityScopedResource()
-        defer { if accessing { folder.stopAccessingSecurityScopedResource() } }
-        let file = folder.appendingPathComponent("rumbo-backup-test.json")
+        let accessing = url.startAccessingSecurityScopedResource()
+        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
         do {
-            let payload = #"{"app":"Rumbo","test":true,"date":"\#(Date.now.ISO8601Format())"}"#
-            try Data(payload.utf8).write(to: file, options: .atomic)
-            return .pass("Wrote \(file.lastPathComponent) to \(folder.lastPathComponent)")
+            try backupPayload().write(to: url, options: .atomic)
+            if stale, let fresh = try? url.bookmarkData() {
+                UserDefaults.standard.set(fresh, forKey: Self.backupBookmarkKey)
+            }
+            return .pass("Rewrote \(url.lastPathComponent) in \(url.deletingLastPathComponent().lastPathComponent) at \(Date.now.formatted(date: .omitted, time: .standard))\(stale ? " (bookmark refreshed)" : "")")
         } catch {
-            return .fail("Couldn't write: \(error.localizedDescription)")
+            return .fail("Couldn't rewrite: \(error.localizedDescription)")
         }
     }
+
+    private func backupPayload() -> Data {
+        Data(#"{"app":"Rumbo","test":true,"version":"\#(Self.appVersion)","date":"\#(Date.now.ISO8601Format())"}"#.utf8)
+    }
+
+    // MARK: - Live Activity
 
     func startTestTimer() {
         let now = Date.now
@@ -298,33 +274,42 @@ final class DiagnosticsModel {
         }
     }
 
-    private static let tutorInstructions = """
-        You are a friendly Spanish tutor for an A2 learner. Correct the learner's text. \
-        List each error with the fix and a one-sentence explanation in English, then give a natural rewrite.
-        """
+    // MARK: - Writing correction
+
     private static let sampleText = "Ayer yo voy a la playa con mis amigo y nosotros comimos mucho pescados."
 
+    /// The planned M4 pipeline in miniature: LanguageTool finds errors, the on-device model explains them
+    /// with structured output, and corrections that don't change anything are dropped.
     func testWritingCorrection() async {
         modelSample = "Thinking…"
+        let hints = (try? await LanguageToolProbe.check(Self.sampleText)) ?? []
+        var prompt = "Learner's text:\n\(Self.sampleText)"
+        if !hints.isEmpty {
+            prompt += "\n\nA grammar checker flagged:\n" + hints.map { "- «\($0.flaggedText(in: Self.sampleText))»: \($0.message)" }.joined(separator: "\n")
+        }
         do {
-            let session = LanguageModelSession(instructions: Self.tutorInstructions)
-            modelSample = try await session.respond(to: Self.sampleText).content
+            let session = LanguageModelSession(instructions: """
+                You are a friendly Spanish tutor for an A2 learner. Find every real error in the learner's text. \
+                Check that each verb tense matches the time expressions (for example "ayer" needs the preterite), \
+                and check gender and number agreement. Use the grammar checker's hints when given. \
+                Never list something that is already correct.
+                """)
+            let feedback = try await session.respond(to: prompt, generating: WritingFeedback.self).content
+            let real = feedback.errors.filter {
+                $0.original.trimmingCharacters(in: .whitespaces).lowercased() != $0.corrected.trimmingCharacters(in: .whitespaces).lowercased()
+            }
+            var lines = real.map { "• \($0.original) → \($0.corrected): \($0.explanation)" }
+            let dropped = feedback.errors.count - real.count
+            if dropped > 0 { lines.append("(dropped \(dropped) non-changes)") }
+            lines.append("Rewrite: \(feedback.naturalRewrite)")
+            lines.append("LanguageTool hints used: \(hints.count)")
+            modelSample = lines.joined(separator: "\n")
         } catch {
             modelSample = "Error: \(error.localizedDescription)"
         }
     }
 
-    func testCloudWritingCorrection() async {
-        cloudModelSample = "Thinking…"
-        do {
-            let session = CloudModelProbe.session(instructions: Self.tutorInstructions)
-            cloudModelSample = try await session.respond(to: Self.sampleText).content
-            results[.cloudModel] = .pass("Available and answered a request")
-        } catch {
-            cloudModelSample = "Error: \(error)"
-            results[.cloudModel] = .fail("Reports available, but the request failed: \(error.localizedDescription)")
-        }
-    }
+    // MARK: - Report
 
     static var appVersion: String {
         let info = Bundle.main.infoDictionary
@@ -332,8 +317,6 @@ final class DiagnosticsModel {
         let build = info?["CFBundleVersion"] as? String ?? "?"
         return "\(version) (\(build))"
     }
-
-    // MARK: - Report
 
     var report: String {
         var lines = ["Rumbo \(Self.appVersion) diagnostics · \(Date.now.formatted())",
@@ -343,11 +326,61 @@ final class DiagnosticsModel {
             lines.append("\(status.symbol) \(id.rawValue): \(status.detail)")
         }
         if let modelSample {
-            lines.append("\nOn-device model sample:\n\(modelSample)")
-        }
-        if let cloudModelSample {
-            lines.append("\nCloud model sample:\n\(cloudModelSample)")
+            lines.append("\nWriting correction sample:\n\(modelSample)")
         }
         return lines.joined(separator: "\n")
+    }
+}
+
+@Generable
+struct WritingFeedback {
+    @Guide(description: "Each real error in the learner's text, most important first. Skip anything already correct.")
+    var errors: [WritingError]
+    @Guide(description: "The whole text rewritten the way a native speaker would say it.")
+    var naturalRewrite: String
+}
+
+@Generable
+struct WritingError {
+    @Guide(description: "The exact wrong words from the learner's text.")
+    var original: String
+    @Guide(description: "The corrected words. Must be different from original.")
+    var corrected: String
+    @Guide(description: "One short sentence in English explaining the rule.")
+    var explanation: String
+}
+
+enum LanguageToolProbe {
+    struct Match: Decodable {
+        let message: String
+        let offset: Int
+        let length: Int
+
+        func flaggedText(in text: String) -> String {
+            let characters = Array(text)
+            guard offset >= 0, offset + length <= characters.count else { return "" }
+            return String(characters[offset..<offset + length])
+        }
+    }
+
+    private struct Response: Decodable {
+        let matches: [Match]
+    }
+
+    static func check(_ text: String) async throws -> [Match] {
+        var request = URLRequest(url: URL(string: "https://api.languagetool.org/v2/check")!)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        var form = URLComponents()
+        form.queryItems = [
+            URLQueryItem(name: "language", value: "es"),
+            URLQueryItem(name: "text", value: text),
+        ]
+        request.httpBody = form.percentEncodedQuery?.data(using: .utf8)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
+        return try JSONDecoder().decode(Response.self, from: data).matches
     }
 }

@@ -18,16 +18,17 @@ Each milestone ends with a downloadable IPA from CI.
 | Question | Answer |
 |---|---|
 | iCloud/CloudKit entitlement | ❌ Not in the profile → **iCloud Drive backup is the sync path**; CloudKit stays as an automatic upgrade for profiles that grant it |
-| App Group entitlement | ❌ Not in the profile → widgets get data through a **shared Keychain group** (being verified in build 0.1.3+) |
+| App Group entitlement | ❌ Not in the profile. An explicit shared Keychain group also fails (-34018, entitlement missing after signing). Testing the Keychain's *default* group in build 0.1.4+. |
 | Push (`aps-environment`) | ✅ Granted |
 | Live Activities, notifications | ✅ |
 | Apple on-device model | ✅ Available, but weak on tense errors: in the sample it "corrected" *voy → voy* instead of *fui* |
-| Apple cloud model (PCC) | ✅ Reports available; a real request is being verified in build 0.1.3+ |
+| Apple cloud model (PCC) | ❌ Reports available, but a real request crashes the app (managed entitlement). Not used. |
 | LanguageTool | ✅ Caught the agreement error the on-device model missed |
 | URL schemes | ✅ `duolingo://`, `youtube://`, `dreaming://` (Dreaming Spanish), `languagetransfer://`, `tandem://`, `spotify://`. `dreamingspanish://` does not work. |
-| iCloud Drive folder picker | ❌ SwiftUI `.fileImporter` returned nothing → replaced with a UIKit picker (verifying) |
+| iCloud Drive folder picker | ❌ Neither SwiftUI's nor UIKit's folder picker returns a folder. Saving a file to iCloud Drive works → backups use one bookmarked file instead (verifying rewrite in 0.1.4+). |
+| App version | XcodeGen hardcoded 1.0 (1) in Info.plist; fixed in 0.1.4 so builds show `0.1.<run>` |
 
 ## Still open
-- Does the shared Keychain group reach the widget?
-- Does a real request to the cloud model succeed in a sideloaded build?
-- Does the UIKit folder picker (or saving a backup file) work for iCloud Drive?
+- Does the Keychain's default group reach the widget?
+- Can Rumbo rewrite the bookmarked backup file later (after relaunch)?
+- Does the improved on-device pipeline (LanguageTool hints + structured output + no-op filter) give good corrections?

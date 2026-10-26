@@ -115,10 +115,10 @@ There are two layers. Which ones are active depends on the entitlements the user
 | Layer | How | Needs |
 |---|---|---|
 | **1. CloudKit sync** (preferred) | SwiftData `ModelConfiguration(cloudKitDatabase: .private("iCloud.com.rahns.rumbo"))`. Automatic, continuous, works across devices. | iCloud + CloudKit entitlement with the container ID in the provisioning profile |
-| **2. Auto-backup to iCloud Drive** (always on) | User picks a folder once (e.g. *iCloud Drive/Rumbo*) via the system folder picker. Rumbo keeps a security-scoped bookmark and writes a versioned JSON backup there after each logged session and daily. Keeps the last 30 backups. | No entitlement. Works with any signing method. |
+| **2. Auto-backup to iCloud Drive** (always on) | During onboarding the user saves `Rumbo Backup.json` once, anywhere in Files (e.g. *iCloud Drive/Rumbo*), using the document picker in move mode. Rumbo keeps a security-scoped bookmark to that file and rewrites it after each logged session. The file holds the latest full snapshot plus the previous 7 daily snapshots. | No entitlement. Works with any signing method. (Picking a *folder* didn't work on device in M0; saving a file does.) |
 
 At launch, Rumbo checks whether CloudKit is available (`FileManager.default.ubiquityIdentityToken` plus a CloudKit account-status check). If it is, CloudKit sync is used. If not, Rumbo uses a local-only store and Settings explains that the iCloud Drive backup is the safety net.
 
-**Restore:** onboarding offers "Restore from backup" before anything else. On a new phone, the user picks the latest JSON in the backup folder.
+**Restore:** onboarding offers "Restore from backup" before anything else. On a new phone (or after reinstalling with a new certificate, which can wipe app data), the user picks `Rumbo Backup.json`, and Rumbo then keeps writing to that same file.
 
 **Export:** Settings → Export creates the same JSON file through the share sheet (for moving to a friend's format, or archiving).

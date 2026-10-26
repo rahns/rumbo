@@ -1,11 +1,9 @@
 import SwiftUI
 import UIKit
-import UniformTypeIdentifiers
 
 struct DiagnosticsView: View {
     @State private var model = DiagnosticsModel()
-    @State private var pickingFolder = false
-    @State private var exporting = false
+    @State private var backupToPlace: PendingBackup?
     @State private var copied = false
 
     var body: some View {
@@ -27,16 +25,13 @@ struct DiagnosticsView: View {
             }
 
             Section {
-                Button("Pick iCloud Drive backup folder", systemImage: "folder.badge.plus") {
-                    pickingFolder = true
-                }
-                Button("Save a test backup file", systemImage: "square.and.arrow.down") {
-                    exporting = true
+                Button("Choose backup location", systemImage: "externaldrive.badge.icloud") {
+                    backupToPlace = model.makeBackupFileToPlace().map(PendingBackup.init)
                 }
             } header: {
                 Text("Backup")
             } footer: {
-                Text("When picking a folder, open it first (tap into it), then tap Open.")
+                Text("Save \"Rumbo Backup.json\" in iCloud Drive (e.g. a Rumbo folder). Then tap Run to check Rumbo can update it.")
             }
 
             Section("Live Activity") {
@@ -49,18 +44,10 @@ struct DiagnosticsView: View {
             }
 
             Section("Writing correction") {
-                Button("Test on-device model", systemImage: "iphone") {
+                Button("Test writing correction", systemImage: "text.badge.checkmark") {
                     Task { await model.testWritingCorrection() }
                 }
                 if let sample = model.modelSample {
-                    Text(sample)
-                        .font(.footnote)
-                        .textSelection(.enabled)
-                }
-                Button("Test cloud model", systemImage: "icloud") {
-                    Task { await model.testCloudWritingCorrection() }
-                }
-                if let sample = model.cloudModelSample {
                     Text(sample)
                         .font(.footnote)
                         .textSelection(.enabled)
@@ -85,20 +72,17 @@ struct DiagnosticsView: View {
             .disabled(model.isRunning)
         }
         .task { await model.runAll() }
-        .sheet(isPresented: $pickingFolder) {
-            FolderPicker { url in
-                pickingFolder = false
-                model.folderPickerFinished(url)
+        .sheet(item: $backupToPlace) { pending in
+            BackupFilePicker(file: pending.url) { url in
+                backupToPlace = nil
+                model.backupPlaced(at: url)
             }
             .ignoresSafeArea()
         }
-        .fileExporter(
-            isPresented: $exporting,
-            document: model.backupTestDocument,
-            contentType: .json,
-            defaultFilename: "rumbo-backup-test"
-        ) { result in
-            model.exportFinished(result)
-        }
     }
+}
+
+private struct PendingBackup: Identifiable {
+    let id = UUID()
+    let url: URL
 }

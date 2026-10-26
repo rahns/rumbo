@@ -38,6 +38,8 @@ targets:
       path: Rumbo/Info.plist
       properties:
         CFBundleDisplayName: Rumbo
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIRequiresFullScreen: true
@@ -72,6 +74,8 @@ targets:
       path: RumboWidgets/Info.plist
       properties:
         CFBundleDisplayName: Rumbo
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:

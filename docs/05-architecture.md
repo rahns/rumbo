@@ -68,12 +68,10 @@ struct CorrectionResult: Codable {
 **Pipeline:**
 1. **LanguageTool** (`https://api.languagetool.org/v2/check`, `language=es`) when online. Free, no key, rate-limited (~20 requests/min). Finds spelling, agreement and grammar errors reliably.
 2. **Apple model** gets the text plus LanguageTool's matches and returns a `CorrectionResult` via guided generation (`@Generable`). It explains errors at the learner's band, adds errors LanguageTool can't see (wrong tense choice, unnatural phrasing), and writes the natural rewrite.
-   - **Online:** Apple's server model on Private Cloud Compute (new in iOS 27). Larger and better at subtle Spanish errors.
-   - **Offline / unavailable:** the on-device model. Works on the author's iPhone 16 Pro and on any Apple Intelligence device.
+   - **On-device model** (all Apple Intelligence devices, works offline). Asked for structured output (`@Generable`), given LanguageTool's matches as hints, and told to check tense against time expressions and agreement. Corrections where the "fix" equals the original are dropped (M0 showed it producing *voy → voy*).
+   - **Private Cloud Compute model: not used.** It reports itself available in a sideloaded build, but sending it a request crashes the app because it needs Apple's managed entitlement (M0 finding). If Rumbo is ever distributed through the App Store, it becomes the preferred online engine.
 3. **Fallbacks:** if no Apple model is available (older iPhone, Apple Intelligence off), LanguageTool's results are shown alone with its built-in messages. Offline with no Apple model: the writing is saved and checked automatically when back online.
 4. **Optional:** a user's own Gemini (or other) key, plugged in through the Foundation Models `LanguageModel` provider protocol. Off by default.
-
-> ⚠️ **To verify in milestone 0:** Apple describes free Private Cloud Compute access for developers in its Small Business Program. It's not yet known whether an app signed outside that program (a sideloaded IPA) can use it. If not, Rumbo uses the on-device model, which is still free and works offline.
 
 The prompt asks for **at most 8 errors, most important first**, so feedback stays useful rather than overwhelming. Explanations are in English at A2–B1 and switch to Spanish from B2.1.
 

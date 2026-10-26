@@ -22,11 +22,12 @@ struct DiagnosticsEntry: TimelineEntry {
     let appGroupPing: Date?
     let keychainPing: Date?
     let keychainStatus: OSStatus
+    let keychainGroup: String?
 }
 
 struct DiagnosticsProvider: TimelineProvider {
     func placeholder(in context: Context) -> DiagnosticsEntry {
-        DiagnosticsEntry(date: .now, appGroupAvailable: true, appGroupPing: .now, keychainPing: .now, keychainStatus: errSecSuccess)
+        DiagnosticsEntry(date: .now, appGroupAvailable: true, appGroupPing: .now, keychainPing: .now, keychainStatus: errSecSuccess, keychainGroup: nil)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (DiagnosticsEntry) -> Void) {
@@ -44,7 +45,8 @@ struct DiagnosticsProvider: TimelineProvider {
             appGroupAvailable: SharedStore.defaults != nil,
             appGroupPing: SharedStore.readAppGroupPing(),
             keychainPing: keychain.date,
-            keychainStatus: keychain.status
+            keychainStatus: keychain.status,
+            keychainGroup: KeychainShare.defaultGroup
         )
     }
 }
@@ -60,6 +62,12 @@ struct DiagnosticsWidgetView: View {
                 detail: entry.appGroupAvailable ? (entry.appGroupPing == nil ? "no data" : nil) : "missing")
             row("Keychain", ok: entry.keychainPing != nil,
                 detail: entry.keychainPing == nil ? "err \(entry.keychainStatus)" : nil)
+            if let group = entry.keychainGroup {
+                Text(group)
+                    .font(.system(size: 8))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
             if let ping = entry.keychainPing ?? entry.appGroupPing {
                 Text(ping, style: .time)
                     .font(.caption2)

@@ -9,12 +9,36 @@
 
 ## 3.2 Visual language
 
-| Element | Choice |
-|---|---|
-| Palette | Warm Latin American palette: terracotta (primary), jade (success), sunflower (XP/streak), deep indigo (night/dark mode). One accent per strand: Input = jade, Output = coral, Language = indigo, Fluency = sunflower. |
-| Type | SF Pro Rounded for headings and numbers, SF Pro for body |
-| Shapes | Large rounded cards (continuous corners), glass tab bar, chunky path nodes |
-| Light/dark | Both, from the first build |
+Rumbo takes a light nod from the two apps it sits between, without copying either: **Duolingo's** playful, tactile game feel, and **Dreaming Spanish's** warm coral-and-navy calm. The tactile, game-like parts lean Duolingo; everything to do with watching and listening leans Dreaming.
+
+### Palette
+
+| Token | Hex | Role | Nod to |
+|---|---|---|---|
+| `coral` | `#F25C4A` | Brand primary, Input strand, primary buttons | Dreaming's coral (`#FA594B`), shifted slightly warmer |
+| `ink` | `#1E2A4A` | Text, dark surfaces, dark-mode background base | Dreaming's navy (`#1F2847`) |
+| `sun` | `#FFBE1A` | XP, streak flame, celebrations | Both apps' yellows (Dreaming `#FFB805`) |
+| `leaf` | `#5BC236` | Success, completed nodes, Language-focused strand | Duolingo's green |
+| `sky` | `#2FA6EE` | Output strand, links | Duolingo's blue |
+| `lilac` | `#DEE4FF` | Soft card backgrounds, unselected chips (light mode) | Dreaming's pale periwinkle |
+| `cream` | `#FFF3D6` | Highlight panels, Pico's speech bubbles | Dreaming's cream |
+
+Strand accents: **Input = coral, Output = sky, Language-focused = leaf, Fluency = sun.**
+
+### Elements
+
+| Element | Choice | Nod to |
+|---|---|---|
+| Buttons | Chunky "3D" buttons: a solid face over a darker bottom edge (4 pt) that presses down on tap with a quick spring | Duolingo |
+| Path nodes | Round, raised nodes with the same pressable bottom edge; locked nodes are flat and grey | Duolingo |
+| Input cards (Dreaming, Extra, podcasts) | Rounded, ink-on-lilac or coral-on-ink cards with a thumbnail feel, calm and spacious | Dreaming |
+| Level badges | Small animated badge per band, like Dreaming's animated level icons | Dreaming |
+| Progress | Thick rounded progress bars with a highlight stripe | Duolingo |
+| Type | SF Pro Rounded, heavy weights for headings and numbers; SF Pro for body | Duolingo's rounded type |
+| Surfaces | Continuous-corner cards, glass tab bar (iOS 27 Liquid Glass) | iOS |
+| Light/dark | Both from the start. Dark mode uses `ink` as the base, which reads as Dreaming's night-time look. | |
+
+Brand names, logos, mascots and exact colors from either app are never used.
 
 ## 3.3 The mascot: Pico 🐦
 
@@ -101,6 +125,7 @@ Sources, budget defaults, Travel mode, weekly goal, reminders, AI correction (en
 |---|---|---|
 | App open | Path scrolls to today with a soft spring; Pico flies in | — |
 | Budget chip change | Cards reflow (`.spring(response: 0.35, dampingFraction: 0.8)`) | `.selection` |
+| Any chunky button | Face drops 4 pt onto its bottom edge, springs back | `.impact(weight: .light)` |
 | Card complete | Card flips, checkmark draws itself, XP number rolls (`.contentTransition(.numericText())`) | `.success` |
 | Streak +1 | Flame grows and flickers (`PhaseAnimator`) | `.impact(weight: .light)` |
 | Weekly goal met | Ring closes with a sparkle burst | `.success` |

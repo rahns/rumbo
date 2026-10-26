@@ -1,15 +1,15 @@
 import Foundation
 import Security
 
-/// Shares small values between the app and its widgets through a Keychain access group.
-/// Used when the App Group entitlement isn't available: development profiles usually grant
-/// `keychain-access-groups: TEAMID.*`, which covers a group both targets can use.
+/// Shares small values between the app and its widgets through the Keychain.
+/// Used when the App Group entitlement isn't available. Items are written to the Keychain's
+/// *default* access group: when a signing tool signs the app and its widget extension with the
+/// same profile, both get the same default group and can read each other's items.
 enum KeychainShare {
-    private static let groupSuffix = "com.rahns.rumbo.shared"
     private static let service = "com.rahns.rumbo.shared"
 
-    /// The team prefix (e.g. `ABCDE12345`), read from the access group the Keychain assigns by default.
-    static var teamPrefix: String? {
+    /// The access group the Keychain assigns this process by default, e.g. `TEAMID.app.example`.
+    static var defaultGroup: String? {
         let probe: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: "com.rahns.rumbo.probe",
@@ -24,25 +24,16 @@ enum KeychainShare {
             add[kSecReturnAttributes as String] = true
             status = SecItemAdd(add as CFDictionary, &result)
         }
-        guard status == errSecSuccess,
-              let attributes = result as? [String: Any],
-              let group = attributes[kSecAttrAccessGroup as String] as? String
-        else { return nil }
-        return group.components(separatedBy: ".").first
-    }
-
-    static var accessGroup: String? {
-        teamPrefix.map { "\($0).\(groupSuffix)" }
+        guard status == errSecSuccess, let attributes = result as? [String: Any] else { return nil }
+        return attributes[kSecAttrAccessGroup as String] as? String
     }
 
     @discardableResult
     static func write(_ data: Data, forKey key: String) -> OSStatus {
-        guard let accessGroup else { return errSecMissingEntitlement }
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: key,
-            kSecAttrAccessGroup as String: accessGroup,
         ]
         let update: [String: Any] = [kSecValueData as String: data]
         let status = SecItemUpdate(query as CFDictionary, update as CFDictionary)
@@ -54,12 +45,10 @@ enum KeychainShare {
     }
 
     static func read(forKey key: String) -> (data: Data?, status: OSStatus) {
-        guard let accessGroup else { return (nil, errSecMissingEntitlement) }
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: key,
-            kSecAttrAccessGroup as String: accessGroup,
             kSecReturnData as String: true,
         ]
         var result: CFTypeRef?
