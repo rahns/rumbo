@@ -1,10 +1,10 @@
-# 4. Data model and sync
+# 4. Data model
 
 ## 4.1 Storage
 
-**SwiftData**, stored on device, synced to the user's private iCloud database through CloudKit. No Rumbo server and no accounts: each user's data lives only in their own iCloud.
+**SwiftData**, stored on device only. No Rumbo server and no accounts.
 
-CloudKit sync puts constraints on SwiftData models, which all models must follow:
+Models still follow CloudKit's rules, so sync could be switched on later for a build signed with an iCloud entitlement:
 - Every property is optional or has a default value.
 - No `@Attribute(.unique)`.
 - Every relationship is optional.
@@ -106,19 +106,13 @@ CloudKit sync puts constraints on SwiftData models, which all models must follow
 }
 ```
 
-**Derived, never stored:** total input hours (`baselineInputHours` + sum of `ActivityLog` input minutes), XP, streak, strand balance, projection. Computing them avoids sync conflicts between devices.
+**Derived, never stored:** total input hours (`baselineInputHours` + sum of `ActivityLog` input minutes), XP, streak, strand balance, projection. Computing them keeps a single source of truth.
 
-## 4.3 Sync and backup
+## 4.3 No sync or backup
 
-There are two layers. Which ones are active depends on the entitlements the user's signing certificate keeps (see [05-architecture.md](05-architecture.md#signing-and-entitlements)).
+Rumbo keeps everything on the phone. There is no sync and no backup file: CloudKit needs an entitlement the author's signing profile doesn't grant, and every iCloud Drive backup approach failed on device in M0.
 
-| Layer | How | Needs |
-|---|---|---|
-| **1. CloudKit sync** (preferred) | SwiftData `ModelConfiguration(cloudKitDatabase: .private("iCloud.com.rahns.rumbo"))`. Automatic, continuous, works across devices. | iCloud + CloudKit entitlement with the container ID in the provisioning profile |
-| **2. Auto-backup to iCloud Drive** (always on) | During onboarding the user saves `Rumbo Backup.json` once, anywhere in Files (e.g. *iCloud Drive/Rumbo*), using the document picker in move mode. Rumbo keeps a security-scoped bookmark to that file and rewrites it after each logged session. The file holds the latest full snapshot plus the previous 7 daily snapshots. | No entitlement. Works with any signing method. (Picking a *folder* didn't work on device in M0; saving a file does.) |
-
-At launch, Rumbo checks whether CloudKit is available (`FileManager.default.ubiquityIdentityToken` plus a CloudKit account-status check). If it is, CloudKit sync is used. If not, Rumbo uses a local-only store and Settings explains that the iCloud Drive backup is the safety net.
-
-**Restore:** onboarding offers "Restore from backup" before anything else. On a new phone (or after reinstalling with a new certificate, which can wipe app data), the user picks `Rumbo Backup.json`, and Rumbo then keeps writing to that same file.
-
-**Export:** Settings → Export creates the same JSON file through the share sheet (for moving to a friend's format, or archiving).
+If the app is lost (new phone, reinstall, new certificate), the learner simply onboards again. That's cheap by design:
+- The numbers that matter live in the sources themselves: Dreaming Spanish hours, the Language Transfer track, the Duolingo unit and Extra episodes. Onboarding asks for exactly these, so the plan picks up where it left off.
+- What's lost is Rumbo's own history: streak, XP, writing entries and the mistake deck.
+- Onboarding should take about 2 minutes (see [03-experience.md](03-experience.md#onboarding-first-launch-about-2-minutes)).

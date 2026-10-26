@@ -26,7 +26,6 @@ Every source can be turned off. The planner reallocates its time to whatever els
 | Bundle ID | `com.rahns.rumbo` |
 | Widget/Live Activity extension | `com.rahns.rumbo.widgets` |
 | App Group | `group.com.rahns.rumbo` |
-| iCloud container | `iCloud.com.rahns.rumbo` |
 | Minimum iOS | 27.0 |
 
 ## Spec
@@ -34,14 +33,14 @@ Every source can be turned off. The planner reallocates its time to whatever els
 1. [Research foundations](docs/01-research.md)
 2. [Learning engine: levels, strands and the daily planner](docs/02-learning-engine.md)
 3. [Screens, animation and the mascot](docs/03-experience.md)
-4. [Data model and sync](docs/04-data-model.md)
+4. [Data model](docs/04-data-model.md)
 5. [Architecture, AI correction, widgets, CI and install](docs/05-architecture.md)
 6. [Content catalog](docs/06-content-catalog.md)
 7. [Roadmap](docs/07-roadmap.md)
 
 ## Install
 
-Every push to `main` builds an **unsigned** `Rumbo.ipa` on GitHub Actions (macOS runner, Xcode 27). Download it from the latest run on the [Actions tab](../../actions) (artifact `Rumbo-<commit>`) or from [Releases](../../releases), and sign/install it with your own certificate. The artifact also contains the two `.entitlements` files in case your signing tool asks for them.
+Every push to `main` builds an **unsigned** `Rumbo.ipa` on GitHub Actions (macOS runner, Xcode 27). Download it from the latest run on the [Actions tab](../../actions) (artifact `Rumbo-0.1.<build>`) or from [Releases](../../releases), and sign/install it with your own certificate. The artifact also contains the two `.entitlements` files in case your signing tool asks for them.
 
 See [docs/05-architecture.md](docs/05-architecture.md#57-signing-and-entitlements) for which features depend on the entitlements your certificate supports. The app's **Diagnostics** screen tells you what works on your phone.
 

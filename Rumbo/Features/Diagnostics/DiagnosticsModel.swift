@@ -1,5 +1,4 @@
 import ActivityKit
-import CloudKit
 import Foundation
 import FoundationModels
 import Observation
@@ -33,18 +32,14 @@ enum CheckStatus: Equatable {
 
 enum CheckID: String, CaseIterable, Identifiable {
     case profile = "Signing profile"
-    case iCloudAccount = "iCloud account"
-    case cloudKit = "CloudKit sync"
     case appGroup = "App Group (widgets)"
     case keychainShare = "Keychain sharing (widgets fallback)"
-    case push = "Push entitlement"
     case liveActivities = "Live Activities"
     case notifications = "Notifications"
     case onDeviceModel = "Apple on-device model"
     case cloudModel = "Apple cloud model (PCC)"
     case languageTool = "LanguageTool"
     case urlSchemes = "Source apps installed"
-    case backupFile = "iCloud Drive backup file"
 
     var id: String { rawValue }
 }
@@ -57,8 +52,6 @@ final class DiagnosticsModel {
     var isRunning = false
 
     private let profile = ProvisioningProfile.embedded()
-    private static let backupBookmarkKey = "backup.fileBookmark"
-    private static let backupBookmarkSourceKey = "backup.fileBookmarkSource"
 
     func status(_ id: CheckID) -> CheckStatus {
         results[id] ?? .pending
@@ -69,13 +62,10 @@ final class DiagnosticsModel {
         defer { isRunning = false }
 
         results[.profile] = checkProfile()
-        results[.iCloudAccount] = checkICloudAccount()
-        results[.cloudKit] = await checkCloudKit()
         let ping = SharedStore.writePing()
         results[.appGroup] = checkAppGroup(written: ping.appGroup)
         results[.keychainShare] = checkKeychainShare(status: ping.keychain)
         WidgetCenter.shared.reloadAllTimelines()
-        results[.push] = checkPush()
         results[.liveActivities] = checkLiveActivities()
         results[.notifications] = await checkNotifications()
         results[.onDeviceModel] = checkOnDeviceModel()
@@ -84,7 +74,6 @@ final class DiagnosticsModel {
             : .fail("Not available")
         results[.languageTool] = await checkLanguageTool()
         results[.urlSchemes] = checkURLSchemes()
-        results[.backupFile] = rewriteSavedBackup()
     }
 
     // MARK: - Checks
@@ -105,35 +94,6 @@ final class DiagnosticsModel {
         return .pass(text)
     }
 
-    private func checkICloudAccount() -> CheckStatus {
-        FileManager.default.ubiquityIdentityToken != nil
-            ? .pass("Signed in to iCloud")
-            : .warn("No iCloud account available to this app")
-    }
-
-    private func checkCloudKit() async -> CheckStatus {
-        // Creating a CKContainer for a container the app isn't entitled to crashes, so check the profile first.
-        guard let profile,
-              profile.grants("com.apple.developer.icloud-container-identifiers", SharedStore.cloudContainerID),
-              profile.grants("com.apple.developer.icloud-services", "CloudKit")
-        else {
-            return .fail("Profile doesn't grant \(SharedStore.cloudContainerID). Rumbo will use the iCloud Drive backup.")
-        }
-        do {
-            let status = try await CKContainer(identifier: SharedStore.cloudContainerID).accountStatus()
-            switch status {
-            case .available: return .pass("Container reachable, account available")
-            case .noAccount: return .warn("Entitled, but no iCloud account signed in")
-            case .restricted: return .warn("Entitled, but iCloud is restricted")
-            case .temporarilyUnavailable: return .warn("Entitled, iCloud temporarily unavailable")
-            case .couldNotDetermine: return .warn("Entitled, status could not be determined")
-            @unknown default: return .warn("Entitled, unknown account status")
-            }
-        } catch {
-            return .fail("CloudKit error: \(error.localizedDescription)")
-        }
-    }
-
     private func checkAppGroup(written: Bool) -> CheckStatus {
         written
             ? .pass("Shared container works. The diagnostics widget should show a ✓ for Group.")
@@ -146,14 +106,6 @@ final class DiagnosticsModel {
             return .fail("Write failed: \(KeychainShare.describe(status)). App's default group: \(group)")
         }
         return .pass("Wrote to the default group \(group). The diagnostics widget should show a ✓ for Keychain and the same group.")
-    }
-
-    private func checkPush() -> CheckStatus {
-        guard let profile else { return .warn("Unknown (no profile)") }
-        let values = profile.strings(for: "aps-environment")
-        return values.isEmpty
-            ? .warn("Not granted. CloudKit sync would only update when the app opens.")
-            : .pass("aps-environment: \(values.joined(separator: ", "))")
     }
 
     private func checkLiveActivities() -> CheckStatus {
@@ -197,69 +149,6 @@ final class DiagnosticsModel {
         return found.isEmpty
             ? .warn("None of the tested URL schemes opened. Rumbo will use web links.")
             : .pass("Opens: \(found.joined(separator: ", "))")
-    }
-
-    // MARK: - Backup file
-
-    /// A new test backup in a temporary location, ready to be moved into place by the picker.
-    func makeBackupFileToPlace() -> URL? {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Rumbo Backup.json")
-        do {
-            try backupPayload().write(to: url, options: .atomic)
-            return url
-        } catch {
-            results[.backupFile] = .fail("Couldn't create the file: \(error.localizedDescription)")
-            return nil
-        }
-    }
-
-    /// Remembers the backup file. `source` is "saved" (create picker) or "opened" (open picker),
-    /// so the report shows which kind of URL produced a bookmark that survives a relaunch.
-    func backupPicked(at url: URL?, source: String) {
-        guard let url else {
-            results[.backupFile] = .warn("Cancelled")
-            return
-        }
-        let accessing = url.startAccessingSecurityScopedResource()
-        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
-        do {
-            let bookmark = try url.bookmarkData()
-            UserDefaults.standard.set(bookmark, forKey: Self.backupBookmarkKey)
-            UserDefaults.standard.set(source, forKey: Self.backupBookmarkSourceKey)
-            results[.backupFile] = .pass("\(source.capitalized) \(url.lastPathComponent) in \(url.deletingLastPathComponent().lastPathComponent) (security scope: \(accessing ? "yes" : "no")). Relaunch and tap Run to test rewriting it.")
-        } catch {
-            results[.backupFile] = .fail("\(source.capitalized), but couldn't remember the location (security scope: \(accessing ? "yes" : "no")): \(error)")
-        }
-    }
-
-    /// Rewrites the backup at its remembered location. This is what real automatic backups will do.
-    private func rewriteSavedBackup() -> CheckStatus {
-        guard let bookmark = UserDefaults.standard.data(forKey: Self.backupBookmarkKey) else {
-            return .pending
-        }
-        let source = UserDefaults.standard.string(forKey: Self.backupBookmarkSourceKey) ?? "unknown"
-        var stale = false
-        let url: URL
-        do {
-            url = try URL(resolvingBookmarkData: bookmark, bookmarkDataIsStale: &stale)
-        } catch {
-            return .fail("Bookmark from the \(source) file can't be resolved: \(error)")
-        }
-        let accessing = url.startAccessingSecurityScopedResource()
-        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
-        do {
-            try backupPayload().write(to: url, options: .atomic)
-            if stale, let fresh = try? url.bookmarkData() {
-                UserDefaults.standard.set(fresh, forKey: Self.backupBookmarkKey)
-            }
-            return .pass("Rewrote \(url.lastPathComponent) in \(url.deletingLastPathComponent().lastPathComponent) at \(Date.now.formatted(date: .omitted, time: .standard)) using the \(source) file's bookmark\(stale ? " (refreshed)" : "")")
-        } catch {
-            return .fail("Resolved the \(source) file's bookmark (security scope: \(accessing ? "yes" : "no")) but couldn't rewrite: \(error)")
-        }
-    }
-
-    private func backupPayload() -> Data {
-        Data(#"{"app":"Rumbo","test":true,"version":"\#(Self.appVersion)","date":"\#(Date.now.ISO8601Format())"}"#.utf8)
     }
 
     // MARK: - Live Activity

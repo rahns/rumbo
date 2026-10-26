@@ -30,9 +30,4 @@ struct ProvisioningProfile {
         if let single = entitlements[key] as? String { return [single] }
         return []
     }
-
-    /// True if the profile grants `value` for `key`, directly or by a `*` wildcard.
-    func grants(_ key: String, _ value: String) -> Bool {
-        strings(for: key).contains { $0 == value || $0 == "*" || (value.hasPrefix(String($0.dropLast())) && $0.hasSuffix("*")) }
-    }
 }

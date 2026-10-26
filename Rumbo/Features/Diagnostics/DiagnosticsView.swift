@@ -3,7 +3,6 @@ import UIKit
 
 struct DiagnosticsView: View {
     @State private var model = DiagnosticsModel()
-    @State private var backupPicker: BackupPickerRequest?
     @State private var copied = false
 
     var body: some View {
@@ -22,21 +21,6 @@ struct DiagnosticsView: View {
                 }
             } header: {
                 Text("Checks · Rumbo \(DiagnosticsModel.appVersion)")
-            }
-
-            Section {
-                Button("1. Save a new backup file", systemImage: "externaldrive.badge.icloud") {
-                    if let file = model.makeBackupFileToPlace() {
-                        backupPicker = BackupPickerRequest(mode: .create(file), source: "saved")
-                    }
-                }
-                Button("2. Open the backup file", systemImage: "doc.badge.arrow.up") {
-                    backupPicker = BackupPickerRequest(mode: .open, source: "opened")
-                }
-            } header: {
-                Text("Backup")
-            } footer: {
-                Text("Step 1 saves \"Rumbo Backup.json\" in iCloud Drive (e.g. a Rumbo folder). Step 2 picks that same file. After each step, close Rumbo fully, reopen Diagnostics and check the backup row.")
             }
 
             Section("Live Activity") {
@@ -77,18 +61,5 @@ struct DiagnosticsView: View {
             .disabled(model.isRunning)
         }
         .task { await model.runAll() }
-        .sheet(item: $backupPicker) { request in
-            BackupFilePicker(mode: request.mode) { url in
-                backupPicker = nil
-                model.backupPicked(at: url, source: request.source)
-            }
-            .ignoresSafeArea()
-        }
     }
-}
-
-private struct BackupPickerRequest: Identifiable {
-    let id = UUID()
-    let mode: BackupFilePicker.Mode
-    let source: String
 }

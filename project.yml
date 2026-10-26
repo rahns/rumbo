@@ -44,7 +44,6 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIRequiresFullScreen: true
         NSSupportsLiveActivities: true
-        UIBackgroundModes: [remote-notification]
         ITSAppUsesNonExemptEncryption: false
         LSApplicationQueriesSchemes:
           - duolingo

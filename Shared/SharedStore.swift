@@ -5,7 +5,6 @@ import Security
 /// Tries the App Group first and falls back to a shared Keychain group.
 enum SharedStore {
     static let appGroupID = "group.com.rahns.rumbo"
-    static let cloudContainerID = "iCloud.com.rahns.rumbo"
 
     private static let pingKey = "diagnostics.lastPing"
 

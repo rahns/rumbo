@@ -73,7 +73,7 @@ Pico also appears in the Live Activity and widgets as a small static pose.
 6. Placement reveal: animated band badge, with the reasoning in one line ("154 hours + 9/10 can-dos → Explorador (A2.1)").
 7. Habit cue: "When will you usually study?" Pick a cue and time (R13). Weekly goal.
 8. Tandem: "Do you have a language partner?" Yes/no. No → tips for finding one.
-9. Notifications and iCloud backup permission.
+9. Notifications permission.
 10. The path builds itself on screen, node by node.
 
 ### Path (home tab)
@@ -117,7 +117,7 @@ Pico also appears in the Live Activity and widgets as a small static pose.
 - Suggested content filtered by band, with "Add to my plan".
 
 ### Settings
-Sources, budget defaults, Travel mode, weekly goal, reminders, AI correction (engine status, optional own API key), backup and sync, export, reset.
+Sources, budget defaults, Travel mode, weekly goal, reminders, AI correction (engine status, optional own API key), reset (start onboarding again).
 
 ## 3.5 Motion and haptics catalog
 

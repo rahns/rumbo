@@ -5,7 +5,7 @@
 | Layer | Choice |
 |---|---|
 | Language/UI | Swift 6, SwiftUI, iOS 27 minimum |
-| Persistence | SwiftData + CloudKit (see [04-data-model.md](04-data-model.md)) |
+| Persistence | SwiftData, on device only (see [04-data-model.md](04-data-model.md)) |
 | AI | Foundation Models framework (Apple cloud model when online, on-device otherwise) + LanguageTool public API |
 | Widgets / Live Activity | WidgetKit, ActivityKit, App Intents |
 | Project generation | [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`project.yml`). No `.xcodeproj` in git, so the project can be edited from any machine. |
@@ -35,7 +35,7 @@ rumbo/
 │  │  ├─ Library/
 │  │  └─ Settings/
 │  ├─ Pico/                      # Mascot shapes + animations
-│  ├─ Services/                  # Correction, Backup, DeepLinks, Notifications, LiveActivity
+│  ├─ Services/                  # Correction, DeepLinks, Notifications, LiveActivity
 │  ├─ DesignSystem/              # Colors, type, cards, haptics, motion presets
 │  └─ Resources/                 # Catalogs (JSON), prompts, can-do statements, assets
 ├─ RumboWidgets/                 # Widget + Live Activity extension
@@ -113,12 +113,11 @@ The IPA is unsigned; the user signs it with their own certificate and provisioni
 
 | Entitlement | Used for | If missing |
 |---|---|---|
-| iCloud / CloudKit (`iCloud.com.rahns.rumbo`) | Automatic sync | Local store + auto-backup to iCloud Drive folder (no entitlement needed) |
 | App Groups (`group.com.rahns.rumbo`) | Widgets read today's plan | Shared Keychain group `TEAMID.com.rahns.rumbo.shared` (development profiles usually grant `TEAMID.*`). If that fails too: an "Open Rumbo" placeholder. |
 | None needed | Live Activity, notifications, Foundation Models on-device, LanguageTool, Pico, everything else | — |
 
 Every CI build is versioned `0.1.<run number>` with build number `<run number>`, so each IPA installs over the previous one.
 
-Milestone 0 ships a test build with a **Diagnostics** screen (Settings → About → Diagnostics) that reports which entitlements and services actually work after signing. That decides whether CloudKit sync is real for the author's setup, before building on it.
+Milestone 0 ships a test build with a **Diagnostics** screen (Settings → About → Diagnostics) that reports which entitlements and services actually work after signing. It showed that the author's profile has no iCloud or App Group entitlement, so Rumbo stores data on device only and widgets use the Keychain.
 
-Friends get the same IPA from the Releases page and sign it with their own certificate. Their bundle ID may change when signing; CloudKit then only works if their profile includes a matching iCloud container, so for most friends the iCloud Drive backup is the sync path.
+Friends get the same IPA from the Releases page and sign it with their own certificate.
