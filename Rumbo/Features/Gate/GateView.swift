@@ -3,6 +3,9 @@ import SwiftUI
 
 /// Level-up check (§2.1 "Promotion"): the next band's 10 can-do statements, pass at 7.
 struct GateView: View {
+    /// Practice mode (from Diagnostics): the full flow, but the result isn't saved.
+    var isPractice = false
+
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
 
@@ -147,11 +150,11 @@ struct GateView: View {
         index += 1
         guard index >= statements.count else { return }
         if LevelGate.passes(yesAnswers: yesCount) {
-            model.passGate()
+            if !isPractice { model.passGate() }
             stage = .passed
             confetti += 1
         } else {
-            model.failGate()
+            if !isPractice { model.failGate() }
             stage = .notYet
         }
     }

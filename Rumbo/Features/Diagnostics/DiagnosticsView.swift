@@ -4,6 +4,7 @@ import UIKit
 struct DiagnosticsView: View {
     @State private var model = DiagnosticsModel()
     @State private var copied = false
+    @State private var practicingGate = false
 
     var body: some View {
         List {
@@ -30,6 +31,16 @@ struct DiagnosticsView: View {
                 Button("End test timers", systemImage: "stop.circle") {
                     Task { await model.endTestTimers() }
                 }
+            }
+
+            Section {
+                Button("Practice level-up check", systemImage: "trophy") {
+                    practicingGate = true
+                }
+            } header: {
+                Text("Level up")
+            } footer: {
+                Text("Runs the real check for your next level, but nothing is saved: your level stays the same.")
             }
 
             Section("Writing correction") {
@@ -61,5 +72,8 @@ struct DiagnosticsView: View {
             .disabled(model.isRunning)
         }
         .task { await model.runAll() }
+        .fullScreenCover(isPresented: $practicingGate) {
+            GateView(isPractice: true)
+        }
     }
 }
