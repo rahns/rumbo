@@ -124,22 +124,3 @@ struct ChunkyProgressBar: View {
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: value)
     }
 }
-
-/// Pico placeholder until the drawn mascot arrives in M3.
-struct PicoBadge: View {
-    var size: CGFloat = 56
-    @State private var hover = false
-
-    var body: some View {
-        Image(systemName: "bird.fill")
-            .font(.system(size: size * 0.55, weight: .bold))
-            .foregroundStyle(.white)
-            .frame(width: size, height: size)
-            .background(Circle().fill(Palette.coral))
-            .background(Circle().fill(Palette.coral.edge()).offset(y: 3))
-            .offset(y: hover ? -3 : 3)
-            .animation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true), value: hover)
-            .onAppear { hover = true }
-            .accessibilityHidden(true)
-    }
-}

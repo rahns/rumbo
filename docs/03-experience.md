@@ -53,7 +53,7 @@ Pico is a **colibrí** (hummingbird), common across Latin America. Hummingbirds 
 | Sleepy | Late in the day with nothing logged | Perched, slow blink. Never sad or guilt-tripping. |
 | Reading/Listening | During a timer | Headphones or a book |
 
-**Built in code:** Pico is drawn with SwiftUI shapes and `Canvas`, animated with `KeyframeAnimator` and `PhaseAnimator`. No third-party runtime and no design tool needed; easy to add new poses. Could move to Rive later if a hand-animated version is wanted.
+**Built in code** (`Rumbo/Pico/PicoView.swift`): drawn on a 100 × 100 `Canvas` (emerald body, Rumbo-coral throat, long beak), animated by a `TimelineView` (wing flap with ghost wings for blur, bob, blink) and a `keyframeAnimator` loop-de-loop whenever a task is completed. Moods: hovering (default), cheering/proud (faster flap, orbiting sparkles), backpacker (Travel mode: backpack and hat), sleepy (after 8 pm with nothing logged: perched on a branch, eyes closed, floating z's), listening (headphones, during input and Language Transfer sessions). Reduce Motion freezes the animation. No third-party runtime; could move to Rive later.
 
 Pico also appears in the Live Activity and widgets as a small static pose.
 
@@ -75,10 +75,18 @@ The first screen also offers "Restore from a backup". Without a backup, onboardi
 6. Placement reveal: band badge with the reasoning in one line ("154 hours of input and 7 of 10 can-dos").
 7. Habit: cue chips ("After breakfast", "On my commute", …), daily reminder toggle and time (asks for notification permission), weekly goal (60/100/150/210/300 min).
 
+### Tabs
+**Path** (home), **Progress**, **Settings**. Today isn't a tab: it opens from today's node, like starting a lesson in Duolingo.
+
 ### Path (home tab)
+Implemented in `Rumbo/Features/Path/PathView.swift`, laid out by `PathLayout` in RumboCore.
 - A vertical, winding scroll of nodes. One node = one day's session; 7 nodes = one unit, with a unit banner ("Unidad 4 · Pasado vs. imperfecto").
-- Past nodes are filled, today's node pulses with Pico hovering by it, and upcoming nodes are faded but show icons for anchors (✍️ writing, 📺 Extra, 🎙 4/3/2).
-- **Gate nodes** are big, with a lock that shatters when passed.
+- One node per day since onboarding; 7 nodes per unit. Done (≥ 10 min) = green tick, partial = yellow, missed = grey moon, upcoming = locked and faded. Today's node is coral, pulses, has a bobbing "START"/"TODAY" bubble, and Pico hovers beside it facing the node.
+- Tapping a past node shows that day's summary; tapping today zooms into Today.
+- **Gate node:** when the hours for the next band are reached (and no failed check in the last 14 days), a golden trophy node appears after today. Today also shows a "Level-up check ready" banner.
+
+### Level-up check
+Intro → the next band's 10 can-do statements one at a time → ≥ 7 "¡Sí!" passes: confetti, proud Pico, new band badge, and the plan's strand mix changes from the next day. Otherwise "Not yet, and that's fine", and the check returns in 14 days.
 - Header: streak flame, weekly goal ring, XP.
 - Tap today's node → its card **expands into the Today screen** (`matchedGeometryEffect` / zoom navigation transition).
 

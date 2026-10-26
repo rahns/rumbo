@@ -36,3 +36,6 @@ M0 is complete. **M1 (core engine)** is implemented in `RumboCore` with 55 tests
 
 ## M2 status
 Written, not yet built: onboarding (7 steps), Today (budget chips, task cards, skip, extra-listening log, difficulty and speaking-stage banners), task session (timer, Live Activity, deep link, writing editor, logging with ratings), Progress tab (level, input hours, projection, streak, courses), Settings (sources, travel mode, progress fixes, speaking stage, habit, diagnostics, start over). Engine additions: course progression, can-do statements, prompts (65 tests).
+
+## M3 status
+Written, not yet built: Path home screen (daily nodes, weekly units, winding layout, today node with zoom into Today, day summaries), level-up gate (node, banner, 10-statement check, pass/fail), Pico drawn in code with six moods, confetti, streak bounce, card flip on completion. Engine: `PathLayout` (73 tests).

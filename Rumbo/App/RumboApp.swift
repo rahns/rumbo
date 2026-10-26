@@ -61,7 +61,7 @@ struct RootView: View {
 struct MainTabView: View {
     var body: some View {
         TabView {
-            Tab("Today", systemImage: "sun.max.fill") { TodayView() }
+            Tab("Path", systemImage: "point.topleft.down.to.point.bottomright.curvepath.fill") { PathView() }
             Tab("Progress", systemImage: "chart.line.uptrend.xyaxis") { StatsView() }
             Tab("Settings", systemImage: "gearshape.fill") { SettingsView() }
         }

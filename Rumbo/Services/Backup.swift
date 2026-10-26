@@ -39,6 +39,9 @@ struct BackupFile: Codable {
         var extraPartsDoneInEpisode: Int
         var duolingoSection: Int
         var duolingoUnit: Int
+        // Added after version 1 shipped; optional so older backups still restore.
+        var gatesPassed: Int?
+        var lastFailedGate: Date?
     }
 
     struct LogData: Codable {
@@ -98,7 +101,8 @@ extension BackupFile.ProfileData {
             baselineInputHours: profile.baselineInputHours, dsDifficultyLow: profile.dsDifficultyLow, dsDifficultyHigh: profile.dsDifficultyHigh,
             languageTransferLastTrack: profile.languageTransferLastTrack, languageTransferRepeatPending: profile.languageTransferRepeatPending,
             extraEpisodesWatched: profile.extraEpisodesWatched, extraPartsDoneInEpisode: profile.extraPartsDoneInEpisode,
-            duolingoSection: profile.duolingoSection, duolingoUnit: profile.duolingoUnit
+            duolingoSection: profile.duolingoSection, duolingoUnit: profile.duolingoUnit,
+            gatesPassed: profile.gatesPassed, lastFailedGate: profile.lastFailedGate
         )
     }
 
@@ -127,6 +131,8 @@ extension BackupFile.ProfileData {
         profile.extraPartsDoneInEpisode = extraPartsDoneInEpisode
         profile.duolingoSection = duolingoSection
         profile.duolingoUnit = duolingoUnit
+        profile.gatesPassed = gatesPassed ?? 0
+        profile.lastFailedGate = lastFailedGate
         return profile
     }
 }

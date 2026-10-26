@@ -5,9 +5,11 @@ struct TodayView: View {
     @Environment(AppModel.self) private var model
     @State private var openTask: PlannedTaskRecord?
     @State private var showingBonus = false
+    @State private var showingGate = false
 
+    /// Pushed from today's node on the path, so it lives inside the path's NavigationStack.
     var body: some View {
-        NavigationStack {
+        ZStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     header
@@ -28,14 +30,19 @@ struct TodayView: View {
                 .padding(20)
             }
             .background(Palette.background.ignoresSafeArea())
-            .toolbar(.hidden, for: .navigationBar)
-            .fullScreenCover(item: $openTask) { task in
-                TaskSessionView(task: task)
-            }
-            .sheet(isPresented: $showingBonus) {
-                BonusInputSheet()
-                    .presentationDetents([.medium])
-            }
+            ConfettiView(trigger: model.confettiBursts)
+        }
+        .navigationTitle("Today")
+        .navigationBarTitleDisplayMode(.inline)
+        .fullScreenCover(item: $openTask) { task in
+            TaskSessionView(task: task)
+        }
+        .fullScreenCover(isPresented: $showingGate) {
+            GateView()
+        }
+        .sheet(isPresented: $showingBonus) {
+            BonusInputSheet()
+                .presentationDetents([.medium])
         }
     }
 
@@ -46,7 +53,7 @@ struct TodayView: View {
         let goal = model.profile?.weeklyGoalMinutes ?? 150
         return VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 12) {
-                PicoBadge(size: 52)
+                PicoBadge(size: 60, mood: model.picoMood, celebrate: model.celebrations)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(greeting)
                         .font(.rounded(.title2, weight: .black))
@@ -58,7 +65,7 @@ struct TodayView: View {
                     }
                 }
                 Spacer()
-                StatPill(symbol: "flame.fill", value: "\(streak.streak)", color: Palette.sun)
+                StatPill(symbol: "flame.fill", value: "\(streak.streak)", color: Palette.sun, bounce: streak.streak)
                 StatPill(symbol: "star.fill", value: "\(model.xp)", color: Palette.sky)
             }
             VStack(alignment: .leading, spacing: 6) {
@@ -86,6 +93,12 @@ struct TodayView: View {
 
     @ViewBuilder
     private var banners: some View {
+        if model.isGateOpen, let next = model.profile?.band.next {
+            BannerCard(title: "Level-up check ready", message: "You've reached the hours for \(next.label). Ten quick questions and you could move up.", color: Palette.sun) {
+                Button("Check now") { showingGate = true }
+                    .buttonStyle(ChunkyButtonStyle(color: Palette.sun, foreground: Palette.ink, fullWidth: false))
+            }
+        }
         if let banner = model.banner {
             BannerCard(title: banner.title, message: banner.message, color: Palette.sky) {
                 Button("Got it") { model.banner = nil }
@@ -216,10 +229,14 @@ struct StatPill: View {
     let symbol: String
     let value: String
     let color: Color
+    /// The icon bounces when this changes (e.g. the streak goes up).
+    var bounce: Int = 0
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: symbol).foregroundStyle(color)
+            Image(systemName: symbol)
+                .foregroundStyle(color)
+                .symbolEffect(.bounce, value: bounce)
             Text(value)
                 .foregroundStyle(Palette.ink)
                 .contentTransition(.numericText())
@@ -273,6 +290,8 @@ struct TaskCardView: View {
                             .background(Circle().fill(finished ? Palette.secondaryText.opacity(0.5) : color))
                             .background(Circle().fill(color.edge()).offset(y: 3).opacity(finished ? 0 : 1))
                             .contentTransition(.symbolEffect(.replace))
+                            // Finishing a task flips its icon over to the tick.
+                            .rotation3DEffect(.degrees(task.status == .done ? 360 : 0), axis: (x: 0, y: 1, z: 0))
                     }
                     .buttonStyle(.plain)
                     .disabled(!finished)

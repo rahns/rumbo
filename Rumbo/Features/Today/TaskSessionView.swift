@@ -74,6 +74,9 @@ struct TaskSessionView: View {
 
     private var titleBlock: some View {
         HStack(spacing: 14) {
+            if kind.strand == .input || kind == .ltTrack {
+                PicoView(mood: .listening, size: 64)
+            }
             Image(systemName: TaskCopy.symbol(for: kind))
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)

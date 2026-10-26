@@ -31,6 +31,10 @@ import SwiftData
     var duolingoSection: Int = 1
     var duolingoUnit: Int = 1
 
+    /// Level-up gates (§2.1): passes count toward XP; a failed check waits 14 days.
+    var gatesPassed: Int = 0
+    var lastFailedGate: Date?
+
     init() {}
 
     var band: Band {

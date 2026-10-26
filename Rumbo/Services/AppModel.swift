@@ -15,6 +15,10 @@ final class AppModel {
     private(set) var revision = 0
     /// A one-off message shown on Today, e.g. a new speaking stage.
     var banner: Banner?
+    /// Bumped on every completed task; Pico loops and cards celebrate when it changes.
+    private(set) var celebrations = 0
+    /// Bumped on bigger moments (all of today done, level up) for confetti.
+    private(set) var confettiBursts = 0
 
     private let pathMonitor = NWPathMonitor()
 
@@ -86,7 +90,7 @@ final class AppModel {
             predicate: #Predicate { $0.statusRaw == "done" }
         ))) ?? 0
         _ = revision
-        return XP.total(minutes: logs.reduce(0) { $0 + $1.minutes }, completedCards: completedCards, rewrites: 0, gatesPassed: 0)
+        return XP.total(minutes: logs.reduce(0) { $0 + $1.minutes }, completedCards: completedCards, rewrites: 0, gatesPassed: profile?.gatesPassed ?? 0)
     }
 
     var minutesToday: Int {
@@ -278,6 +282,11 @@ final class AppModel {
         save()
         LiveActivities.endAll()
         updateSpeakingStage()
+        celebrations += 1
+        if let plan = todayPlan, plan.sortedTasks.allSatisfy({ $0.status == .done || $0.status == .skipped }),
+           plan.sortedTasks.contains(where: { $0.status == .done }) {
+            confettiBursts += 1
+        }
     }
 
     /// Puts a done or skipped task back to planned, removing its log and anything it moved forward.
@@ -333,6 +342,41 @@ final class AppModel {
             return "Section \(profile.duolingoSection) · Unit \(profile.duolingoUnit)"
         }
         return TaskCopy.detail(task.detail)
+    }
+
+    // MARK: - Level-up gates
+
+    var isGateOpen: Bool {
+        guard let profile else { return false }
+        return LevelGate.isOpen(band: profile.band, inputHours: inputHours, lastFailedAttempt: profile.lastFailedGate, today: .now, calendar: calendar)
+    }
+
+    func passGate() {
+        guard let profile, let next = profile.band.next else { return }
+        profile.band = next
+        profile.gatesPassed += 1
+        profile.lastFailedGate = nil
+        save()
+        celebrations += 1
+        confettiBursts += 1
+    }
+
+    func failGate() {
+        profile?.lastFailedGate = .now
+        save()
+    }
+
+    /// What Pico is up to on the home screens.
+    var picoMood: PicoMood {
+        guard let profile else { return .hovering }
+        if profile.travelMode { return .backpacker }
+        let hour = calendar.component(.hour, from: .now)
+        if hour >= 20 && minutesToday == 0 { return .sleepy }
+        return .hovering
+    }
+
+    func logs(on day: Date) -> [ActivityLog] {
+        logs.filter { calendar.isDate($0.date, inSameDayAs: day) }
     }
 
     func acceptDifficultySuggestion() {
