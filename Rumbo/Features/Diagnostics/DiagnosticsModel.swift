@@ -58,6 +58,7 @@ final class DiagnosticsModel {
 
     private let profile = ProvisioningProfile.embedded()
     private static let backupBookmarkKey = "backup.fileBookmark"
+    private static let backupBookmarkSourceKey = "backup.fileBookmarkSource"
 
     func status(_ id: CheckID) -> CheckStatus {
         results[id] ?? .pending
@@ -212,7 +213,9 @@ final class DiagnosticsModel {
         }
     }
 
-    func backupPlaced(at url: URL?) {
+    /// Remembers the backup file. `source` is "saved" (create picker) or "opened" (open picker),
+    /// so the report shows which kind of URL produced a bookmark that survives a relaunch.
+    func backupPicked(at url: URL?, source: String) {
         guard let url else {
             results[.backupFile] = .warn("Cancelled")
             return
@@ -222,9 +225,10 @@ final class DiagnosticsModel {
         do {
             let bookmark = try url.bookmarkData()
             UserDefaults.standard.set(bookmark, forKey: Self.backupBookmarkKey)
-            results[.backupFile] = .pass("Saved \(url.lastPathComponent) in \(url.deletingLastPathComponent().lastPathComponent). Tap Run (or relaunch) to test rewriting it.")
+            UserDefaults.standard.set(source, forKey: Self.backupBookmarkSourceKey)
+            results[.backupFile] = .pass("\(source.capitalized) \(url.lastPathComponent) in \(url.deletingLastPathComponent().lastPathComponent) (security scope: \(accessing ? "yes" : "no")). Relaunch and tap Run to test rewriting it.")
         } catch {
-            results[.backupFile] = .fail("Saved, but couldn't remember the location: \(error.localizedDescription)")
+            results[.backupFile] = .fail("\(source.capitalized), but couldn't remember the location (security scope: \(accessing ? "yes" : "no")): \(error)")
         }
     }
 
@@ -233,9 +237,13 @@ final class DiagnosticsModel {
         guard let bookmark = UserDefaults.standard.data(forKey: Self.backupBookmarkKey) else {
             return .pending
         }
+        let source = UserDefaults.standard.string(forKey: Self.backupBookmarkSourceKey) ?? "unknown"
         var stale = false
-        guard let url = try? URL(resolvingBookmarkData: bookmark, bookmarkDataIsStale: &stale) else {
-            return .fail("Remembered location can't be found. Choose it again.")
+        let url: URL
+        do {
+            url = try URL(resolvingBookmarkData: bookmark, bookmarkDataIsStale: &stale)
+        } catch {
+            return .fail("Bookmark from the \(source) file can't be resolved: \(error)")
         }
         let accessing = url.startAccessingSecurityScopedResource()
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }
@@ -244,9 +252,9 @@ final class DiagnosticsModel {
             if stale, let fresh = try? url.bookmarkData() {
                 UserDefaults.standard.set(fresh, forKey: Self.backupBookmarkKey)
             }
-            return .pass("Rewrote \(url.lastPathComponent) in \(url.deletingLastPathComponent().lastPathComponent) at \(Date.now.formatted(date: .omitted, time: .standard))\(stale ? " (bookmark refreshed)" : "")")
+            return .pass("Rewrote \(url.lastPathComponent) in \(url.deletingLastPathComponent().lastPathComponent) at \(Date.now.formatted(date: .omitted, time: .standard)) using the \(source) file's bookmark\(stale ? " (refreshed)" : "")")
         } catch {
-            return .fail("Couldn't rewrite: \(error.localizedDescription)")
+            return .fail("Resolved the \(source) file's bookmark (security scope: \(accessing ? "yes" : "no")) but couldn't rewrite: \(error)")
         }
     }
 

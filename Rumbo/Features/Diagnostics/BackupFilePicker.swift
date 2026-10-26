@@ -1,19 +1,27 @@
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
-/// Lets the user choose where Rumbo's backup file lives (e.g. iCloud Drive/Rumbo).
+/// Document picker for Rumbo's backup file (e.g. iCloud Drive/Rumbo/Rumbo Backup.json).
 ///
-/// Uses the document picker in *move* mode (`asCopy: false`): the file is moved to the chosen place and
-/// the picker hands back a security-scoped URL to it, which can be bookmarked and rewritten later.
-/// Choosing a folder didn't work on device; saving a file does.
+/// - `.create` saves a new file by moving it into place (picking a folder didn't work on device).
+/// - `.open` picks an existing file. Opened files come back as security-scoped URLs, which is what a
+///   bookmark needs to keep working after a relaunch.
 struct BackupFilePicker: UIViewControllerRepresentable {
-    /// The freshly written file to move into place.
-    let file: URL
-    /// Called with the file's new location, or `nil` if the user cancelled.
+    enum Mode {
+        case create(URL)
+        case open
+    }
+
+    let mode: Mode
+    /// Called with the picked or saved file, or `nil` if the user cancelled.
     let onFinish: (URL?) -> Void
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let picker = UIDocumentPickerViewController(forExporting: [file], asCopy: false)
+        let picker = switch mode {
+        case .create(let file): UIDocumentPickerViewController(forExporting: [file], asCopy: false)
+        case .open: UIDocumentPickerViewController(forOpeningContentTypes: [.json], asCopy: false)
+        }
         picker.delegate = context.coordinator
         return picker
     }
