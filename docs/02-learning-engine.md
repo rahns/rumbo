@@ -57,7 +57,7 @@ Times are minutes: min / default / max per day.
 | `lt.track` | Language | 8 / 12 / 25 | Until the course is done | Next track. Rated "shaky" → repeat it once. |
 | `ds.watch` | Input | 8 / 20 / 60 | All | At the suggested difficulty (§2.6) |
 | `ds.easy` | Fluency | 8 / 10 / 20 | All | Videos 10–15 points below your level, at normal speed (R8) |
-| `extra.intensive` | Language | 10 / 12 / 15 | A2.1–A2.2 | One part = half an episode. Step 1: watch with Spanish subtitles (R9). Step 2: rewatch one scene and shadow it for 2–3 min (R10). |
+| `extra.intensive` | Input | 10 / 12 / 15 | A2.1–A2.2 | One part = half an episode. Step 1: watch with Spanish subtitles (R9). Step 2: rewatch one scene and shadow it for 2–3 min (R10). Counted as input: it's mostly captioned viewing, and counting it as language study crowded out Language Transfer in simulations. |
 | `extra.extensive` | Input | 12 / 25 / 30 | B1.1–B1.2 | One episode straight through, can be split over 2 days |
 | `content.watch` / `content.listen` | Input | 10 / 20 / 60 | When a source has run out | From the [content catalog](06-content-catalog.md) |
 | `write.guided` | Output | 8 / 12 / 20 | All | Words: A2 50–100, B1 120–180, B2 200–300. Write → AI feedback → rewrite (R11). |
@@ -89,15 +89,18 @@ The learner can always unlock a stage early with "I feel ready". Autonomy matter
 Band, today's budget `B` (10 / 15 / 20 / 30 / 45 / 60 min, chosen at the start of the day), the last 6 days of logged minutes per strand, source states, speaking stage, Travel/offline mode, weekly anchors still due, and the number of due mistake cards.
 
 ### Algorithm
-1. **Warm-up.** If `B ≥ 15` and the band uses Duolingo, plan `duo.lesson` 5 min. If `B ≥ 20` and ≥ 5 cards are due, plan `review.mistakes` 3–5 min.
+Implemented in `RumboCore/DayPlanner.swift`.
+
+1. **Warm-up.** If `B ≥ 15` and the band uses Duolingo, plan `duo.lesson` 5 min. If `B ≥ 20` and ≥ 5 cards are due, plan `review.mistakes` (3 min, or 5 from 30 min).
 2. **Deficits.** For each strand: `target = share × (logged last 6 days + B)`, then `deficit = target − logged last 6 days − planned today`.
-3. **Fill.** While the minutes left ≥ the smallest task minimum:
+3. **Fill with new cards.** While there are fewer than 4 cards:
    - Pick the strand with the largest deficit.
-   - Within that strand, pick in this order: a **weekly anchor** that's due (see below), then the next **progression** task (next Language Transfer track, next Extra part), then the default task.
-   - Allocate `clamp(round5(deficit), min, max)`, but never more than what's left. If it doesn't fit, try the strand's next task, then the next strand.
-4. **Limit.** At most 4 cards per day (to keep cognitive load low) **[design]**. Merge repeated tasks into one card.
-5. **Order.** Warm-up → language-focused → input → output → fluency (R4, R7 **[design]**). The output card's prompt reuses that day's Language Transfer topic or Extra episode vocabulary (R4).
-6. **Tiny days.** If `B = 10`, plan exactly one task: the strand with the largest deficit, using its smallest task that fits.
+   - Within that strand, take the first task not already planned, in this order: a **weekly anchor** that's due (see below), then the next **progression** task (next Language Transfer track, next Extra part), then the defaults.
+   - Allocate `clamp(round5(deficit), min, max)`, but never more than what's left. If nothing in the strand fits, move to the next strand.
+4. **Leftover.** Minutes too few for a new card go to existing cards that have headroom: input first, then the strand with the largest deficit.
+5. **Limits.** At most 4 cards per day (to keep cognitive load low) **[design]**, and at most **one weekly anchor per day (two from 45 min)**, so a fresh week spreads its anchors out instead of crowding out progression **[design]**.
+6. **Order.** Warm-up → language-focused → input → output → fluency (R4, R7 **[design]**). The output card's prompt reuses that day's Language Transfer track or Extra episode (R4).
+7. **Tiny days.** If `B = 10`, plan exactly one task: the strand with the largest deficit, using its first task that fits.
 
 ### Weekly anchors
 Planned on the first day the budget allows, so they don't depend on a fixed weekday (which wouldn't survive backpacking).
@@ -108,16 +111,22 @@ Planned on the first day the budget allows, so they don't depend on a fixed week
 | Extra en Español | 1 episode/week (2 intensive parts) | 1 episode/week | — |
 | Tandem exchange (any stage) | 3×/week | 3×/week | 3×/week |
 | `fluency.432` | — | 1×/week once unlocked | 1×/week |
+| `tandem.call` | — | 1×/week once calls are unlocked | 1×/week once calls are unlocked |
 
-### Example: A2.1, Language Transfer track 13, Extra episode 2
+### Example: A2.1, first day, Language Transfer track 13 next, Extra episode 2 next
+
+Real planner output (no history yet, so every anchor is due; * = weekly anchor):
 
 | Budget | Plan |
 |---|---|
-| 10 min | Dreaming Spanish 10 |
-| 15 min | Duolingo 5 → Dreaming Spanish 10 |
-| 30 min | Duolingo 5 → LT track 13 (10) → Dreaming Spanish 15 |
-| 30 min, output deficit | Duolingo 5 → Dreaming Spanish 15 → Tandem text 10 |
-| 45 min | Duolingo 5 → LT track 13 (12) → Dreaming Spanish 18 → Guided writing 10 |
+| 10 min | Extra ep. 2 part 1* (10) |
+| 15 min | Duolingo 5 → Extra ep. 2 part 1* (10) |
+| 20 min | Duolingo 5 → Extra ep. 2 part 1* (10) → Tandem text 5 |
+| 30 min | Duolingo 10 → Extra ep. 2 part 1* (15) → Tandem text 5 |
+| 45 min | Duolingo 5 → LT track 13 (10) → Extra ep. 2 part 1* (15) → Guided writing* (15) |
+| 60 min | Duolingo 5 → LT track 13 (15) → Extra ep. 2 part 1* (15) → Dreaming Spanish 25 |
+
+Over an irregular fortnight (15/45/20/30/10/45/30, twice) at A2.1 the planner gives 45% input, 14% output, 30% language-focused and 9% fluency, with Language Transfer on 6 days, Extra on 4, guided writing twice and Tandem on 6 days. These are checked by tests at A2.1, B1.1 and B2.2 (within 5 points of every target).
 
 ## 2.6 Keeping input comprehensible
 

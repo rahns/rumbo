@@ -9,6 +9,7 @@ Native iOS app (SwiftUI, iOS 27+) that turns a learner's Spanish sources into on
 
 ## Building
 - There is no Mac in the cloud environment. CI (`.github/workflows/build.yml`, runner `xcode-27`) is the compiler: push, then read the workflow logs.
+- RumboCore builds on Linux: if a Swift toolchain is installed (e.g. `/home/user/.toolchains/swift-6.4.1-RELEASE-ubuntu24.04/usr/bin`), run `swift test --package-path Packages/RumboCore` locally before pushing.
 - CI runs `swift test` on RumboCore, then archives an unsigned IPA, fake-signs it with `ldid` using the entitlements files, and uploads it as an artifact. Tags `v*` publish a release.
 
 ## Conventions

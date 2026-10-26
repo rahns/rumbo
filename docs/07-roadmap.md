@@ -28,7 +28,9 @@ Each milestone ends with a downloadable IPA from CI.
 | iCloud Drive folder picker | ❌ Neither SwiftUI's nor UIKit's folder picker returns a folder. Saving a file to iCloud Drive works → backups use one bookmarked file instead (verifying rewrite in 0.1.4+). |
 | App version | XcodeGen hardcoded 1.0 (1) in Info.plist; fixed in 0.1.4 so builds show `0.1.<run>` |
 
-## Still open
-- Does the Keychain's default group reach the widget?
-- Can Rumbo rewrite the bookmarked backup file later (after relaunch)?
-- Does the improved on-device pipeline (LanguageTool hints + structured output + no-op filter) give good corrections?
+## Resolved in 0.1.4
+- Keychain sharing works through the Keychain's default access group (`TEAMID.*` on the author's profile) → widgets use it.
+- Saving `Rumbo Backup.json` to iCloud Drive works. Rewriting it after a relaunch is still to be confirmed.
+- The on-device pipeline (LanguageTool hints + structured output + no-op filter) found all three errors in the sample and dropped one non-change.
+
+M0 is complete. **M1 (core engine)** is implemented in `RumboCore` with 55 tests.
