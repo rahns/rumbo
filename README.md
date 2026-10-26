@@ -39,6 +39,20 @@ Every source can be turned off. The planner reallocates its time to whatever els
 6. [Content catalog](docs/06-content-catalog.md)
 7. [Roadmap](docs/07-roadmap.md)
 
-## Install (once CI exists)
+## Install
 
-Every push to `main` builds an **unsigned** `Rumbo.ipa` on GitHub Actions (macOS runner, Xcode 27). Download it from the workflow run or the latest release and sign/install it with your own certificate. See [docs/05-architecture.md](docs/05-architecture.md#signing-and-entitlements) for which features depend on the entitlements your certificate supports.
+Every push to `main` builds an **unsigned** `Rumbo.ipa` on GitHub Actions (macOS runner, Xcode 27). Download it from the latest run on the [Actions tab](../../actions) (artifact `Rumbo-<commit>`) or from [Releases](../../releases), and sign/install it with your own certificate. The artifact also contains the two `.entitlements` files in case your signing tool asks for them.
+
+See [docs/05-architecture.md](docs/05-architecture.md#57-signing-and-entitlements) for which features depend on the entitlements your certificate supports. The app's **Diagnostics** screen tells you what works on your phone.
+
+## Development
+
+The Xcode project is generated with [XcodeGen](https://github.com/yonaskolb/XcodeGen):
+
+```sh
+brew install xcodegen
+xcodegen generate
+open Rumbo.xcodeproj
+```
+
+Engine tests: `swift test --package-path Packages/RumboCore`.

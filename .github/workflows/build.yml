@@ -1,0 +1,87 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: brew install xcodegen ldid
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Test RumboCore
+        run: swift test --package-path Packages/RumboCore
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Archive (unsigned)
+        run: |
+          set -o pipefail
+          mkdir -p build
+          xcodebuild archive \
+            -project Rumbo.xcodeproj \
+            -scheme Rumbo \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/Rumbo.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            | tee build/xcodebuild.log
+
+      # Fake-sign with the entitlements so signing tools that keep the IPA's entitlements carry them over.
+      - name: Package IPA
+        run: |
+          APP=build/Rumbo.xcarchive/Products/Applications/Rumbo.app
+          ldid -SRumboWidgets/RumboWidgets.entitlements "$APP/PlugIns/RumboWidgets.appex/RumboWidgets"
+          ldid -SRumbo/Rumbo.entitlements "$APP/Rumbo"
+          mkdir -p build/ipa/Payload
+          cp -R "$APP" build/ipa/Payload/
+          (cd build/ipa && zip -qry ../Rumbo.ipa Payload)
+          mkdir -p build/dist
+          cp build/Rumbo.ipa build/dist/
+          cp Rumbo/Rumbo.entitlements RumboWidgets/RumboWidgets.entitlements build/dist/
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rumbo-${{ github.sha }}
+          path: build/dist/
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: build/xcodebuild.log
+          if-no-files-found: ignore
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/dist/Rumbo.ipa
+            build/dist/Rumbo.entitlements
+            build/dist/RumboWidgets.entitlements

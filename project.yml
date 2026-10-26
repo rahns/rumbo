@@ -1,0 +1,77 @@
+name: Rumbo
+
+options:
+  bundleIdPrefix: com.rahns
+  deploymentTarget:
+    iOS: "27.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+
+settings:
+  base:
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Swift 5 language mode for now; move to Swift 6 once the app's concurrency is settled.
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+
+packages:
+  RumboCore:
+    path: Packages/RumboCore
+
+targets:
+  Rumbo:
+    type: application
+    platform: iOS
+    sources:
+      - path: Rumbo
+      - path: Shared
+    dependencies:
+      - package: RumboCore
+      - target: RumboWidgets
+        embed: true
+    entitlements:
+      path: Rumbo/Rumbo.entitlements
+    info:
+      path: Rumbo/Info.plist
+      properties:
+        CFBundleDisplayName: Rumbo
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSSupportsLiveActivities: true
+        UIBackgroundModes: [remote-notification]
+        ITSAppUsesNonExemptEncryption: false
+        LSApplicationQueriesSchemes:
+          - duolingo
+          - youtube
+          - dreamingspanish
+          - dreaming
+          - languagetransfer
+          - tandem
+          - spotify
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rahns.rumbo
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    scheme:
+      testTargets: []
+
+  RumboWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: RumboWidgets
+      - path: Shared
+    entitlements:
+      path: RumboWidgets/RumboWidgets.entitlements
+    info:
+      path: RumboWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Rumbo
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rahns.rumbo.widgets
