@@ -16,5 +16,5 @@ Native iOS app (SwiftUI, iOS 27+) that turns a learner's Spanish sources into on
 ## Conventions
 - App targets use Swift 5 language mode for now; RumboCore uses Swift 6.
 - Every planner rule from `docs/02-learning-engine.md` gets a unit test in RumboCore.
-- Data is on device only (no sync, no backup). SwiftData models still follow the CloudKit rules in `docs/04-data-model.md` (defaults on every property, no unique constraints, optional relationships).
+- Data is on device only (no sync). Backup is manual: save a JSON file, restore by picking it (`Rumbo/Services/Backup.swift`); keep `BackupFile` in step with the models. SwiftData models still follow the CloudKit rules in `docs/04-data-model.md` (defaults on every property, no unique constraints, optional relationships).
 - Features must degrade gracefully when an entitlement is missing (see `docs/05-architecture.md`).

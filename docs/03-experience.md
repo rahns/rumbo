@@ -60,7 +60,7 @@ Pico also appears in the Live Activity and widgets as a small static pose.
 ## 3.4 Screens
 
 ### Onboarding (first launch, about 2 minutes)
-Also the recovery path if the app is lost, since there's no backup (see [04-data-model.md](04-data-model.md#43-no-sync-or-backup)).
+The first screen also offers "Restore from a backup". Without a backup, onboarding again is the recovery path (see [04-data-model.md](04-data-model.md#43-no-sync-manual-backup)).
 
 1. Welcome: Pico bobs in. "¿Rumbo a dónde?"
 2. Name (optional) and goal: B1 / **B2** / C1, plus an optional target date ("Moving to Latin America in 2028").
@@ -116,7 +116,7 @@ Also the recovery path if the app is lost, since there's no backup (see [04-data
 - Suggested content filtered by band, with "Add to my plan".
 
 ### Settings
-Sources, budget defaults, Travel mode, weekly goal, reminders, AI correction (engine status, optional own API key), reset (start onboarding again).
+Sources, budget defaults, Travel mode, weekly goal, reminders, AI correction (engine status, optional own API key), backup (save a file / restore from a file), reset (start onboarding again).
 
 ## 3.5 Motion and haptics catalog
 

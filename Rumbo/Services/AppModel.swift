@@ -116,12 +116,56 @@ final class AppModel {
     func reset() {
         LiveActivities.endAll()
         Reminders.cancel()
+        deleteAll()
+        save()
+    }
+
+    private func deleteAll() {
         try? context.delete(model: PlannedTaskRecord.self)
         try? context.delete(model: DayPlanRecord.self)
         try? context.delete(model: ActivityLog.self)
         try? context.delete(model: WritingEntry.self)
         try? context.delete(model: LearnerProfile.self)
+    }
+
+    // MARK: - Backup
+
+    func makeBackup() throws -> BackupDocument {
+        guard let profile else { throw BackupError.unreadable }
+        let writing = (try? context.fetch(FetchDescriptor<WritingEntry>(sortBy: [SortDescriptor(\.date)]))) ?? []
+        let file = BackupFile(
+            version: BackupFile.currentVersion,
+            exportedAt: .now,
+            appVersion: DiagnosticsModel.appVersion,
+            profile: BackupFile.ProfileData(profile),
+            logs: logs.map(BackupFile.LogData.init),
+            writing: writing.map { BackupFile.WritingData(date: $0.date, task: $0.taskRaw, prompt: $0.prompt, text: $0.text) }
+        )
+        return BackupDocument(data: try BackupFile.encoder().encode(file))
+    }
+
+    /// Replaces everything with the backup's contents. The file is fully decoded before anything is deleted.
+    func restore(from data: Data) throws {
+        let file: BackupFile
+        do {
+            file = try BackupFile.decode(data)
+        } catch let error as BackupError {
+            throw error
+        } catch {
+            throw BackupError.unreadable
+        }
+        LiveActivities.endAll()
+        deleteAll()
+        let profile = file.profile.makeProfile()
+        context.insert(profile)
+        for log in file.logs {
+            context.insert(log.makeLog())
+        }
+        for entry in file.writing {
+            context.insert(WritingEntry(date: entry.date, task: TaskKind(rawValue: entry.task) ?? .writeGuided, prompt: entry.prompt, text: entry.text))
+        }
         save()
+        Reminders.schedule(for: profile)
     }
 
     // MARK: - Planning

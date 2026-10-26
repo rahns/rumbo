@@ -33,7 +33,7 @@ Every source can be turned off. The planner reallocates its time to whatever els
 1. [Research foundations](docs/01-research.md)
 2. [Learning engine: levels, strands and the daily planner](docs/02-learning-engine.md)
 3. [Screens, animation and the mascot](docs/03-experience.md)
-4. [Data model](docs/04-data-model.md)
+4. [Data model and backup](docs/04-data-model.md)
 5. [Architecture, AI correction, widgets, CI and install](docs/05-architecture.md)
 6. [Content catalog](docs/06-content-catalog.md)
 7. [Roadmap](docs/07-roadmap.md)

@@ -5,7 +5,10 @@ import SwiftUI
 struct OnboardingView: View {
     let onFinish: (OnboardingDraft) -> Void
 
+    @Environment(AppModel.self) private var model
     @State private var draft = OnboardingDraft()
+    @State private var importing = false
+    @State private var restoreError: String?
     @State private var step = Step.welcome
     @State private var canDoIndex = 0
 
@@ -32,6 +35,27 @@ struct OnboardingView: View {
         }
         .background(Palette.background.ignoresSafeArea())
         .animation(.spring(response: 0.45, dampingFraction: 0.85), value: step)
+        .sheet(isPresented: $importing) {
+            BackupImportPicker { result in
+                importing = false
+                switch result {
+                case .success(let data):
+                    do {
+                        try withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                            try model.restore(from: data)
+                        }
+                    } catch {
+                        restoreError = error.localizedDescription
+                    }
+                case .failure(let error): restoreError = error.localizedDescription
+                case nil: break
+                }
+            }
+            .ignoresSafeArea()
+        }
+        .alert(restoreError ?? "", isPresented: Binding(get: { restoreError != nil }, set: { if !$0 { restoreError = nil } })) {
+            Button("OK", role: .cancel) {}
+        }
     }
 
     // MARK: Chrome
@@ -109,6 +133,10 @@ struct OnboardingView: View {
             Text("Hi, I'm Pico. This takes about two minutes.")
                 .font(.rounded(.subheadline, weight: .semibold))
                 .foregroundStyle(Palette.coral)
+            Button("Restore from a backup") { importing = true }
+                .font(.rounded(.subheadline, weight: .bold))
+                .foregroundStyle(Palette.secondaryText)
+                .padding(.top, 8)
         }
         .frame(maxWidth: .infinity)
     }

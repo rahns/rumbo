@@ -1,4 +1,4 @@
-# 4. Data model
+# 4. Data model and backup
 
 ## 4.1 Storage
 
@@ -27,11 +27,15 @@ The budget can be changed until the first task is started; after that the day's 
 
 **Derived, never stored:** total input hours (`baselineInputHours` + sum of `ActivityLog` input minutes), XP, streak, strand balance, projection. Computing them keeps a single source of truth.
 
-## 4.3 No sync or backup
+## 4.3 No sync; manual backup
 
-Rumbo keeps everything on the phone. There is no sync and no backup file: CloudKit needs an entitlement the author's signing profile doesn't grant, and every iCloud Drive backup approach failed on device in M0.
+Rumbo keeps everything on the phone. There is no sync and no automatic backup: CloudKit needs an entitlement the author's signing profile doesn't grant, and Rumbo can't keep access to a file in iCloud Drive across launches on that setup (M0).
 
-If the app is lost (new phone, reinstall, new certificate), the learner simply onboards again. That's cheap by design:
-- The numbers that matter live in the sources themselves: Dreaming Spanish hours, the Language Transfer track, the Duolingo unit and Extra episodes. Onboarding asks for exactly these, so the plan picks up where it left off.
+**Manual backup** (Settings → Backup), implemented in `Rumbo/Services/Backup.swift`:
+- **Save backup** writes `Rumbo Backup YYYY-MM-DD.json` wherever the learner chooses, through the system save dialog. It holds the profile, every activity log and every writing entry. Today's plan isn't included; it's rebuilt from the history.
+- **Restore from a backup** picks a file, imports a copy, decodes it fully, asks for confirmation, then replaces everything. Also offered on the first onboarding screen, for a new phone or reinstall.
+- The file has a `version` number; a backup from a newer Rumbo is refused with a message rather than half-read.
+
+If the app is lost without a backup, the learner onboards again. That's cheap by design:
+- The numbers that matter live in the sources themselves: Dreaming Spanish hours, the Language Transfer track, the Duolingo unit and Extra episodes. Onboarding asks for exactly these.
 - What's lost is Rumbo's own history: streak, XP, writing entries and the mistake deck.
-- Onboarding should take about 2 minutes (see [03-experience.md](03-experience.md#onboarding-first-launch-about-2-minutes)).
