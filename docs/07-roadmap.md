@@ -13,7 +13,21 @@ Each milestone ends with a downloadable IPA from CI.
 | **M6** | **Progress, Library, Travel mode** | Charts, projection, content catalog with remote refresh, Travel mode and missions, notifications. |
 | **M7** | **Polish and sharing** | Accessibility pass, empty states, export/restore, a Releases page friends can download from. |
 
-## Open questions to settle in M0
-- Does the author's certificate/profile keep the iCloud and App Group entitlements after signing?
-- Can a sideloaded build use Apple's Private Cloud Compute model?
-- Which URL schemes do Dreaming Spanish, Language Transfer and Tandem respond to?
+## M0 findings (iPhone 16 Pro, iOS 27.2, author's development certificate)
+
+| Question | Answer |
+|---|---|
+| iCloud/CloudKit entitlement | ❌ Not in the profile → **iCloud Drive backup is the sync path**; CloudKit stays as an automatic upgrade for profiles that grant it |
+| App Group entitlement | ❌ Not in the profile → widgets get data through a **shared Keychain group** (being verified in build 0.1.3+) |
+| Push (`aps-environment`) | ✅ Granted |
+| Live Activities, notifications | ✅ |
+| Apple on-device model | ✅ Available, but weak on tense errors: in the sample it "corrected" *voy → voy* instead of *fui* |
+| Apple cloud model (PCC) | ✅ Reports available; a real request is being verified in build 0.1.3+ |
+| LanguageTool | ✅ Caught the agreement error the on-device model missed |
+| URL schemes | ✅ `duolingo://`, `youtube://`, `dreaming://` (Dreaming Spanish), `languagetransfer://`, `tandem://`, `spotify://`. `dreamingspanish://` does not work. |
+| iCloud Drive folder picker | ❌ SwiftUI `.fileImporter` returned nothing → replaced with a UIKit picker (verifying) |
+
+## Still open
+- Does the shared Keychain group reach the widget?
+- Does a real request to the cloud model succeed in a sideloaded build?
+- Does the UIKit folder picker (or saving a backup file) work for iCloud Drive?

@@ -3,6 +3,7 @@ import CloudKit
 import Foundation
 import FoundationModels
 import Observation
+import Security
 import UIKit
 import UserNotifications
 import WidgetKit
@@ -35,6 +36,7 @@ enum CheckID: String, CaseIterable, Identifiable {
     case iCloudAccount = "iCloud account"
     case cloudKit = "CloudKit sync"
     case appGroup = "App Group (widgets)"
+    case keychainShare = "Keychain sharing (widgets fallback)"
     case push = "Push entitlement"
     case liveActivities = "Live Activities"
     case notifications = "Notifications"
@@ -43,6 +45,7 @@ enum CheckID: String, CaseIterable, Identifiable {
     case languageTool = "LanguageTool"
     case urlSchemes = "Source apps installed"
     case driveFolder = "iCloud Drive backup folder"
+    case driveExport = "Save backup file to Files"
 
     var id: String { rawValue }
 }
@@ -52,6 +55,7 @@ enum CheckID: String, CaseIterable, Identifiable {
 final class DiagnosticsModel {
     var results: [CheckID: CheckStatus] = [:]
     var modelSample: String?
+    var cloudModelSample: String?
     var isRunning = false
 
     private let profile = ProvisioningProfile.embedded()
@@ -68,7 +72,10 @@ final class DiagnosticsModel {
         results[.profile] = checkProfile()
         results[.iCloudAccount] = checkICloudAccount()
         results[.cloudKit] = await checkCloudKit()
-        results[.appGroup] = checkAppGroup()
+        let ping = SharedStore.writePing()
+        results[.appGroup] = checkAppGroup(written: ping.appGroup)
+        results[.keychainShare] = checkKeychainShare(status: ping.keychain)
+        WidgetCenter.shared.reloadAllTimelines()
         results[.push] = checkPush()
         results[.liveActivities] = checkLiveActivities()
         results[.notifications] = await checkNotifications()
@@ -93,6 +100,11 @@ final class DiagnosticsModel {
         if let expiration = profile.expiration {
             text += " · expires \(expiration.formatted(date: .abbreviated, time: .omitted))"
         }
+        let appID = profile.strings(for: "application-identifier").joined(separator: ", ")
+        let keychainGroups = profile.strings(for: "keychain-access-groups").joined(separator: ", ")
+        text += "\nApp ID: \(appID.isEmpty ? "none" : appID)"
+        text += "\nKeychain groups: \(keychainGroups.isEmpty ? "none" : keychainGroups)"
+        text += "\nBundle ID: \(Bundle.main.bundleIdentifier ?? "?")"
         return .pass(text)
     }
 
@@ -125,12 +137,17 @@ final class DiagnosticsModel {
         }
     }
 
-    private func checkAppGroup() -> CheckStatus {
-        guard SharedStore.writePing() else {
-            return .fail("App Group container unavailable. Widgets can't read today's plan.")
+    private func checkAppGroup(written: Bool) -> CheckStatus {
+        written
+            ? .pass("Shared container works. The diagnostics widget should show a ✓ for Group.")
+            : .fail("App Group container unavailable.")
+    }
+
+    private func checkKeychainShare(status: OSStatus) -> CheckStatus {
+        guard status == errSecSuccess else {
+            return .fail("Write failed: \(KeychainShare.describe(status))")
         }
-        WidgetCenter.shared.reloadAllTimelines()
-        return .pass("Shared container works. Add the Rumbo diagnostics widget to confirm it shows \"App Group: OK\".")
+        return .pass("Wrote to \(KeychainShare.accessGroup ?? "?"). The diagnostics widget should show a ✓ for Keychain.")
     }
 
     private func checkPush() -> CheckStatus {
@@ -216,6 +233,28 @@ final class DiagnosticsModel {
 
     // MARK: - Actions
 
+    func folderPickerFinished(_ url: URL?) {
+        guard let url else {
+            results[.driveFolder] = .warn("Picker closed without a folder (cancelled)")
+            return
+        }
+        useDriveFolder(url)
+    }
+
+    func exportFinished(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            results[.driveExport] = .pass("Saved \(url.lastPathComponent) in \(url.deletingLastPathComponent().lastPathComponent)")
+        case .failure(let error):
+            results[.driveExport] = .fail(error.localizedDescription)
+        }
+    }
+
+    var backupTestDocument: BackupTestDocument {
+        let payload = #"{"app":"Rumbo","test":true,"date":"\#(Date.now.ISO8601Format())"}"#
+        return BackupTestDocument(data: Data(payload.utf8))
+    }
+
     func useDriveFolder(_ url: URL) {
         guard url.startAccessingSecurityScopedResource() else {
             results[.driveFolder] = .fail("No permission for that folder")
@@ -259,24 +298,45 @@ final class DiagnosticsModel {
         }
     }
 
+    private static let tutorInstructions = """
+        You are a friendly Spanish tutor for an A2 learner. Correct the learner's text. \
+        List each error with the fix and a one-sentence explanation in English, then give a natural rewrite.
+        """
+    private static let sampleText = "Ayer yo voy a la playa con mis amigo y nosotros comimos mucho pescados."
+
     func testWritingCorrection() async {
         modelSample = "Thinking…"
         do {
-            let session = LanguageModelSession(instructions: """
-                You are a friendly Spanish tutor for an A2 learner. Correct the learner's text. \
-                List each error with the fix and a one-sentence explanation in English, then give a natural rewrite.
-                """)
-            let response = try await session.respond(to: "Ayer yo voy a la playa con mis amigo y nosotros comimos mucho pescados.")
-            modelSample = response.content
+            let session = LanguageModelSession(instructions: Self.tutorInstructions)
+            modelSample = try await session.respond(to: Self.sampleText).content
         } catch {
             modelSample = "Error: \(error.localizedDescription)"
         }
     }
 
+    func testCloudWritingCorrection() async {
+        cloudModelSample = "Thinking…"
+        do {
+            let session = CloudModelProbe.session(instructions: Self.tutorInstructions)
+            cloudModelSample = try await session.respond(to: Self.sampleText).content
+            results[.cloudModel] = .pass("Available and answered a request")
+        } catch {
+            cloudModelSample = "Error: \(error)"
+            results[.cloudModel] = .fail("Reports available, but the request failed: \(error.localizedDescription)")
+        }
+    }
+
+    static var appVersion: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info?["CFBundleVersion"] as? String ?? "?"
+        return "\(version) (\(build))"
+    }
+
     // MARK: - Report
 
     var report: String {
-        var lines = ["Rumbo diagnostics · \(Date.now.formatted())",
+        var lines = ["Rumbo \(Self.appVersion) diagnostics · \(Date.now.formatted())",
                      "iOS \(UIDevice.current.systemVersion)"]
         for id in CheckID.allCases {
             let status = status(id)
@@ -284,6 +344,9 @@ final class DiagnosticsModel {
         }
         if let modelSample {
             lines.append("\nOn-device model sample:\n\(modelSample)")
+        }
+        if let cloudModelSample {
+            lines.append("\nCloud model sample:\n\(cloudModelSample)")
         }
         return lines.joined(separator: "\n")
     }

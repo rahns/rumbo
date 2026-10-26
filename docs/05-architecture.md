@@ -116,8 +116,10 @@ The IPA is unsigned; the user signs it with their own certificate and provisioni
 | Entitlement | Used for | If missing |
 |---|---|---|
 | iCloud / CloudKit (`iCloud.com.rahns.rumbo`) | Automatic sync | Local store + auto-backup to iCloud Drive folder (no entitlement needed) |
-| App Groups (`group.com.rahns.rumbo`) | Widgets read today's plan | Widgets show streak/ring only from their own last snapshot, or a "Open Rumbo" placeholder |
+| App Groups (`group.com.rahns.rumbo`) | Widgets read today's plan | Shared Keychain group `TEAMID.com.rahns.rumbo.shared` (development profiles usually grant `TEAMID.*`). If that fails too: an "Open Rumbo" placeholder. |
 | None needed | Live Activity, notifications, Foundation Models on-device, LanguageTool, Pico, everything else | — |
+
+Every CI build is versioned `0.1.<run number>` with build number `<run number>`, so each IPA installs over the previous one.
 
 Milestone 0 ships a test build with a **Diagnostics** screen (Settings → About → Diagnostics) that reports which entitlements and services actually work after signing. That decides whether CloudKit sync is real for the author's setup, before building on it.
 

@@ -9,6 +9,7 @@ options:
 
 settings:
   base:
+    # Local builds only. CI overrides both with the workflow run number (see build.yml).
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
     # Swift 5 language mode for now; move to Swift 6 once the app's concurrency is settled.

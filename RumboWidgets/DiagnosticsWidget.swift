@@ -1,7 +1,9 @@
+import Security
 import SwiftUI
 import WidgetKit
 
-/// Milestone 0 widget: shows whether the widget can read data the app wrote to the App Group.
+/// Milestone 0 widget: shows whether the widget can read data the app wrote,
+/// through the App Group and through the shared Keychain group.
 struct DiagnosticsWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "RumboDiagnostics", provider: DiagnosticsProvider()) { entry in
@@ -17,12 +19,14 @@ struct DiagnosticsWidget: Widget {
 struct DiagnosticsEntry: TimelineEntry {
     let date: Date
     let appGroupAvailable: Bool
-    let lastPing: Date?
+    let appGroupPing: Date?
+    let keychainPing: Date?
+    let keychainStatus: OSStatus
 }
 
 struct DiagnosticsProvider: TimelineProvider {
     func placeholder(in context: Context) -> DiagnosticsEntry {
-        DiagnosticsEntry(date: .now, appGroupAvailable: true, lastPing: .now)
+        DiagnosticsEntry(date: .now, appGroupAvailable: true, appGroupPing: .now, keychainPing: .now, keychainStatus: errSecSuccess)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (DiagnosticsEntry) -> Void) {
@@ -34,10 +38,13 @@ struct DiagnosticsProvider: TimelineProvider {
     }
 
     private func currentEntry() -> DiagnosticsEntry {
-        DiagnosticsEntry(
+        let keychain = SharedStore.readKeychainPing()
+        return DiagnosticsEntry(
             date: .now,
             appGroupAvailable: SharedStore.defaults != nil,
-            lastPing: SharedStore.readPing()
+            appGroupPing: SharedStore.readAppGroupPing(),
+            keychainPing: keychain.date,
+            keychainStatus: keychain.status
         )
     }
 }
@@ -49,20 +56,28 @@ struct DiagnosticsWidgetView: View {
         VStack(alignment: .leading, spacing: 6) {
             Label("Rumbo", systemImage: "bird.fill")
                 .font(.headline)
-            if !entry.appGroupAvailable {
-                Text("App Group: missing")
-                    .foregroundStyle(.red)
-            } else if let ping = entry.lastPing {
-                Text("App Group: OK")
-                    .foregroundStyle(.green)
+            row("Group", ok: entry.appGroupPing != nil,
+                detail: entry.appGroupAvailable ? (entry.appGroupPing == nil ? "no data" : nil) : "missing")
+            row("Keychain", ok: entry.keychainPing != nil,
+                detail: entry.keychainPing == nil ? "err \(entry.keychainStatus)" : nil)
+            if let ping = entry.keychainPing ?? entry.appGroupPing {
                 Text(ping, style: .time)
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
-            } else {
-                Text("App Group: OK, no data yet. Run diagnostics.")
-                    .font(.caption)
             }
         }
+        .font(.caption)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func row(_ title: String, ok: Bool, detail: String?) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: ok ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .foregroundStyle(ok ? .green : .red)
+            Text(title)
+            if let detail {
+                Text(detail).foregroundStyle(.secondary)
+            }
+        }
     }
 }

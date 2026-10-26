@@ -18,6 +18,10 @@ jobs:
   build:
     runs-on: xcode-27
     timeout-minutes: 30
+    env:
+      # Every run gets a higher version so a new IPA installs over the previous one.
+      BUILD_NUMBER: ${{ github.run_number }}
+      APP_VERSION: 0.1.${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
 
@@ -48,6 +52,8 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
+            MARKETING_VERSION="$APP_VERSION" \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
             | tee build/xcodebuild.log
 
       # Fake-sign with the entitlements so signing tools that keep the IPA's entitlements carry them over.
@@ -60,13 +66,13 @@ jobs:
           cp -R "$APP" build/ipa/Payload/
           (cd build/ipa && zip -qry ../Rumbo.ipa Payload)
           mkdir -p build/dist
-          cp build/Rumbo.ipa build/dist/
+          cp build/Rumbo.ipa "build/dist/Rumbo-$APP_VERSION.ipa"
           cp Rumbo/Rumbo.entitlements RumboWidgets/RumboWidgets.entitlements build/dist/
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: Rumbo-${{ github.sha }}
+          name: Rumbo-${{ env.APP_VERSION }}
           path: build/dist/
 
       - name: Upload build log on failure
@@ -82,6 +88,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            build/dist/Rumbo.ipa
+            build/dist/Rumbo-${{ env.APP_VERSION }}.ipa
             build/dist/Rumbo.entitlements
             build/dist/RumboWidgets.entitlements

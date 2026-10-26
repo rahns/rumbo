@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 struct DiagnosticsView: View {
     @State private var model = DiagnosticsModel()
     @State private var pickingFolder = false
+    @State private var exporting = false
     @State private var copied = false
 
     var body: some View {
@@ -22,23 +23,44 @@ struct DiagnosticsView: View {
                     .animation(.snappy, value: status)
                 }
             } header: {
-                Text("Checks")
+                Text("Checks · Rumbo \(DiagnosticsModel.appVersion)")
             }
 
-            Section("Try it") {
+            Section {
                 Button("Pick iCloud Drive backup folder", systemImage: "folder.badge.plus") {
                     pickingFolder = true
                 }
+                Button("Save a test backup file", systemImage: "square.and.arrow.down") {
+                    exporting = true
+                }
+            } header: {
+                Text("Backup")
+            } footer: {
+                Text("When picking a folder, open it first (tap into it), then tap Open.")
+            }
+
+            Section("Live Activity") {
                 Button("Start test timer", systemImage: "timer") {
                     model.startTestTimer()
                 }
                 Button("End test timers", systemImage: "stop.circle") {
                     Task { await model.endTestTimers() }
                 }
-                Button("Test writing correction", systemImage: "text.badge.checkmark") {
+            }
+
+            Section("Writing correction") {
+                Button("Test on-device model", systemImage: "iphone") {
                     Task { await model.testWritingCorrection() }
                 }
                 if let sample = model.modelSample {
+                    Text(sample)
+                        .font(.footnote)
+                        .textSelection(.enabled)
+                }
+                Button("Test cloud model", systemImage: "icloud") {
+                    Task { await model.testCloudWritingCorrection() }
+                }
+                if let sample = model.cloudModelSample {
                     Text(sample)
                         .font(.footnote)
                         .textSelection(.enabled)
@@ -63,10 +85,20 @@ struct DiagnosticsView: View {
             .disabled(model.isRunning)
         }
         .task { await model.runAll() }
-        .fileImporter(isPresented: $pickingFolder, allowedContentTypes: [.folder]) { result in
-            if case .success(let url) = result {
-                model.useDriveFolder(url)
+        .sheet(isPresented: $pickingFolder) {
+            FolderPicker { url in
+                pickingFolder = false
+                model.folderPickerFinished(url)
             }
+            .ignoresSafeArea()
+        }
+        .fileExporter(
+            isPresented: $exporting,
+            document: model.backupTestDocument,
+            contentType: .json,
+            defaultFilename: "rumbo-backup-test"
+        ) { result in
+            model.exportFinished(result)
         }
     }
 }
