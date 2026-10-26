@@ -1,51 +1,69 @@
-import RumboCore
+import Combine
+import SwiftData
 import SwiftUI
+import UIKit
 
 @main
 struct RumboApp: App {
+    let container: ModelContainer
+    @State private var model: AppModel
+
+    init() {
+        let schema = Schema([LearnerProfile.self, ActivityLog.self, DayPlanRecord.self, PlannedTaskRecord.self, WritingEntry.self])
+        // On device only: no sync, no backup (docs/04-data-model.md).
+        let configuration = ModelConfiguration(schema: schema, cloudKitDatabase: .none)
+        do {
+            container = try ModelContainer(for: schema, configurations: configuration)
+        } catch {
+            fatalError("Couldn't open the Rumbo store: \(error)")
+        }
+        _model = State(initialValue: AppModel(context: container.mainContext))
+    }
+
     var body: some Scene {
         WindowGroup {
-            RootView()
+            RootView(model: model)
+        }
+        .modelContainer(container)
+    }
+}
+
+struct RootView: View {
+    let model: AppModel
+    @Environment(\.scenePhase) private var scenePhase
+
+    var body: some View {
+        Group {
+            if model.profile == nil {
+                OnboardingView { draft in
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                        model.completeOnboarding(with: draft)
+                    }
+                }
+                .transition(.opacity)
+            } else {
+                MainTabView()
+                    .transition(.opacity)
+            }
+        }
+        .environment(model)
+        .tint(Palette.coral)
+        // Refresh when the app comes back or the day changes, so Today rolls over at midnight.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { model.save() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
+            model.save()
         }
     }
 }
 
-/// Milestone 0 placeholder home screen. The real path arrives in M3.
-struct RootView: View {
-    @State private var hover = false
-
+struct MainTabView: View {
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 24) {
-                Spacer()
-                Image(systemName: "bird.fill")
-                    .font(.system(size: 72))
-                    .foregroundStyle(.tint)
-                    .offset(y: hover ? -8 : 8)
-                    .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: hover)
-                    .onAppear { hover = true }
-                VStack(spacing: 8) {
-                    Text("¿Rumbo a dónde?")
-                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                    Text("Milestone 0 test build. Run diagnostics and send the report back so the real app can be built on what your phone supports.")
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                NavigationLink {
-                    DiagnosticsView()
-                } label: {
-                    Text("Run diagnostics")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                }
-                .buttonStyle(.borderedProminent)
-                Text("Starting band for 154 h: \(Band.forInputHours(154).label)")
-                    .font(.footnote)
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(24)
+        TabView {
+            Tab("Today", systemImage: "sun.max.fill") { TodayView() }
+            Tab("Progress", systemImage: "chart.line.uptrend.xyaxis") { StatsView() }
+            Tab("Settings", systemImage: "gearshape.fill") { SettingsView() }
         }
     }
 }

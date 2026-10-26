@@ -10,16 +10,19 @@ public enum Placement {
     }
 
     /// - Parameters:
-    ///   - ownBandYes: "Sí" answers to the 10 statements for the band the hours point to.
-    ///   - nextBandYes: "Sí" answers to the 10 statements for the band above it.
-    public static func place(inputHours: Double, ownBandYes: Int, nextBandYes: Int) -> Result {
+    ///   - ownBandYes: "Sí" answers to the statements for the band the hours point to.
+    ///   - nextBandYes: "Sí" answers to the statements for the band above it.
+    ///   - statementsPerBand: how many statements of each band were shown (10, or 5 in onboarding).
+    /// Moves up if ≥ 80% of the next band's statements are ticked, down if < 50% of the own band's.
+    public static func place(inputHours: Double, ownBandYes: Int, nextBandYes: Int, statementsPerBand: Int = CanDo.perBand) -> Result {
         let byHours = Band.forInputHours(inputHours)
+        let total = Double(max(statementsPerBand, 1))
         var band = byHours
         var adjustment = 0
-        if nextBandYes >= 8, let next = byHours.next {
+        if Double(nextBandYes) / total >= 0.8, let next = byHours.next {
             band = next
             adjustment = 1
-        } else if ownBandYes < 5, let previous = byHours.previous {
+        } else if Double(ownBandYes) / total < 0.5, let previous = byHours.previous {
             band = previous
             adjustment = -1
         }

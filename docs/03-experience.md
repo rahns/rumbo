@@ -60,21 +60,20 @@ Pico also appears in the Live Activity and widgets as a small static pose.
 ## 3.4 Screens
 
 ### Onboarding (first launch, about 2 minutes)
-1. Welcome: Pico flies in. "¿Rumbo a dónde?"
+Also the recovery path if the app is lost, since there's no backup (see [04-data-model.md](04-data-model.md#43-no-sync-or-backup)).
+
+1. Welcome: Pico bobs in. "¿Rumbo a dónde?"
 2. Name (optional) and goal: B1 / **B2** / C1, plus an optional target date ("Moving to Latin America in 2028").
-3. Sources: toggle the ones you use (all on by default).
-4. Progress per source, each on its own card:
-   - Dreaming Spanish: total hours and the difficulty range you're watching
-   - Language Transfer: last finished track (slider, 0–90)
+3. Sources: toggle the ones you use (all on by default). The Tandem row reads "I have a language exchange partner".
+4. Progress per source, each on its own card (only for enabled sources):
+   - Dreaming Spanish: total hours and the difficulty you're watching (the range is that value + 8)
+   - Language Transfer: last finished track (0–90)
    - Duolingo: section and unit
    - Extra en Español: episodes watched (0–13)
    - Not using Dreaming Spanish: estimated hours of Spanish listening
-5. Can-do check: 10 statements, swipe right "Sí" / left "Todavía no".
-6. Placement reveal: animated band badge, with the reasoning in one line ("154 hours + 9/10 can-dos → Explorador (A2.1)").
-7. Habit cue: "When will you usually study?" Pick a cue and time (R13). Weekly goal.
-8. Tandem: "Do you have a language partner?" Yes/no. No → tips for finding one.
-9. Notifications permission.
-10. The path builds itself on screen, node by node.
+5. Can-do check: 10 statements, one at a time, "¡Sí!" / "Todavía no". 5 come from the band the hours point to and 5 from the next band, interleaved. Placement uses the same thresholds as §2.1 scaled to 5 (≥ 4/5 of the next band → up, < 3/5 of your own → down).
+6. Placement reveal: band badge with the reasoning in one line ("154 hours of input and 7 of 10 can-dos").
+7. Habit: cue chips ("After breakfast", "On my commute", …), daily reminder toggle and time (asks for notification permission), weekly goal (60/100/150/210/300 min).
 
 ### Path (home tab)
 - A vertical, winding scroll of nodes. One node = one day's session; 7 nodes = one unit, with a unit banner ("Unidad 4 · Pasado vs. imperfecto").

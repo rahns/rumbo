@@ -12,99 +12,18 @@ Models still follow CloudKit's rules, so sync could be switched on later for a b
 
 ## 4.2 Models
 
-```swift
-@Model final class LearnerProfile {
-    var id: UUID = UUID()
-    var displayName: String = ""
-    var createdAt: Date = Date.now
-    var goalBand: String = "B2.2"            // Band raw value
-    var targetDate: Date?
-    var currentBand: String = "A2.1"
-    var speakingStage: Int = 1               // 1 text, 2 voice, 3 calls
-    var weeklyGoalMinutes: Int = 150
-    var habitCue: String = ""                // "After breakfast"
-    var reminderTime: Date?
-    var travelMode: Bool = false
-    var enabledSources: [String] = []        // SourceKind raw values
-    var dsDifficultyLow: Int = 40
-    var dsDifficultyHigh: Int = 48
-    var streakFreezes: Int = 0
-}
+Defined in `Rumbo/Models/Models.swift`. Enums are stored as raw strings/ints, with typed accessors.
 
-@Model final class SourceProgress {
-    var source: String = ""                  // SourceKind
-    var baselineInputHours: Double = 0       // e.g. DS hours at onboarding
-    var position: Int = 0                    // LT track, Extra episode
-    var section: Int = 0                     // Duolingo section
-    var unit: Int = 0                        // Duolingo unit
-    var finishedAt: Date?
-    var updatedAt: Date = Date.now
-}
+| Model | Holds |
+|---|---|
+| `LearnerProfile` | One per install: name, goal, target date, band, speaking stage, enabled sources, weekly goal, habit cue and reminder, travel mode, and the learner's place in each source: baseline input hours, Dreaming Spanish difficulty range, Language Transfer track (+ repeat flag), Extra episode and part, Duolingo section/unit. |
+| `ActivityLog` | One logged block: date, task, minutes, comprehension rating (input), track rating or Tandem feeling, bonus flag, and the Dreaming Spanish range it was watched at (for difficulty tuning). |
+| `DayPlanRecord` + `PlannedTaskRecord` | Today's plan, saved when the budget is picked so it stays stable as courses move forward during the day. Each task keeps its order, minutes, anchor flag, encoded detail (`lt:13`, `extra:2:1`, `ds:40:48`), the prompt fixed at planning time, and status (planned / active / done / skipped). |
+| `WritingEntry` | Text written in a writing task, with its prompt. Correction is added in M4. |
 
-@Model final class DayPlan {
-    var day: Date = Date.now                 // start of local day
-    var budgetMinutes: Int = 30
-    var band: String = "A2.1"
-    @Relationship(deleteRule: .cascade) var tasks: [PlannedTask]? = []
-}
+Coming later: `ReviewCard` (FSRS state for the mistake deck, M4) and `LevelCheck` (gate attempts, M3).
 
-@Model final class PlannedTask {
-    var taskID: String = ""                  // "lt.track", "ds.watch", …
-    var strand: String = ""
-    var order: Int = 0
-    var minutesPlanned: Int = 0
-    var detail: String = ""                  // "Track 13", "Rated 40–48"
-    var payload: Data?                       // JSON, task-specific
-    var status: String = "planned"           // planned / active / done / skipped
-    var plan: DayPlan?
-}
-
-@Model final class ActivityLog {
-    var id: UUID = UUID()
-    var date: Date = Date.now
-    var taskID: String = ""
-    var source: String = ""
-    var strand: String = ""
-    var minutes: Int = 0
-    var countsAsInput: Bool = false          // adds to input hours
-    var comprehension: Int?                  // 1 lost, 2 mostly, 3 easy
-    var rating: String?                      // "solid" / "shaky"
-    var isBonus: Bool = false                // logged outside a plan
-}
-
-@Model final class WritingEntry {
-    var id: UUID = UUID()
-    var date: Date = Date.now
-    var promptID: String = ""
-    var draft: String = ""
-    var feedbackJSON: Data?                  // CorrectionResult
-    var rewrite: String = ""
-    var engine: String = ""                  // which correction engine ran
-}
-
-@Model final class ReviewCard {
-    var id: UUID = UUID()
-    var front: String = ""
-    var back: String = ""
-    var explanation: String = ""
-    var origin: String = ""                  // writing / tandem / manual
-    // FSRS state
-    var due: Date = Date.now
-    var stability: Double = 0
-    var difficulty: Double = 0
-    var reps: Int = 0
-    var lapses: Int = 0
-    var state: Int = 0                       // new / learning / review / relearning
-    var lastReview: Date?
-}
-
-@Model final class LevelCheck {
-    var date: Date = Date.now
-    var band: String = ""
-    var answers: [Bool] = []
-    var passed: Bool = false
-}
-```
+The budget can be changed until the first task is started; after that the day's plan is fixed.
 
 **Derived, never stored:** total input hours (`baselineInputHours` + sum of `ActivityLog` input minutes), XP, streak, strand balance, projection. Computing them keeps a single source of truth.
 
