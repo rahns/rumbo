@@ -53,7 +53,7 @@ Pico is a **colibrí** (hummingbird), common across Latin America. Hummingbirds 
 | Sleepy | Late in the day with nothing logged | Perched, slow blink. Never sad or guilt-tripping. |
 | Reading/Listening | During a timer | Headphones or a book |
 
-**Built in code** (`Rumbo/Pico/PicoView.swift`): drawn on a 100 × 100 `Canvas` (emerald body, Rumbo-coral throat, long beak), animated by a `TimelineView` (wing flap with ghost wings for blur, bob, blink) and a `keyframeAnimator` loop-de-loop whenever a task is completed. Moods: hovering (default), cheering/proud (faster flap, orbiting sparkles), backpacker (Travel mode: backpack and hat), sleepy (after 8 pm with nothing logged: perched on a branch, eyes closed, floating z's), listening (headphones, during input and Language Transfer sessions). Reduce Motion freezes the animation. No third-party runtime; could move to Rive later.
+**Built in code** (`Rumbo/Pico/PicoView.swift`; reference render in `docs/art/pico-preview.png`, made with `docs/art/pico-render.py`): drawn on a 100 × 100 `Canvas` (emerald body, Rumbo-coral throat, long beak), animated by a `TimelineView` (wing flap with ghost wings for blur, bob, blink) and a `keyframeAnimator` loop-de-loop whenever a task is completed. Moods: hovering (default), cheering/proud (faster flap, orbiting sparkles), backpacker (Travel mode: backpack and hat), sleepy (after 8 pm with nothing logged: perched on a branch, eyes closed, floating z's), listening (headphones, during input and Language Transfer sessions). Reduce Motion freezes the animation. No third-party runtime; could move to Rive later.
 
 Pico also appears in the Live Activity and widgets as a small static pose.
 
@@ -80,10 +80,15 @@ The first screen also offers "Restore from a backup". Without a backup, onboardi
 
 ### Path (home tab)
 Implemented in `Rumbo/Features/Path/PathView.swift`, laid out by `PathLayout` in RumboCore.
-- A vertical, winding scroll of nodes. One node = one day's session; 7 nodes = one unit, with a unit banner ("Unidad 4 · Pasado vs. imperfecto").
-- One node per day since onboarding; 7 nodes per unit. Done (≥ 10 min) = green tick, partial = yellow, missed = grey moon, upcoming = locked and faded. Today's node is coral, pulses, has a bobbing "START"/"TODAY" bubble, and Pico hovers beside it facing the node.
-- Tapping a past node shows that day's summary; tapping today zooms into Today.
-- **Gate node:** when the hours for the next band are reached (and no failed check in the last 14 days), a golden trophy node appears after today. Today also shows a "Level-up check ready" banner.
+
+- **One node per session**, like lessons on a Duolingo path. A session is one day's plan. Missed days leave no gaps; the streak (calendar days) lives in the header instead.
+- 7 nodes per unit ("Unidad N", with the dates it covered). Finished session = green tick, started-but-unfinished on an earlier day = yellow, upcoming = locked and faded.
+- **Focus node:** today's session is coral with a bobbing "START"/"TODAY" bubble; Pico hovers beside it facing the node. Tapping it zooms into Today.
+- **Finishing today** turns that node into a tick and unlocks the next node (blue, "KEEP GOING"). Tapping it, or "Keep going" on Today, starts another session now. That session is planned as if it were tomorrow, so today's work counts toward the strand balance and the anchors.
+- **The future:** the path continues with locked units at least 4 units ahead, and as far as the last projected level-up (up to about two years). Trophy markers show roughly where each level-up should land ("Viajero · A2.2, around February 2027"), assuming about one session a day at the forecast pace: the learner's own pace after a week of history, the weekly goal before that.
+- **Gate node:** when the hours for the next band are reached (and no failed check in the last 14 days), a golden trophy node appears right after the focus node. Today also shows a "Level-up check ready" banner.
+- Tapping a past node shows that day's summary. Days with practice but no saved session (restored backups, extra listening only) still get a node.
+- The pulse ring is centred on the node's face and its 3D edge together.
 
 ### Level-up check
 Intro → the next band's 10 can-do statements one at a time → ≥ 7 "¡Sí!" passes: confetti, proud Pico, new band badge, and the plan's strand mix changes from the next day. Otherwise "Not yet, and that's fine", and the check returns in 14 days.

@@ -50,12 +50,8 @@ struct StatsView: View {
 
     private func projectionCard(_ profile: LearnerProfile) -> some View {
         let projection = Projection()
-        let history = model.history
         // Until there's a week of history, forecast at the weekly goal rather than from one or two sessions.
-        let ownPace = projection.hasEnoughHistory(history, today: .now)
-        let weekly = ownPace
-            ? projection.weeklyInputHours(history: history, today: .now)
-            : Projection.weeklyInputHours(atGoalMinutes: profile.weeklyGoalMinutes, band: profile.band)
+        let (weekly, ownPace) = model.forecastWeeklyHours
         let arrivals = projection.arrivalDates(inputHours: model.inputHours, weeklyHours: weekly, from: .now)
         return RaisedCard(accent: Palette.sky) {
             VStack(alignment: .leading, spacing: 10) {

@@ -55,12 +55,24 @@ final class AppModel {
         return (profile?.baselineInputHours ?? 0) + Double(minutes) / 60
     }
 
-    var todayPlan: DayPlanRecord? {
+    /// Set by tapping the unlocked node after finishing today: Today then offers a fresh session.
+    var wantsNextSession = false
+
+    /// Every session (a day's plan), oldest first. `day` is when the session was created.
+    var sessions: [DayPlanRecord] {
         _ = revision
-        let start = calendar.startOfDay(for: .now)
-        let end = calendar.date(byAdding: .day, value: 1, to: start)!
-        let descriptor = FetchDescriptor<DayPlanRecord>(predicate: #Predicate { $0.day >= start && $0.day < end })
-        return try? context.fetch(descriptor).first
+        return (try? context.fetch(FetchDescriptor<DayPlanRecord>(sortBy: [SortDescriptor(\.day)]))) ?? []
+    }
+
+    private var sessionsToday: [DayPlanRecord] {
+        sessions.filter { calendar.isDateInToday($0.day) }
+    }
+
+    /// The session Today shows: the latest one created today, unless the learner asked for the next one.
+    var todayPlan: DayPlanRecord? {
+        let latest = sessionsToday.last
+        if wantsNextSession, latest?.isComplete == true { return nil }
+        return latest
     }
 
     func snapshot(for profile: LearnerProfile) -> LearnerSnapshot {
@@ -176,7 +188,7 @@ final class AppModel {
 
     /// Whether the budget can still be changed (nothing done yet today).
     var canChangeBudget: Bool {
-        !(todayPlan?.sortedTasks.contains { $0.status == .done || $0.status == .active } ?? false)
+        !(todayPlan?.hasStarted ?? false)
     }
 
     func makeTodayPlan(budget: Int) {
@@ -184,14 +196,18 @@ final class AppModel {
         if let existing = todayPlan {
             context.delete(existing)
         }
-        let today = Date.now
+        let now = Date.now
+        // A second session today plans as if it were tomorrow, so today's work counts toward the balance.
+        let finishedEarlier = sessionsToday.contains { $0.isComplete && $0 !== todayPlan }
+        let today = finishedEarlier ? calendar.date(byAdding: .day, value: 1, to: now)! : now
         let plan = DayPlanner(calendar: calendar).plan(
             budget: budget,
             learner: snapshot(for: profile),
             history: history,
             today: today
         )
-        let record = DayPlanRecord(day: calendar.startOfDay(for: today), budgetMinutes: budget, band: profile.band)
+        wantsNextSession = false
+        let record = DayPlanRecord(day: now, budgetMinutes: budget, band: profile.band)
         context.insert(record)
         for (index, task) in plan.tasks.enumerated() {
             let taskRecord = PlannedTaskRecord(task: task, order: index, prompt: prompt(for: task.kind, band: profile.band, focus: plan.focus, on: today))
@@ -377,6 +393,53 @@ final class AppModel {
 
     func logs(on day: Date) -> [ActivityLog] {
         logs.filter { calendar.isDate($0.date, inSameDayAs: day) }
+    }
+
+    // MARK: - Path
+
+    /// Input pace for forecasts: the learner's own once there's a week of history, else their weekly goal.
+    var forecastWeeklyHours: (hours: Double, isOwnPace: Bool) {
+        guard let profile else { return (0, false) }
+        let projection = Projection(calendar: calendar)
+        if projection.hasEnoughHistory(history, today: .now) {
+            return (projection.weeklyInputHours(history: history, today: .now), true)
+        }
+        return (Projection.weeklyInputHours(atGoalMinutes: profile.weeklyGoalMinutes, band: profile.band), false)
+    }
+
+    var pathMap: PathMap {
+        let allLogs = logs
+        let minutesByLog = Dictionary(allLogs.map { ($0.id, $0.minutes) }, uniquingKeysWith: +)
+        var summaries: [PathLayout.Session] = []
+        var daysWithSessions: Set<Date> = []
+        let today = sessionsToday.last
+        var todayInProgress = false
+
+        for session in sessions {
+            let done = session.sortedTasks.filter { $0.status == .done }
+            guard !done.isEmpty else { continue }
+            let minutes = done.compactMap { $0.logID.flatMap { minutesByLog[$0] } }.reduce(0, +)
+            summaries.append(PathLayout.Session(date: session.day, minutes: minutes, isComplete: session.isComplete))
+            daysWithSessions.insert(calendar.startOfDay(for: session.day))
+            if session === today && !session.isComplete { todayInProgress = true }
+        }
+
+        // Days with practice but no saved session (restored backups, extra listening only) still get a node.
+        var looseMinutes: [Date: Int] = [:]
+        for log in allLogs where !daysWithSessions.contains(calendar.startOfDay(for: log.date)) && !calendar.isDateInToday(log.date) {
+            looseMinutes[calendar.startOfDay(for: log.date), default: 0] += log.minutes
+        }
+        for (day, minutes) in looseMinutes {
+            summaries.append(PathLayout.Session(date: day, minutes: minutes, isComplete: minutes >= StreakCalculator.minutesForStreakDay))
+        }
+        summaries.sort { $0.date < $1.date }
+
+        let pace = forecastWeeklyHours.hours
+        var arrivals = Projection(calendar: calendar).arrivalDates(inputHours: inputHours, weeklyHours: pace, from: .now)
+        if let band = profile?.band {
+            arrivals = arrivals.filter { $0.key > band }
+        }
+        return PathLayout.map(sessions: summaries, todayInProgress: todayInProgress, arrivals: arrivals, today: .now, calendar: calendar)
     }
 
     func acceptDifficultySuggestion() {

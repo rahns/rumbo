@@ -125,10 +125,12 @@ struct TodayView: View {
     private var budgetPrompt: some View {
         RaisedCard(accent: Palette.coral) {
             VStack(alignment: .leading, spacing: 14) {
-                Text("How much time today?")
+                Text(model.wantsNextSession ? "Another session? How long?" : "How much time today?")
                     .font(.rounded(.title3, weight: .black))
                     .foregroundStyle(Palette.ink)
-                Text("Pick honestly. Ten minutes still counts.")
+                Text(model.wantsNextSession
+                     ? "Today's work is counted, so this session balances it out."
+                     : "Pick honestly. Ten minutes still counts.")
                     .font(.rounded(.subheadline, weight: .medium))
                     .foregroundStyle(Palette.secondaryText)
                 budgetChips(selected: nil)
@@ -165,6 +167,14 @@ struct TodayView: View {
             }
             if model.canChangeBudget {
                 budgetChips(selected: plan.budgetMinutes)
+            }
+            if plan.isComplete {
+                Button {
+                    withAnimation { model.wantsNextSession = true }
+                } label: {
+                    Label("Keep going: start another session", systemImage: "forward.fill")
+                }
+                .buttonStyle(ChunkyButtonStyle(color: Palette.sky))
             }
             if tasks.isEmpty {
                 Text("Nothing fits with the sources you have switched on. Check Settings → Sources.")

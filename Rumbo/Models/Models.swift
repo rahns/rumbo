@@ -120,6 +120,19 @@ import SwiftData
     var sortedTasks: [PlannedTaskRecord] {
         (tasks ?? []).sorted { $0.order < $1.order }
     }
+
+    /// Something has been done (or is underway), so the budget is fixed.
+    var hasStarted: Bool {
+        sortedTasks.contains { $0.status == .done || $0.status == .active }
+    }
+
+    /// Every card is done or skipped, and at least one was done.
+    var isComplete: Bool {
+        let tasks = sortedTasks
+        return !tasks.isEmpty
+            && tasks.allSatisfy { $0.status == .done || $0.status == .skipped }
+            && tasks.contains { $0.status == .done }
+    }
 }
 
 @Model final class PlannedTaskRecord {
