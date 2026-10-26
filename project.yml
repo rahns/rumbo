@@ -39,6 +39,7 @@ targets:
         CFBundleDisplayName: Rumbo
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIRequiresFullScreen: true
         NSSupportsLiveActivities: true
         UIBackgroundModes: [remote-notification]
         ITSAppUsesNonExemptEncryption: false
