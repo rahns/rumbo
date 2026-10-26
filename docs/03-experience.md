@@ -86,6 +86,8 @@ The first screen also offers "Restore from a backup". Without a backup, onboardi
 - Budget picker at the top: chips for 10 / 15 / 20 / 30 / 45 / 60. Changing it reshuffles the cards with a spring animation.
 - Up to 4 task cards in order. Each card shows: source icon, task title, minutes, strand color strip, and the specific instruction ("Track 13", "Rated 40–48", "Episode 2, part 1: watch with Spanish subtitles").
 - Swipe a card left to swap it for an alternative in the same strand. Tap "Busy day" for the minimum dose.
+- **Everything can be undone.** A done or skipped card shows an Undo button (tapping its grey icon works too). Undo removes the log and writing entry and rolls back what the task moved forward (Language Transfer track, Extra episode, Duolingo position). Extra listening logged today is listed under the plan, each with Undo.
+- The Duolingo card shows the learner's section and unit; logging it asks where they are now.
 
 ### Task flow
 1. Tap **Start** → timer starts, Live Activity appears in the Dynamic Island, the source opens via deep link.

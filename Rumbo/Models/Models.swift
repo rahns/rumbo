@@ -131,6 +131,13 @@ import SwiftData
     var startedAt: Date?
     var plan: DayPlanRecord?
 
+    // Set when the task is completed, so the completion can be undone.
+    var logID: UUID?
+    var writingID: UUID?
+    var progressBefore: Data?
+    var duolingoSectionBefore: Int?
+    var duolingoUnitBefore: Int?
+
     init(task: PlannedTask, order: Int, prompt: String) {
         self.taskRaw = task.kind.rawValue
         self.order = order

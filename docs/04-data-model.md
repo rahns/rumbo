@@ -18,7 +18,7 @@ Defined in `Rumbo/Models/Models.swift`. Enums are stored as raw strings/ints, wi
 |---|---|
 | `LearnerProfile` | One per install: name, goal, target date, band, speaking stage, enabled sources, weekly goal, habit cue and reminder, travel mode, and the learner's place in each source: baseline input hours, Dreaming Spanish difficulty range, Language Transfer track (+ repeat flag), Extra episode and part, Duolingo section/unit. |
 | `ActivityLog` | One logged block: date, task, minutes, comprehension rating (input), track rating or Tandem feeling, bonus flag, and the Dreaming Spanish range it was watched at (for difficulty tuning). |
-| `DayPlanRecord` + `PlannedTaskRecord` | Today's plan, saved when the budget is picked so it stays stable as courses move forward during the day. Each task keeps its order, minutes, anchor flag, encoded detail (`lt:13`, `extra:2:1`, `ds:40:48`), the prompt fixed at planning time, and status (planned / active / done / skipped). |
+| `DayPlanRecord` + `PlannedTaskRecord` | Today's plan, saved when the budget is picked so it stays stable as courses move forward during the day. Each task keeps its order, minutes, anchor flag, encoded detail (`lt:13`, `extra:2:1`, `ds:40:48`), the prompt fixed at planning time, and status (planned / active / done / skipped). Once done, it also keeps what's needed to undo it: the log and writing entry IDs, the course progress before, and the previous Duolingo position. |
 | `WritingEntry` | Text written in a writing task, with its prompt. Correction is added in M4. |
 
 Coming later: `ReviewCard` (FSRS state for the mistake deck, M4) and `LevelCheck` (gate attempts, M3).

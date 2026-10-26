@@ -58,6 +58,23 @@ import Testing
         #expect(abs(projection.weeklyInputHours(history: history, today: today) - 3.5) < 0.001)
     }
 
+    @Test func aNewLearnersPaceIsNotSpreadOverFourWeeks() {
+        // One 15-minute session today: averaged over a week minimum, not four.
+        let history = [ActivityRecord(date: today, kind: .dsWatch, minutes: 15)]
+        #expect(abs(projection.weeklyInputHours(history: history, today: today) - 0.25) < 0.001)
+        #expect(!projection.hasEnoughHistory(history, today: today))
+    }
+
+    @Test func twoWeeksOfHistoryUseTwoWeeks() {
+        let history = (0..<14).map { ActivityRecord(date: TestCalendar.adding(days: -$0, to: today), kind: .dsWatch, minutes: 30) }
+        #expect(abs(projection.weeklyInputHours(history: history, today: today) - 3.5) < 0.001)
+        #expect(projection.hasEnoughHistory(history, today: today))
+    }
+
+    @Test func goalPaceUsesTheInputShare() {
+        #expect(abs(Projection.weeklyInputHours(atGoalMinutes: 150, band: .a2_1) - 1.125) < 0.001)
+    }
+
     @Test func arrivalDatesFollowThePace() {
         let dates = projection.arrivalDates(inputHours: 154, weeklyHours: 2, from: today)
         #expect(dates[.a2_1] == nil, "already reached")

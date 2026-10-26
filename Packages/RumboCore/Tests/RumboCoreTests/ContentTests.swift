@@ -41,6 +41,19 @@ import Testing
         #expect(progress.extraEpisodesWatched == 2 && progress.extraPartsDoneInEpisode == 0)
     }
 
+    @Test func undoRestoresOnlyThatTasksCourse() {
+        let start = SourceProgress(languageTransferLastTrack: 12, extraEpisodesWatched: 1, extraPartsDoneInEpisode: 1)
+        var progress = start
+        progress.record(.ltTrack, trackRating: .solid)
+        progress.record(.extraIntensive)
+        let afterExtra = progress
+        progress.undo(.ltTrack, before: start)
+        #expect(progress.languageTransferLastTrack == 12)
+        #expect(progress.extraEpisodesWatched == afterExtra.extraEpisodesWatched, "Extra progress is kept")
+        progress.undo(.extraIntensive, before: start)
+        #expect(progress == start)
+    }
+
     @Test func coursesStopAtTheirLastEpisodeAndTrack() {
         var progress = SourceProgress(languageTransferLastTrack: 90, extraEpisodesWatched: 13)
         progress.record(.ltTrack, trackRating: .solid)

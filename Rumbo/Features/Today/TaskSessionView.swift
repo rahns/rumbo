@@ -8,7 +8,6 @@ struct TaskSessionView: View {
     let task: PlannedTaskRecord
 
     @Environment(AppModel.self) private var model
-    @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
 
     @State private var logging = false
@@ -17,6 +16,8 @@ struct TaskSessionView: View {
     @State private var trackRating: SourceProgress.TrackRating?
     @State private var tandemFeeling: String?
     @State private var writing = ""
+    @State private var duolingoSection = 1
+    @State private var duolingoUnit = 1
 
     private var kind: TaskKind { task.task }
     private var color: Color { kind.strand.color }
@@ -83,7 +84,7 @@ struct TaskSessionView: View {
                 Text(TaskCopy.title(for: kind))
                     .font(.rounded(.title2, weight: .black))
                     .foregroundStyle(Palette.ink)
-                if let detail = TaskCopy.detail(task.detail) {
+                if let detail = model.detailText(for: task) {
                     Text(detail)
                         .font(.rounded(.headline, weight: .bold))
                         .foregroundStyle(Palette.secondaryText)
@@ -170,6 +171,16 @@ struct TaskSessionView: View {
                     ], selection: $trackRating)
                 }
             }
+            if kind == .duoLesson {
+                question("Where are you in Duolingo now?") {
+                    RaisedCard {
+                        VStack(spacing: 10) {
+                            NumberStepper(title: "Section", value: $duolingoSection, range: 1...10, step: 1)
+                            NumberStepper(title: "Unit", value: $duolingoUnit, range: 1...300, step: 1)
+                        }
+                    }
+                }
+            }
             if kind.isTandemExchange {
                 question("How did it feel?") {
                     ChoiceRow(options: [("easy", "😎", "Easy"), ("ok", "🙂", "OK"), ("hard", "😬", "Hard")], selection: $tandemFeeling)
@@ -215,14 +226,20 @@ struct TaskSessionView: View {
         let elapsed = Date.now.timeIntervalSince(task.startedAt ?? .now) / 60
         minutes = max(1, Int(elapsed.rounded()))
         if elapsed < 1 { minutes = task.minutesPlanned }
+        duolingoSection = model.profile?.duolingoSection ?? 1
+        duolingoUnit = model.profile?.duolingoUnit ?? 1
         withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { logging = true }
     }
 
     private func save() {
-        if isWriting && !writing.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            context.insert(WritingEntry(date: .now, task: kind, prompt: task.prompt, text: writing))
-        }
-        model.complete(task, with: .init(minutes: minutes, comprehension: comprehension, trackRating: trackRating, tandemFeeling: tandemFeeling))
+        model.complete(task, with: .init(
+            minutes: minutes,
+            comprehension: comprehension,
+            trackRating: trackRating,
+            tandemFeeling: tandemFeeling,
+            writing: isWriting ? writing : nil,
+            duolingoPosition: kind == .duoLesson ? (section: duolingoSection, unit: duolingoUnit) : nil
+        ))
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()
     }

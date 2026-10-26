@@ -41,6 +41,21 @@ public struct SourceProgress: Equatable, Codable, Sendable {
         }
     }
 
+    /// Reverses `record(kind)` by restoring only the fields that kind changes from `before`,
+    /// so undoing one task doesn't roll back progress made by another task since.
+    public mutating func undo(_ kind: TaskKind, before: SourceProgress) {
+        switch kind {
+        case .ltTrack:
+            languageTransferLastTrack = before.languageTransferLastTrack
+            languageTransferRepeatPending = before.languageTransferRepeatPending
+        case .extraIntensive, .extraExtensive:
+            extraEpisodesWatched = before.extraEpisodesWatched
+            extraPartsDoneInEpisode = before.extraPartsDoneInEpisode
+        default:
+            break
+        }
+    }
+
     private mutating func finishExtraEpisode() {
         extraEpisodesWatched = min(extraEpisodesWatched + 1, Course.extraEpisodes)
         extraPartsDoneInEpisode = 0

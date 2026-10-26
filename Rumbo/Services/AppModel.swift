@@ -240,6 +240,8 @@ final class AppModel {
         var comprehension: ComprehensionTuner.Rating?
         var trackRating: SourceProgress.TrackRating?
         var tandemFeeling: String?
+        var writing: String?
+        var duolingoPosition: (section: Int, unit: Int)?
     }
 
     func complete(_ task: PlannedTaskRecord, with completion: Completion) {
@@ -253,14 +255,60 @@ final class AppModel {
         }
         context.insert(log)
         task.status = .done
+        task.logID = log.id
 
+        if let text = completion.writing?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty {
+            let entry = WritingEntry(date: .now, task: task.task, prompt: task.prompt, text: text)
+            context.insert(entry)
+            task.writingID = entry.id
+        }
+
+        task.progressBefore = try? JSONEncoder().encode(profile.sourceProgress)
         var progress = profile.sourceProgress
         progress.record(task.task, trackRating: completion.trackRating)
         profile.sourceProgress = progress
 
+        if let position = completion.duolingoPosition {
+            task.duolingoSectionBefore = profile.duolingoSection
+            task.duolingoUnitBefore = profile.duolingoUnit
+            profile.duolingoSection = position.section
+            profile.duolingoUnit = position.unit
+        }
+
         save()
         LiveActivities.endAll()
         updateSpeakingStage()
+    }
+
+    /// Puts a done or skipped task back to planned, removing its log and anything it moved forward.
+    func undo(_ task: PlannedTaskRecord) {
+        guard let profile else { return }
+        if task.status == .done {
+            if let id = task.logID, let log = logs.first(where: { $0.id == id }) {
+                context.delete(log)
+            }
+            if let id = task.writingID,
+               let entry = try? context.fetch(FetchDescriptor<WritingEntry>(predicate: #Predicate { $0.id == id })).first {
+                context.delete(entry)
+            }
+            if let data = task.progressBefore, let before = try? JSONDecoder().decode(SourceProgress.self, from: data) {
+                var progress = profile.sourceProgress
+                progress.undo(task.task, before: before)
+                profile.sourceProgress = progress
+            }
+            if let section = task.duolingoSectionBefore, let unit = task.duolingoUnitBefore {
+                profile.duolingoSection = section
+                profile.duolingoUnit = unit
+            }
+        }
+        task.status = .planned
+        task.startedAt = nil
+        task.logID = nil
+        task.writingID = nil
+        task.progressBefore = nil
+        task.duolingoSectionBefore = nil
+        task.duolingoUnitBefore = nil
+        save()
     }
 
     func logBonusInput(minutes: Int) {
@@ -268,6 +316,23 @@ final class AppModel {
         log.isBonus = true
         context.insert(log)
         save()
+    }
+
+    var bonusLogsToday: [ActivityLog] {
+        logs.filter { $0.isBonus && calendar.isDateInToday($0.date) }
+    }
+
+    func delete(_ log: ActivityLog) {
+        context.delete(log)
+        save()
+    }
+
+    /// Card subtitle: the planner's detail, or the learner's Duolingo position for the warm-up.
+    func detailText(for task: PlannedTaskRecord) -> String? {
+        if task.task == .duoLesson, let profile {
+            return "Section \(profile.duolingoSection) · Unit \(profile.duolingoUnit)"
+        }
+        return TaskCopy.detail(task.detail)
     }
 
     func acceptDifficultySuggestion() {

@@ -17,6 +17,7 @@ struct TodayView: View {
                     } else {
                         budgetPrompt
                     }
+                    bonusSection
                     Button {
                         showingBonus = true
                     } label: {
@@ -158,16 +159,56 @@ struct TodayView: View {
                     .foregroundStyle(Palette.secondaryText)
             }
             ForEach(tasks) { task in
-                TaskCardView(task: task) {
+                TaskCardView(task: task, detail: model.detailText(for: task)) {
                     if task.status != .active { model.start(task) }
                     openTask = task
                 } onSkip: {
                     withAnimation { model.skip(task) }
+                } onUndo: {
+                    withAnimation { model.undo(task) }
                 }
                 .transition(.asymmetric(insertion: .move(edge: .bottom).combined(with: .opacity), removal: .opacity))
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: tasks.map(\.statusRaw))
+    }
+}
+
+extension TodayView {
+    /// Extra listening logged today, each with an undo.
+    @ViewBuilder
+    var bonusSection: some View {
+        let logs = model.bonusLogsToday
+        if !logs.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Extra listening today")
+                    .font(.rounded(.headline, weight: .black))
+                    .foregroundStyle(Palette.ink)
+                ForEach(logs) { log in
+                    HStack {
+                        Image(systemName: "ear.fill").foregroundStyle(Palette.coral)
+                        Text("\(log.minutes) min")
+                            .font(.rounded(.body, weight: .bold))
+                            .foregroundStyle(Palette.ink)
+                        Text(log.date.formatted(date: .omitted, time: .shortened))
+                            .font(.rounded(.subheadline, weight: .medium))
+                            .foregroundStyle(Palette.secondaryText)
+                        Spacer()
+                        Button {
+                            withAnimation { model.delete(log) }
+                        } label: {
+                            Label("Undo", systemImage: "arrow.uturn.backward")
+                                .font(.rounded(.subheadline, weight: .heavy))
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Palette.secondaryText)
+                    }
+                    .padding(12)
+                    .background(RoundedRectangle(cornerRadius: 14).fill(Palette.card))
+                    .transition(.opacity)
+                }
+            }
+        }
     }
 }
 
@@ -210,8 +251,10 @@ struct BannerCard<Actions: View>: View {
 
 struct TaskCardView: View {
     let task: PlannedTaskRecord
+    let detail: String?
     let onStart: () -> Void
     let onSkip: () -> Void
+    let onUndo: () -> Void
 
     var body: some View {
         let kind = task.task
@@ -220,13 +263,20 @@ struct TaskCardView: View {
         RaisedCard(accent: color) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
-                    Image(systemName: finished ? (task.status == .done ? "checkmark" : "forward.fill") : TaskCopy.symbol(for: kind))
-                        .font(.title3.weight(.bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 46, height: 46)
-                        .background(Circle().fill(finished ? Palette.secondaryText.opacity(0.5) : color))
-                        .background(Circle().fill(color.edge()).offset(y: 3).opacity(finished ? 0 : 1))
-                        .contentTransition(.symbolEffect(.replace))
+                    Button {
+                        if finished { onUndo() }
+                    } label: {
+                        Image(systemName: finished ? (task.status == .done ? "checkmark" : "forward.fill") : TaskCopy.symbol(for: kind))
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 46, height: 46)
+                            .background(Circle().fill(finished ? Palette.secondaryText.opacity(0.5) : color))
+                            .background(Circle().fill(color.edge()).offset(y: 3).opacity(finished ? 0 : 1))
+                            .contentTransition(.symbolEffect(.replace))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!finished)
+                    .accessibilityLabel(finished ? "Undo" : TaskCopy.title(for: kind))
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 6) {
                             Text(TaskCopy.title(for: kind))
@@ -238,16 +288,25 @@ struct TaskCardView: View {
                             }
                         }
                         .foregroundStyle(Palette.ink)
-                        if let detail = TaskCopy.detail(task.detail) {
+                        if let detail {
                             Text(detail)
                                 .font(.rounded(.subheadline, weight: .semibold))
                                 .foregroundStyle(Palette.secondaryText)
                         }
                     }
                     Spacer()
-                    Text(TaskCopy.minutesLabel(task.minutesPlanned))
-                        .font(.rounded(.subheadline, weight: .heavy))
-                        .foregroundStyle(color)
+                    if finished {
+                        Button(action: onUndo) {
+                            Label("Undo", systemImage: "arrow.uturn.backward")
+                                .font(.rounded(.subheadline, weight: .heavy))
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Palette.secondaryText)
+                    } else {
+                        Text(TaskCopy.minutesLabel(task.minutesPlanned))
+                            .font(.rounded(.subheadline, weight: .heavy))
+                            .foregroundStyle(color)
+                    }
                 }
                 if !task.prompt.isEmpty && !finished {
                     Text(task.prompt)

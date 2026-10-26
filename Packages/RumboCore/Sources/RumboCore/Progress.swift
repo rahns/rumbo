@@ -83,14 +83,34 @@ public struct Projection: Sendable {
         self.calendar = calendar
     }
 
+    /// Days of history needed before the forecast uses the learner's own pace.
+    public static let minimumDaysOfHistory = 7
+
     /// Input hours per week, averaged over the last 4 weeks (bonus input included).
+    /// A newer learner's average covers only the days since their first log, so one short
+    /// session on day one isn't read as a pace kept up for a month.
     public func weeklyInputHours(history: [ActivityRecord], today: Date) -> Double {
         let end = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: today)!)
-        let start = calendar.date(byAdding: .day, value: -7 * Self.averagingWeeks, to: end)!
+        let windowStart = calendar.date(byAdding: .day, value: -7 * Self.averagingWeeks, to: end)!
+        guard let firstLog = history.map(\.date).min() else { return 0 }
+        let start = max(windowStart, calendar.startOfDay(for: firstLog))
+        let days = max(Double(Self.minimumDaysOfHistory), Double(calendar.dateComponents([.day], from: start, to: end).day ?? 0))
         let minutes = history
             .filter { $0.kind.countsAsInput && $0.date >= start && $0.date < end }
             .reduce(0) { $0 + $1.minutes }
-        return Double(minutes) / 60 / Double(Self.averagingWeeks)
+        return Double(minutes) / 60 / days * 7
+    }
+
+    /// Whether there's enough history for `weeklyInputHours` to mean something.
+    public func hasEnoughHistory(_ history: [ActivityRecord], today: Date) -> Bool {
+        guard let firstLog = history.map(\.date).min() else { return false }
+        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: firstLog), to: calendar.startOfDay(for: today)).day ?? 0
+        return days + 1 >= Self.minimumDaysOfHistory
+    }
+
+    /// The pace a learner would keep by meeting their weekly goal, used until there's a week of history.
+    public static func weeklyInputHours(atGoalMinutes goal: Int, band: Band) -> Double {
+        Double(goal) * (band.strandTargets[.input] ?? 0) / 60
     }
 
     /// The date each remaining band threshold is reached at `weeklyHours`, or nil if the pace is zero.

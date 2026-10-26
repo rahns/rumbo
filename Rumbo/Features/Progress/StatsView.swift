@@ -50,18 +50,25 @@ struct StatsView: View {
 
     private func projectionCard(_ profile: LearnerProfile) -> some View {
         let projection = Projection()
-        let weekly = projection.weeklyInputHours(history: model.history, today: .now)
+        let history = model.history
+        // Until there's a week of history, forecast at the weekly goal rather than from one or two sessions.
+        let ownPace = projection.hasEnoughHistory(history, today: .now)
+        let weekly = ownPace
+            ? projection.weeklyInputHours(history: history, today: .now)
+            : Projection.weeklyInputHours(atGoalMinutes: profile.weeklyGoalMinutes, band: profile.band)
         let arrivals = projection.arrivalDates(inputHours: model.inputHours, weeklyHours: weekly, from: .now)
         return RaisedCard(accent: Palette.sky) {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Where you're heading")
                     .font(.rounded(.headline, weight: .black))
                     .foregroundStyle(Palette.ink)
-                Text(String(format: "%.1f hours of input a week (last 4 weeks)", weekly))
+                Text(ownPace
+                     ? String(format: "%.1f hours of input a week, your recent pace", weekly)
+                     : String(format: "%.1f hours of input a week if you meet your weekly goal. Your own pace takes over after a week.", weekly))
                     .font(.rounded(.subheadline, weight: .semibold))
                     .foregroundStyle(Palette.secondaryText)
                 if arrivals.isEmpty {
-                    Text("Log a few sessions and Rumbo will forecast when you reach each level.")
+                    Text("Log some listening and Rumbo will forecast when you reach each level.")
                         .font(.rounded(.subheadline, weight: .medium))
                         .foregroundStyle(Palette.secondaryText)
                 } else {
@@ -108,22 +115,39 @@ struct StatsView: View {
     }
 
     private func coursesCard(_ profile: LearnerProfile) -> some View {
-        RaisedCard(accent: Palette.leaf) {
+        let sources = profile.enabledSources
+        return RaisedCard(accent: Palette.leaf) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Courses")
+                Text("Your sources")
                     .font(.rounded(.headline, weight: .black))
                     .foregroundStyle(Palette.ink)
-                if profile.enabledSources.contains(.languageTransfer) {
+                if sources.contains(.dreamingSpanish) {
+                    infoRow("Dreaming Spanish", "\(Int(model.inputHours)) h · videos \(profile.dsDifficultyLow)–\(profile.dsDifficultyHigh)")
+                }
+                if sources.contains(.languageTransfer) {
                     courseRow("Language Transfer", done: profile.languageTransferLastTrack, total: Course.languageTransferTracks, unit: "tracks")
                 }
-                if profile.enabledSources.contains(.extraEnEspanol) {
+                if sources.contains(.duolingo) {
+                    infoRow("Duolingo", "Section \(profile.duolingoSection) · Unit \(profile.duolingoUnit)")
+                }
+                if sources.contains(.extraEnEspanol) {
                     courseRow("Extra en Español", done: profile.extraEpisodesWatched, total: Course.extraEpisodes, unit: "episodes")
                 }
-                Text("Speaking stage: \(stageName(profile.speakingStage))")
-                    .font(.rounded(.subheadline, weight: .semibold))
-                    .foregroundStyle(Palette.secondaryText)
+                if sources.contains(.tandem) {
+                    infoRow("Tandem", "Speaking stage: \(stageName(profile.speakingStage))")
+                }
             }
         }
+    }
+
+    private func infoRow(_ title: String, _ value: String) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Text(value).foregroundStyle(Palette.secondaryText)
+        }
+        .font(.rounded(.subheadline, weight: .bold))
+        .foregroundStyle(Palette.ink)
     }
 
     private func courseRow(_ title: String, done: Int, total: Int, unit: String) -> some View {

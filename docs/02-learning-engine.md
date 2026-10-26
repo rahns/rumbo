@@ -157,6 +157,6 @@ Over the last 5 ratings at the current difficulty: 3 or more "Easy" → suggest 
 
 ## 2.9 Projection
 
-Weekly input hours = 4-week rolling average, including bonus input. Rumbo projects a date for each remaining band threshold and shows it against the learner's target date ("At this pace you'll reach B1.2 by March 2028. +10 min/day → December 2027").
+Weekly input hours = rolling average over the last 4 weeks, including bonus input. For a newer learner the average covers only the days since their first log (at least 7), so one short first session isn't read as a month-long pace. Until there's a week of history, the forecast assumes the learner meets their weekly goal (goal minutes × the band's input share). Rumbo projects a date for each remaining band threshold and shows it against the learner's target date ("At this pace you'll reach B1.2 by March 2028. +10 min/day → December 2027").
 
 Example (the author, at the time of writing): 154 h. At ~18 min/day of input → ~110 h/year → about 400–450 h by mid-2028 (B1). Logging an extra 30 min/day of outside listening → about 650 h (B2.1).

@@ -32,12 +32,10 @@ enum CheckStatus: Equatable {
 
 enum CheckID: String, CaseIterable, Identifiable {
     case profile = "Signing profile"
-    case appGroup = "App Group (widgets)"
     case keychainShare = "Keychain sharing (widgets fallback)"
     case liveActivities = "Live Activities"
     case notifications = "Notifications"
     case onDeviceModel = "Apple on-device model"
-    case cloudModel = "Apple cloud model (PCC)"
     case languageTool = "LanguageTool"
     case urlSchemes = "Source apps installed"
 
@@ -63,15 +61,11 @@ final class DiagnosticsModel {
 
         results[.profile] = checkProfile()
         let ping = SharedStore.writePing()
-        results[.appGroup] = checkAppGroup(written: ping.appGroup)
         results[.keychainShare] = checkKeychainShare(status: ping.keychain)
         WidgetCenter.shared.reloadAllTimelines()
         results[.liveActivities] = checkLiveActivities()
         results[.notifications] = await checkNotifications()
         results[.onDeviceModel] = checkOnDeviceModel()
-        results[.cloudModel] = CloudModelProbe.isAvailable
-            ? .warn("Reports available, but requests crash a sideloaded build (needs Apple's managed entitlement). Not used.")
-            : .fail("Not available")
         results[.languageTool] = await checkLanguageTool()
         results[.urlSchemes] = checkURLSchemes()
     }
@@ -92,12 +86,6 @@ final class DiagnosticsModel {
         text += "\nKeychain groups: \(keychainGroups.isEmpty ? "none" : keychainGroups)"
         text += "\nBundle ID: \(Bundle.main.bundleIdentifier ?? "?")"
         return .pass(text)
-    }
-
-    private func checkAppGroup(written: Bool) -> CheckStatus {
-        written
-            ? .pass("Shared container works. The diagnostics widget should show a ✓ for Group.")
-            : .fail("App Group container unavailable.")
     }
 
     private func checkKeychainShare(status: OSStatus) -> CheckStatus {
