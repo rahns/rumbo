@@ -59,6 +59,16 @@ extension Strand {
         }
     }
 
+    /// Light-mode colour as hex, for places that can't use dynamic colours (the Live Activity, widgets).
+    var hex: UInt32 {
+        switch self {
+        case .input: 0xF25C4A
+        case .output: 0x2FA6EE
+        case .languageFocused: 0x5BC236
+        case .fluency: 0xFFBE1A
+        }
+    }
+
     var label: String {
         switch self {
         case .input: "Listen"

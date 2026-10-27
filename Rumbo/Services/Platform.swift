@@ -6,27 +6,66 @@ import UserNotifications
 
 /// The task timer on the Lock Screen and in the Dynamic Island.
 enum LiveActivities {
+    /// A forgotten timer greys out this long after its planned end.
+    static let staleAfter: TimeInterval = 30 * 60
+
+    /// Shows the timer for `task` (replacing any other), picking up its elapsed time and pause state.
     static func start(task: PlannedTaskRecord) {
-        endAll()
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-        let now = Date.now
         let attributes = RumboTimerAttributes(
             taskTitle: TaskCopy.title(for: task.task),
-            sourceSymbol: TaskCopy.symbol(for: task.task)
+            sourceSymbol: TaskCopy.symbol(for: task.task),
+            colorHex: task.task.strand.hex
         )
-        let state = RumboTimerAttributes.ContentState(
-            startedAt: now,
-            endsAt: now.addingTimeInterval(Double(task.minutesPlanned * 60))
-        )
-        _ = try? Activity.request(attributes: attributes, content: .init(state: state, staleDate: nil))
+        let content = self.content(for: task)
+        Task {
+            await endAllNow()
+            guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+            _ = try? Activity.request(attributes: attributes, content: content)
+        }
+    }
+
+    /// Refreshes the running timer after a pause or resume.
+    static func update(task: PlannedTaskRecord) {
+        let content = self.content(for: task)
+        Task {
+            for activity in Activity<RumboTimerAttributes>.activities {
+                await activity.update(content)
+            }
+        }
     }
 
     static func endAll() {
-        Task {
-            for activity in Activity<RumboTimerAttributes>.activities {
-                await activity.end(nil, dismissalPolicy: .immediate)
-            }
+        Task { await endAllNow() }
+    }
+
+    static func endAllNow() async {
+        for activity in Activity<RumboTimerAttributes>.activities {
+            await activity.end(nil, dismissalPolicy: .immediate)
         }
+    }
+
+    /// For app termination: waits (briefly) until the timers are gone, since the process is about to end.
+    static func endAllBlocking() {
+        let done = DispatchSemaphore(value: 0)
+        Task.detached {
+            await endAllNow()
+            done.signal()
+        }
+        _ = done.wait(timeout: .now() + 2)
+    }
+
+    private static func content(for task: PlannedTaskRecord) -> ActivityContent<RumboTimerAttributes.ContentState> {
+        let now = Date.now
+        let elapsed = task.elapsed(at: now)
+        let effectiveStart = now.addingTimeInterval(-elapsed)
+        let endsAt = effectiveStart.addingTimeInterval(Double(task.minutesPlanned * 60))
+        let state = RumboTimerAttributes.ContentState(
+            startedAt: effectiveStart,
+            endsAt: endsAt,
+            isPaused: task.isPaused,
+            pausedElapsed: elapsed
+        )
+        return ActivityContent(state: state, staleDate: max(endsAt, now).addingTimeInterval(staleAfter))
     }
 }
 

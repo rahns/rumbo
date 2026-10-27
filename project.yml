@@ -43,6 +43,9 @@ targets:
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIRequiresFullScreen: true
+        CFBundleURLTypes:
+          - CFBundleURLName: com.rahns.rumbo
+            CFBundleURLSchemes: [rumbo]
         NSSupportsLiveActivities: true
         ITSAppUsesNonExemptEncryption: false
         LSApplicationQueriesSchemes:
@@ -67,6 +70,8 @@ targets:
     sources:
       - path: RumboWidgets
       - path: Shared
+    dependencies:
+      - package: RumboCore
     entitlements:
       path: RumboWidgets/RumboWidgets.entitlements
     info:

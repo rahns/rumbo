@@ -87,12 +87,14 @@ The prompt asks for **at most 8 errors, most important first**, plus one or two 
 
 URL schemes are confirmed during implementation and listed in `LSApplicationQueriesSchemes`. If a scheme doesn't work, Rumbo opens the https link instead.
 
-## 5.5 Timer and Live Activity
+## 5.5 Timer, Live Activity and widgets
 
-- The timer is based on timestamps (start time, accumulated pauses), so it survives the app being backgrounded or killed.
-- Starting a task starts an `ActivityKit` Live Activity. Its content state holds task name, source, strand color, start date and target minutes. The countdown uses `Text(timerInterval:)`, so no push updates are needed.
-- Pause and Done buttons are `LiveActivityIntent`s that update the shared timer state.
-- Widgets read today's plan from a small JSON snapshot in the App Group container, written by the app whenever the plan changes, then reload timelines.
+- The timer is based on timestamps: `startedAt`, plus `pausedAt` / `pausedSeconds` for pauses, so it survives the app being backgrounded or killed.
+- The Live Activity's state carries an *effective* start (now − elapsed) so `Text(timerInterval:)` counts correctly after pauses, plus the paused flag and frozen elapsed time. Its stale date is the planned end + 30 minutes.
+- Pause/Resume is a `LiveActivityIntent` (`Shared/TimerIntents.swift`). It runs in the app's process; the app registers the handler at launch. Done is a `rumbo://finish` link the app opens to the active task's log screen.
+- Ending timers: on leaving the task screen, on logging or cancelling, on `willTerminate` (waiting up to 2 s, since the process is ending), and on every launch.
+- Widgets read `WidgetSnapshot` (`Shared/WidgetSnapshot.swift`), JSON in the Keychain's default access group with the App Group as a fallback. The app rewrites it after every save, only when it changed, and reloads widget timelines.
+- Pico's drawing and the palette live in `Shared/` so the widget extension can draw them (widgets use a still Pico).
 
 ## 5.6 CI: unsigned IPA
 

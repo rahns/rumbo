@@ -18,8 +18,10 @@ struct RumboApp: App {
         } catch {
             fatalError("Couldn't open the Rumbo store: \(error)")
         }
-        _model = State(initialValue: AppModel(context: container.mainContext))
+        let appModel = AppModel(context: container.mainContext)
+        _model = State(initialValue: appModel)
         UNUserNotificationCenter.current().delegate = NotificationPresenter.shared
+        TimerControl.togglePause = { appModel.togglePause() }
     }
 
     var body: some Scene {
@@ -60,15 +62,26 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
             model.save()
         }
+        // Quitting the app takes the task timer off the Lock Screen and Dynamic Island.
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willTerminateNotification)) { _ in
+            LiveActivities.endAllBlocking()
+        }
+        .onOpenURL { model.handle($0) }
     }
 }
 
 struct MainTabView: View {
+    @Environment(AppModel.self) private var model
+
     var body: some View {
+        @Bindable var model = model
         TabView {
             Tab("Path", systemImage: "point.topleft.down.to.point.bottomright.curvepath.fill") { PathView() }
             Tab("Progress", systemImage: "chart.line.uptrend.xyaxis") { StatsView() }
             Tab("Settings", systemImage: "gearshape.fill") { SettingsView() }
+        }
+        .fullScreenCover(item: $model.finishingTask) { task in
+            TaskSessionView(task: task, startLogging: true)
         }
     }
 }

@@ -3,6 +3,7 @@ import Network
 import Observation
 import RumboCore
 import SwiftData
+import WidgetKit
 
 /// Connects SwiftData to the RumboCore engine. Views read from it and call its actions.
 @MainActor
@@ -49,6 +50,9 @@ final class AppModel {
         }
         pathMonitor.start(queue: DispatchQueue(label: "rumbo.network"))
         weekStartsOnSunday = profile?.weekStartsOnSunday ?? false
+        // No task screen is open at launch, so any timer still showing is left over from a closed app.
+        LiveActivities.endAll()
+        publishWidgets()
     }
 
     // MARK: - Reading
@@ -290,15 +294,57 @@ final class AppModel {
     func start(_ task: PlannedTaskRecord) {
         task.status = .active
         task.startedAt = .now
+        task.pausedAt = nil
+        task.pausedSeconds = 0
         save()
         LiveActivities.start(task: task)
+    }
+
+    /// Back into a task that was already started: the timer reappears with its elapsed time.
+    func resumeSession(_ task: PlannedTaskRecord) {
+        LiveActivities.start(task: task)
+    }
+
+    /// Leaving the task screen without logging: the task stays started, but its timer goes away.
+    func leaveSession() {
+        LiveActivities.endAll()
     }
 
     func cancelActive(_ task: PlannedTaskRecord) {
         task.status = .planned
         task.startedAt = nil
+        task.pausedAt = nil
+        task.pausedSeconds = 0
         save()
         LiveActivities.endAll()
+    }
+
+    /// The task currently being timed, if any.
+    var activeTask: PlannedTaskRecord? {
+        sessions.reversed().lazy.flatMap(\.sortedTasks).first { $0.status == .active }
+    }
+
+    /// Pause / resume, from the task screen or the Live Activity's button.
+    func togglePause() {
+        guard let task = activeTask else { return }
+        if let pausedAt = task.pausedAt {
+            task.pausedSeconds += Date.now.timeIntervalSince(pausedAt)
+            task.pausedAt = nil
+        } else {
+            task.pausedAt = .now
+        }
+        save()
+        LiveActivities.update(task: task)
+    }
+
+    /// Set by the Live Activity's Done button (rumbo://finish): opens the log screen for the active task.
+    var finishingTask: PlannedTaskRecord?
+
+    func handle(_ url: URL) {
+        guard url.scheme == "rumbo" else { return }
+        if url.host == "finish" {
+            finishingTask = activeTask
+        }
     }
 
     func skip(_ task: PlannedTaskRecord) {
@@ -592,5 +638,39 @@ final class AppModel {
     func save() {
         try? context.save()
         revision += 1
+        publishWidgets()
+    }
+
+    // MARK: - Widgets
+
+    @ObservationIgnored private var lastSnapshot: WidgetSnapshot?
+
+    /// Writes what the widgets show and reloads them, if it changed.
+    func publishWidgets() {
+        guard let profile else { return }
+        let today = calendar.startOfDay(for: .now)
+        let plan = session(for: today)
+        let tasks = (plan?.sortedTasks ?? []).filter { $0.status != .skipped }.map {
+            WidgetSnapshot.TaskLine(title: TaskCopy.title(for: $0.task), symbol: TaskCopy.symbol(for: $0.task),
+                                    minutes: $0.minutesPlanned, done: $0.status == .done, colorHex: $0.task.strand.hex)
+        }
+        let status = streak
+        let mood: String = switch picoMood {
+        case .backpacker: "backpacker"
+        case .sleepy: "sleepy"
+        default: "hovering"
+        }
+        var snapshot = WidgetSnapshot(
+            updated: .now, day: today, streak: status.streak, minutesThisWeek: status.minutesThisWeek,
+            weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.band.label) · \(profile.band.rawValue)",
+            dayComplete: plan?.isComplete ?? false, hasPlan: plan != nil, tasks: tasks, mood: mood
+        )
+        var comparable = snapshot
+        comparable.updated = lastSnapshot?.updated ?? snapshot.updated
+        guard comparable != lastSnapshot else { return }
+        snapshot.updated = .now
+        snapshot.save()
+        lastSnapshot = snapshot
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }

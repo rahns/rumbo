@@ -162,17 +162,26 @@ Every animation respects **Reduce Motion** (switches to fades).
 
 ## 3.6 Widgets and Live Activity
 
+Implemented in `RumboWidgets/`. Widgets read a `WidgetSnapshot` the app writes after every change (streak, this week's minutes and goal, today's tasks, whether the day is complete, Pico's mood), shared through the Keychain's default group. A plan from yesterday never shows today; the timeline refreshes just after midnight. Tapping any widget opens Rumbo.
+
 | Surface | Content |
 |---|---|
-| Small widget | Streak, weekly ring, Pico pose |
-| Medium widget | Today's tasks with checkmarks; tap a task → opens it |
-| Lock Screen (circular/rectangular) | Weekly ring; next task |
-| Live Activity (Lock Screen) | Task name, source icon, elapsed/target time, progress bar, Pause / Done buttons (App Intents) |
-| Dynamic Island compact | Source icon + countdown |
-| Dynamic Island expanded | Task, progress bar, Pause / Done |
-| Dynamic Island minimal | Progress ring |
+| Small widget | Pico (cheering once the day is complete), weekly ring with %, streak, and "Next: …" or "¡Hecho! Day complete" |
+| Medium widget | The same, plus today's tasks with ticks, colour-coded by strand, and minutes |
+| Lock Screen circular | Weekly-goal gauge with the streak number |
+| Lock Screen rectangular | "🔥 5 · 85/150 min", then the next task (or "Day complete ✓") |
+| Lock Screen inline | "🔥 5 · 85/150 min this week" |
+| Live Activity (Lock Screen) | Task icon in its strand colour, title, elapsed time, progress bar, **Pause/Resume** and **Done** |
+| Dynamic Island compact | Task icon (pause icon while paused) + elapsed time |
+| Dynamic Island expanded | Title, elapsed time, progress bar, Pause/Resume and Done |
+| Dynamic Island minimal | Timer (or pause) icon |
 
-The Live Activity ends when the task is logged, or after the planned time + 30 min with a "Still going?" prompt.
+**Timer rules**
+- Starting a task shows the timer; switching to the source app (e.g. Dreaming Spanish) keeps it.
+- **Leaving the task screen** without logging (⌄) removes the timer; the task stays started, and "Continue" brings the timer back with the right elapsed time.
+- **Pause** (in the app or on the Live Activity) freezes the timer everywhere; paused time isn't counted when logging.
+- **Done** on the Live Activity opens Rumbo straight to that task's log screen.
+- **Quitting the app** removes the timer. iOS doesn't always tell an app it's being quit, so Rumbo also clears leftover timers every time it starts, and a forgotten timer is marked stale 30 minutes after its planned end.
 
 ## 3.7 Notifications
 

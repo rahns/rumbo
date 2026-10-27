@@ -42,3 +42,6 @@ Built in 0.1.10, then revised: one node per calendar day with an unmistakable "d
 
 ## M4 status
 Written, not yet built: correction service (LanguageTool + on-device model, merged and capped), guided writing flow (check → highlighted feedback → rewrite → compare), mistake deck (cloze cards from writing, Tandem/manual cards, FSRS review, deck screen on Progress), due cards feeding the planner, rewrites counting toward XP, cards and feedback in backups. Engine: `Mistakes` (merge, cloze cards) with tests (84).
+
+## M5 status
+Written, not yet built: home widgets (small, medium) and Lock Screen widgets (circular, rectangular, inline) from a Keychain-shared snapshot; Live Activity redesign with Pause/Resume (App Intent) and Done (deep link to the log screen); timers removed when leaving a task, on quit and on launch, and marked stale after the planned end + 30 min; pause support in the app timer. Diagnostics widget removed.

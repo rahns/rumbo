@@ -224,7 +224,7 @@ struct TodayView: View {
             }
             ForEach(tasks) { task in
                 TaskCardView(task: task, detail: model.detailText(for: task)) {
-                    if task.status != .active { model.start(task) }
+                    if task.status == .active { model.resumeSession(task) } else { model.start(task) }
                     openTask = task
                 } onSkip: {
                     withAnimation { model.skip(task) }

@@ -6,6 +6,8 @@ import UIKit
 /// Doing one task: instructions, a timer, a link into the source app, then logging.
 struct TaskSessionView: View {
     let task: PlannedTaskRecord
+    /// Opened from the Live Activity's Done button: go straight to logging.
+    var startLogging = false
 
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
@@ -44,6 +46,9 @@ struct TaskSessionView: View {
             bottomBar
         }
         .background(Palette.background.ignoresSafeArea())
+        .onAppear {
+            if startLogging && !logging { beginLogging() }
+        }
     }
 
     // MARK: Pieces
@@ -51,6 +56,8 @@ struct TaskSessionView: View {
     private var topBar: some View {
         HStack {
             Button {
+                // Leaving without logging: the task stays started, but its timer leaves the Dynamic Island.
+                model.leaveSession()
                 dismiss()
             } label: {
                 Image(systemName: "chevron.down")
@@ -101,8 +108,15 @@ struct TaskSessionView: View {
 
     private var sessionBody: some View {
         VStack(alignment: .leading, spacing: 18) {
-            TimerDial(startedAt: task.startedAt ?? .now, plannedMinutes: task.minutesPlanned, color: color)
+            TimerDial(task: task, color: color)
                 .frame(maxWidth: .infinity)
+            Button {
+                model.togglePause()
+            } label: {
+                Label(task.isPaused ? "Resume" : "Pause", systemImage: task.isPaused ? "play.fill" : "pause.fill")
+            }
+            .buttonStyle(ChunkySecondaryButtonStyle(fullWidth: false))
+            .frame(maxWidth: .infinity)
             Text(TaskCopy.instructions(for: kind, detail: task.detail, band: model.profile?.band ?? .a2_1))
                 .font(.rounded(.body, weight: .medium))
                 .foregroundStyle(Palette.ink)
@@ -244,7 +258,7 @@ struct TaskSessionView: View {
     // MARK: Actions
 
     private func beginLogging() {
-        let elapsed = Date.now.timeIntervalSince(task.startedAt ?? .now) / 60
+        let elapsed = task.elapsed() / 60
         minutes = max(1, Int(elapsed.rounded()))
         if elapsed < 1 { minutes = task.minutesPlanned }
         duolingoSection = model.profile?.duolingoSection ?? 1
@@ -268,15 +282,16 @@ struct TaskSessionView: View {
     }
 }
 
-/// Big circular timer counting up against the planned minutes.
+/// Big circular timer counting up against the planned minutes; freezes while paused.
 struct TimerDial: View {
-    let startedAt: Date
-    let plannedMinutes: Int
+    let task: PlannedTaskRecord
     let color: Color
 
+    private var plannedMinutes: Int { task.minutesPlanned }
+
     var body: some View {
-        TimelineView(.periodic(from: startedAt, by: 1)) { context in
-            let elapsed = max(0, context.date.timeIntervalSince(startedAt))
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let elapsed = task.elapsed(at: context.date)
             let progress = elapsed / Double(max(plannedMinutes * 60, 1))
             ZStack {
                 Circle().stroke(Palette.lilac, lineWidth: 16)
@@ -290,9 +305,9 @@ struct TimerDial: View {
                         .font(.system(size: 44, weight: .black, design: .rounded).monospacedDigit())
                         .foregroundStyle(Palette.ink)
                         .contentTransition(.numericText())
-                    Text("of \(plannedMinutes) min")
+                    Text(task.isPaused ? "Paused" : "of \(plannedMinutes) min")
                         .font(.rounded(.subheadline, weight: .bold))
-                        .foregroundStyle(Palette.secondaryText)
+                        .foregroundStyle(task.isPaused ? Palette.coral : Palette.secondaryText)
                 }
             }
             .frame(width: 200, height: 200)

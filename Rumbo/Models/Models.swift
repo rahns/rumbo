@@ -148,6 +148,9 @@ import SwiftData
     var prompt: String = ""
     var statusRaw: String = TaskStatus.planned.rawValue
     var startedAt: Date?
+    /// Set while the timer is paused; `pausedSeconds` is the total of earlier pauses.
+    var pausedAt: Date?
+    var pausedSeconds: Double = 0
     var plan: DayPlanRecord?
 
     // Set when the task is completed, so the completion can be undone.
@@ -168,6 +171,15 @@ import SwiftData
 
     var task: TaskKind { TaskKind(rawValue: taskRaw) ?? .dsWatch }
     var detail: TaskDetail { TaskDetailCoding.decode(detailRaw) }
+
+    var isPaused: Bool { pausedAt != nil }
+
+    /// Seconds on the clock, not counting pauses.
+    func elapsed(at now: Date = .now) -> TimeInterval {
+        guard let startedAt else { return 0 }
+        let end = pausedAt ?? now
+        return max(0, end.timeIntervalSince(startedAt) - pausedSeconds)
+    }
 
     var status: TaskStatus {
         get { TaskStatus(rawValue: statusRaw) ?? .planned }
