@@ -34,6 +34,8 @@ import SwiftData
     /// Level-up gates (§2.1): passes count toward XP; a failed check waits 14 days.
     var gatesPassed: Int = 0
     var lastFailedGate: Date?
+    /// Weeks (weekly goal, freezes, budget advice) start on Sunday instead of Monday.
+    var weekStartsOnSunday: Bool = false
 
     init() {}
 

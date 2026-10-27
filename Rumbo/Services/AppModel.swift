@@ -9,7 +9,21 @@ import SwiftData
 @Observable
 final class AppModel {
     let context: ModelContext
-    let calendar = Calendar.current
+    /// The user's calendar, with the week starting on the day they chose (Monday by default).
+    var calendar: Calendar {
+        var calendar = Calendar.current
+        calendar.firstWeekday = weekStartsOnSunday ? 1 : 2
+        return calendar
+    }
+
+    /// Mirrors the profile setting; read directly so `calendar` doesn't fetch the profile each time.
+    private(set) var weekStartsOnSunday = false
+
+    func setWeekStartsOnSunday(_ value: Bool) {
+        profile?.weekStartsOnSunday = value
+        weekStartsOnSunday = value
+        save()
+    }
     private(set) var isOnline = true
     /// Bumped after every change so views depending on fetched data refresh.
     private(set) var revision = 0
@@ -34,6 +48,7 @@ final class AppModel {
             Task { @MainActor in self?.isOnline = path.status == .satisfied }
         }
         pathMonitor.start(queue: DispatchQueue(label: "rumbo.network"))
+        weekStartsOnSunday = profile?.weekStartsOnSunday ?? false
     }
 
     // MARK: - Reading
@@ -149,6 +164,7 @@ final class AppModel {
         let profile = LearnerProfile()
         draft.apply(to: profile)
         context.insert(profile)
+        weekStartsOnSunday = profile.weekStartsOnSunday
         save()
         refreshReminders()
     }
@@ -157,6 +173,7 @@ final class AppModel {
         LiveActivities.endAll()
         Reminders.cancel()
         deleteAll()
+        weekStartsOnSunday = false
         save()
     }
 
@@ -203,6 +220,7 @@ final class AppModel {
         deleteAll()
         let profile = file.profile.makeProfile()
         context.insert(profile)
+        weekStartsOnSunday = profile.weekStartsOnSunday
         for log in file.logs {
             context.insert(log.makeLog())
         }

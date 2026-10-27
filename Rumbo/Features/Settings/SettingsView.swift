@@ -125,6 +125,13 @@ struct SettingsView: View {
             Picker("Weekly goal", selection: binding(get: { profile.weeklyGoalMinutes }, set: { profile.weeklyGoalMinutes = $0 })) {
                 ForEach(OnboardingDraft.weeklyGoals, id: \.self) { Text("\($0) min").tag($0) }
             }
+            Picker("Week starts on", selection: Binding(
+                get: { profile.weekStartsOnSunday },
+                set: { model.setWeekStartsOnSunday($0) }
+            )) {
+                Text("Monday").tag(false)
+                Text("Sunday").tag(true)
+            }
             Toggle("Daily reminder", isOn: binding(
                 get: { profile.reminderEnabled },
                 set: { on in

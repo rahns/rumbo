@@ -179,3 +179,28 @@ import Testing
         #expect(advice.recommended == 10)
     }
 }
+
+@Suite struct WeekStartTests {
+    func calendar(firstWeekday: Int) -> Calendar {
+        var calendar = TestCalendar.utc
+        calendar.firstWeekday = firstWeekday
+        return calendar
+    }
+
+    // 1 Nov 2026 is a Sunday.
+    let sunday = TestCalendar.day(2026, 11, 1)
+
+    @Test func sundayStartMakesSundayTheFirstDayOfTheWeek() {
+        #expect(BudgetAdvisor.advice(weeklyGoal: 140, minutesThisWeek: 0, today: sunday, calendar: calendar(firstWeekday: 1)).daysLeft == 7)
+        #expect(BudgetAdvisor.advice(weeklyGoal: 140, minutesThisWeek: 0, today: sunday, calendar: calendar(firstWeekday: 2)).daysLeft == 1)
+    }
+
+    @Test func weeklyMinutesResetOnTheChosenDay() {
+        let saturday = TestCalendar.adding(days: -1, to: sunday)
+        let history = [ActivityRecord(date: saturday, kind: .dsWatch, minutes: 30)]
+        let sundayStart = StreakCalculator(weeklyGoalMinutes: 150, calendar: calendar(firstWeekday: 1)).status(history: history, today: sunday)
+        let mondayStart = StreakCalculator(weeklyGoalMinutes: 150, calendar: calendar(firstWeekday: 2)).status(history: history, today: sunday)
+        #expect(sundayStart.minutesThisWeek == 0, "Saturday belongs to last week when weeks start on Sunday")
+        #expect(mondayStart.minutesThisWeek == 30)
+    }
+}
