@@ -133,7 +133,7 @@ Over an irregular fortnight (15/45/20/30/10/45/30, twice) at A2.1 the planner gi
 
 ## 2.6 Keeping input comprehensible
 
-After every input session the learner rates comprehension in one tap (R3):
+After every Dreaming Spanish session (`ds.watch`) the learner rates comprehension in one tap (R3). It isn't asked for easy videos (they should feel easy) or Extra, since nothing uses it there:
 
 | Rating | Meaning |
 |---|---|

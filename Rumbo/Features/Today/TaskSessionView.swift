@@ -184,23 +184,28 @@ struct TaskSessionView: View {
 
     private var logForm: some View {
         VStack(alignment: .leading, spacing: 18) {
-            RaisedCard {
-                NumberStepper(title: "Minutes spent", value: $minutes, range: 1...240, step: 1)
+            VStack(alignment: .leading, spacing: 6) {
+                RaisedCard {
+                    NumberStepper(title: "Minutes spent", value: $minutes, range: 1...240, step: 1)
+                }
+                explanation(kind.countsAsInput
+                            ? "Counts toward your weekly goal, streak and level hours."
+                            : "Counts toward your weekly goal and streak.")
             }
-            switch kind.strand {
-            case .input where kind != .contentWatch:
-                question("How much did you understand?") {
+            // Only questions whose answers change something are asked (docs/03-experience.md §3.3).
+            if kind == .dsWatch {
+                question("How much did you understand?",
+                         explanation: "Rumbo looks at your last 5 answers: mostly \"Lost\" suggests easier videos, mostly \"Easy\" suggests harder ones.") {
                     ChoiceRow(options: [
                         (ComprehensionTuner.Rating.lost, "😵", "Lost"),
                         (.mostly, "🙂", "Mostly"),
                         (.easy, "😎", "Easy"),
                     ], selection: $comprehension)
                 }
-            default:
-                EmptyView()
             }
             if kind == .ltTrack {
-                question("How did that track feel?") {
+                question("How did that track feel?",
+                         explanation: "\"Shaky\" plans this track again next time (once); \"Solid\" moves on to the next one.") {
                     ChoiceRow(options: [
                         (SourceProgress.TrackRating.solid, "💪", "Solid"),
                         (.shaky, "🤔", "Shaky, repeat it"),
@@ -208,7 +213,8 @@ struct TaskSessionView: View {
                 }
             }
             if kind == .duoLesson {
-                question("Where are you in Duolingo now?") {
+                question("Where are you in Duolingo now?",
+                         explanation: "Keeps your place up to date, so the warm-up card shows where to pick up.") {
                     RaisedCard {
                         VStack(spacing: 10) {
                             NumberStepper(title: "Section", value: $duolingoSection, range: 1...10, step: 1)
@@ -217,10 +223,13 @@ struct TaskSessionView: View {
                     }
                 }
             }
-            if kind.isTandemExchange {
-                question("How did it feel?") {
+            if kind == .tandemText {
+                question("How did it feel?",
+                         explanation: "Voice notes unlock once texting feels comfortable: your latest message needs to be Easy or OK.") {
                     ChoiceRow(options: [("easy", "😎", "Easy"), ("ok", "🙂", "OK"), ("hard", "😬", "Hard")], selection: $tandemFeeling)
                 }
+            }
+            if kind.isTandemExchange {
                 Button {
                     addingCorrection = true
                 } label: {
@@ -235,13 +244,22 @@ struct TaskSessionView: View {
         }
     }
 
-    private func question<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+    private func question<Content: View>(_ title: String, explanation text: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(.rounded(.headline, weight: .heavy))
                 .foregroundStyle(Palette.ink)
             content()
+            explanation(text)
         }
+    }
+
+    /// Small print under a question: what Rumbo does with the answer.
+    private func explanation(_ text: String) -> some View {
+        Label(text, systemImage: "info.circle")
+            .font(.rounded(.caption, weight: .semibold))
+            .foregroundStyle(Palette.secondaryText)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private var bottomBar: some View {
@@ -261,7 +279,7 @@ struct TaskSessionView: View {
     private var canSave: Bool {
         switch kind {
         case .ltTrack: trackRating != nil
-        case .dsWatch, .dsEasy, .extraIntensive, .extraExtensive: comprehension != nil
+        case .dsWatch: comprehension != nil
         default: true
         }
     }

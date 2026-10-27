@@ -106,7 +106,7 @@ Intro → the next band's 10 can-do statements one at a time → ≥ 7 "¡Sí!" 
 ### Task flow
 1. Tap **Start** → timer starts, Live Activity appears in the Dynamic Island, the source opens via deep link.
 2. Come back to Rumbo → "Done?" sheet with the timer's minutes pre-filled and adjustable.
-3. Quick rating: comprehension (input), "solid / shaky" (Language Transfer), or nothing.
+3. Quick rating, asked only where the answer changes something, each with small print saying what it does: comprehension after Dreaming Spanish (tunes the difficulty range), "solid / shaky" after Language Transfer (shaky repeats the track once), Easy / OK / Hard after a Tandem text message (Easy or OK on the latest one is needed to unlock voice notes), and the Duolingo position after the warm-up. Easy Dreaming, Extra, voice notes and calls ask nothing beyond minutes.
 4. Card flips to complete, Pico cheers, XP counts up, haptic success.
 
 ### Writing
