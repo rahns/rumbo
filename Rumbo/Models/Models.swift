@@ -130,18 +130,25 @@ import SwiftData
         self.bandRaw = band.rawValue
     }
 
+    /// Every task, the day's plan and any "Keep going" extras, in order.
     var sortedTasks: [PlannedTaskRecord] {
         (tasks ?? []).sorted { $0.order < $1.order }
     }
 
+    /// The tasks planned for the chosen time, without extras.
+    var planTasks: [PlannedTaskRecord] { sortedTasks.filter { !$0.isExtra } }
+
+    /// Tasks added from "Keep going" after the plan was complete.
+    var extraTasks: [PlannedTaskRecord] { sortedTasks.filter(\.isExtra) }
+
     /// Something has been done (or is underway), so the budget is fixed.
     var hasStarted: Bool {
-        sortedTasks.contains { $0.status == .done || $0.status == .active }
+        planTasks.contains { $0.status == .done || $0.status == .active }
     }
 
-    /// Every card is done or skipped, and at least one was done.
+    /// Every planned card is done or skipped, and at least one was done. Extras don't count.
     var isComplete: Bool {
-        let tasks = sortedTasks
+        let tasks = planTasks
         return !tasks.isEmpty
             && tasks.allSatisfy { $0.status == .done || $0.status == .skipped }
             && tasks.contains { $0.status == .done }
@@ -153,6 +160,8 @@ import SwiftData
     var order: Int = 0
     var minutesPlanned: Int = 0
     var isAnchor: Bool = false
+    /// Added from "Keep going" after the day's plan was complete.
+    var isExtra: Bool = false
     /// Encoded `TaskDetail`, e.g. "lt:13", "extra:2:1", "ds:40:48".
     var detailRaw: String = ""
     /// The prompt shown for output tasks, fixed when the plan is made.

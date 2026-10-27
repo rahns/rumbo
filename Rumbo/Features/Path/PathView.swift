@@ -2,7 +2,8 @@ import RumboCore
 import SwiftUI
 
 /// Home: a winding path with one node per calendar day, in units of 7, running on into the future
-/// with projected level-ups. Finishing today opens tomorrow early. See docs/03-experience.md §3.4 "Path".
+/// with projected level-ups. Extra practice after today is done happens on Today ("Keep going").
+/// See docs/03-experience.md §3.4 "Path".
 struct PathView: View {
     @Environment(AppModel.self) private var model
     @Namespace private var zoom
@@ -105,7 +106,7 @@ struct PathView: View {
     @ViewBuilder
     private func nodeRow(_ node: PathNode, todayDone: Bool) -> some View {
         let offset = xOffset(node.number)
-        let highlighted = node.isToday || node.status == .unlocked
+        let highlighted = node.isToday
         ZStack {
             Button {
                 open(node)
@@ -143,7 +144,6 @@ struct PathView: View {
             if node.status == .done { return ("¡Hecho!", Palette.leaf) }
             return (model.session(for: node.date) == nil ? "Start" : "Continue", Palette.coral)
         }
-        if node.status == .unlocked { return ("Keep going", Palette.sky) }
         return nil
     }
 
@@ -151,8 +151,8 @@ struct PathView: View {
         if node.isToday {
             model.showToday()
             showingToday = true
-        } else if node.status == .unlocked || (node.date > .now && model.session(for: node.date) != nil) {
-            // A day opened early, finished or not, opens in Today so its tasks can be continued or undone.
+        } else if node.date > .now && model.session(for: node.date) != nil {
+            // A day done early in an older version opens in Today, so its tasks can still be undone.
             model.selectedPlanDay = node.date
             showingToday = true
         } else {
@@ -237,7 +237,7 @@ struct UnitBanner: View {
     }
 }
 
-/// A round "3D" node: a face over a darker edge. Today and the open day pulse; a finished today
+/// A round "3D" node: a face over a darker edge. Today pulses; a finished today
 /// gets a gold ring and sparkles so it's obvious the day is complete. Upcoming nodes are flat and locked.
 struct PathNodeView: View {
     let status: PathNode.Status
@@ -259,7 +259,6 @@ struct PathNodeView: View {
         case .partial: return Palette.sun
         case .missed: return Palette.lilac
         case .current: return Palette.coral
-        case .unlocked: return Palette.sky
         case .upcoming: return Palette.lilac
         }
     }
@@ -271,7 +270,6 @@ struct PathNodeView: View {
         case .partial: return "circle.lefthalf.filled"
         case .missed: return "moon.zzz.fill"
         case .current: return "star.fill"
-        case .unlocked: return "forward.fill"
         case .upcoming: return "lock.fill"
         }
     }
@@ -279,10 +277,10 @@ struct PathNodeView: View {
     private var size: CGFloat {
         if isGate { return 86 }
         if isToday { return 88 }
-        return status == .unlocked ? 76 : 64
+        return 64
     }
 
-    private var pulses: Bool { isGate || status == .current || status == .unlocked }
+    private var pulses: Bool { isGate || status == .current }
     private var finishedToday: Bool { isToday && status == .done }
 
     var body: some View {
@@ -341,7 +339,6 @@ struct PathNodeView: View {
         case .partial: return "Day partly done"
         case .missed: return "Missed day"
         case .current: return "Today"
-        case .unlocked: return "Next day, open early"
         case .upcoming: return "Locked day"
         }
     }

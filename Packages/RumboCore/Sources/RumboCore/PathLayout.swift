@@ -1,7 +1,7 @@
 import Foundation
 
 /// The scrolling path: one node per calendar day since onboarding, in units of 7, running on into
-/// the future with projected level-ups. Finishing today opens tomorrow early.
+/// the future with projected level-ups. Future days stay locked.
 /// See docs/03-experience.md §3.4 "Path".
 public struct PathNode: Equatable, Sendable, Identifiable {
     public enum Status: Equatable, Sendable {
@@ -12,8 +12,6 @@ public struct PathNode: Equatable, Sendable, Identifiable {
         case missed
         /// Today, not finished yet.
         case current
-        /// A future day, open early because every day up to it is finished.
-        case unlocked
         case upcoming
     }
 
@@ -57,8 +55,8 @@ public struct PathMap: Equatable, Sendable {
     }
 
     public var allNodes: [PathNode] { units.flatMap(\.nodes) }
-    /// Today if it's unfinished, otherwise the day open early.
-    public var focusNode: PathNode? { allNodes.first { $0.status == .current || $0.status == .unlocked } }
+    /// Today while it's unfinished.
+    public var focusNode: PathNode? { allNodes.first { $0.status == .current } }
     public var todayNode: PathNode? { allNodes.first(where: \.isToday) }
 }
 
@@ -110,8 +108,6 @@ public enum PathLayout {
         milestones = milestones.filter { $0.afterNode <= pathEnd }
 
         var nodes: [PathNode] = []
-        var chainUnbroken = true
-        var unlockedOne = false
         for index in 0..<((lastUnit + 1) * nodesPerUnit) {
             let day = date(at: index)
             let info = days[day] ?? Day(minutes: 0, session: .none)
@@ -126,14 +122,10 @@ public enum PathLayout {
                 }
             } else if index == todayIndex {
                 status = .current
-            } else if chainUnbroken && !unlockedOne {
-                status = .unlocked
-                unlockedOne = true
             } else {
+                // Future days stay locked; extra practice after finishing today happens on Today
+                // ("Keep going"). A day finished early in an older version still shows as done.
                 status = .upcoming
-            }
-            if index >= todayIndex && status != .done {
-                chainUnbroken = false
             }
             nodes.append(PathNode(number: index + 1, date: day, minutes: info.minutes, status: status, isToday: index == todayIndex))
         }

@@ -100,7 +100,8 @@ Implemented in `RumboCore/DayPlanner.swift`.
 4. **Leftover.** Minutes too few for a new card go to existing cards that have headroom: input first, then the strand with the largest deficit.
 5. **Limits.** At most 4 cards per day (to keep cognitive load low) **[design]**, and at most **one weekly anchor per day (two from 45 min)**, so a fresh week spreads its anchors out instead of crowding out progression **[design]**.
 6. **Order.** Warm-up → language-focused → input → output → fluency (R4, R7 **[design]**). The output card's prompt reuses that day's Language Transfer track or Extra episode (R4).
-7. **Tiny days.** If `B = 10`, plan exactly one task: the strand with the largest deficit, using its first task that fits.
+7. **Tiny days.** If `B = 10`, plan exactly one task: the strand with the largest deficit, using its first task that fits. Prefer a task that can fill the whole 10 minutes.
+8. **Keep going.** Once every planned card is done or skipped (with at least one done), Today offers every other eligible task not already in the plan, at its standard length and with its progression detail (next track, next Extra part). They're ordered by strand deficit over the last 7 days *including today*, so the most-behind strand comes first. An extra is added to the day as its own card when started; it counts like any other practice (minutes, strand balance, streak, XP, course progress) but never changes whether the day is complete. (`DayPlanner.extraTasks`)
 
 ### Weekly anchors
 Planned on the first day the budget allows, so they don't depend on a fixed weekday (which wouldn't survive backpacking).

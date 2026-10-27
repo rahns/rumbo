@@ -60,6 +60,24 @@ public struct DayPlanner: Sendable {
         return DayPlan(budget: budget, band: learner.band, tasks: builder.orderedTasks())
     }
 
+    /// "Keep going" options once today's plan is complete: every task the learner can do that isn't
+    /// already in today's plan, at its standard length, the most-behind strand first (§2.5 step 8).
+    public func extraTasks(learner: LearnerSnapshot, history: [ActivityRecord], today: Date, excluding planned: Set<TaskKind>) -> [PlannedTask] {
+        // Today's practice counts too: it's already done.
+        let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: today))!
+        let window = recentRecords(history, before: startOfTomorrow)
+        let builder = PlanBuilder(budget: 0, learner: learner, window: window)
+        let order = Dictionary(uniqueKeysWithValues: TaskKind.allCases.enumerated().map { ($1, $0) })
+        return TaskKind.allCases
+            .filter { !planned.contains($0) && learner.isEligible($0) }
+            .sorted { lhs, rhs in
+                let left = builder.deficit(lhs.strand), right = builder.deficit(rhs.strand)
+                if left != right { return left > right }
+                return order[lhs]! < order[rhs]!
+            }
+            .map { PlannedTask(kind: $0, minutes: $0.minutes.standard, detail: builder.detail(for: $0), isAnchor: false) }
+    }
+
     /// Records from the 6 days before `today` (today itself is what's being planned).
     func recentRecords(_ history: [ActivityRecord], before today: Date) -> [ActivityRecord] {
         let startOfToday = calendar.startOfDay(for: today)
@@ -281,7 +299,7 @@ private struct PlanBuilder {
         tasks.append(PlannedTask(kind: kind, minutes: minutes, detail: detail(for: kind), isAnchor: anchor))
     }
 
-    private func detail(for kind: TaskKind) -> TaskDetail {
+    func detail(for kind: TaskKind) -> TaskDetail {
         switch kind {
         case .ltTrack:
             let track = learner.languageTransferRepeatPending

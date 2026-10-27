@@ -76,7 +76,8 @@ final class AppModel {
         return (profile?.baselineInputHours ?? 0) + Double(minutes) / 60
     }
 
-    /// The day Today is showing. Normally today; a later day when working ahead after finishing today.
+    /// The day Today is showing. Normally today; a later day only to revisit a day finished early in
+    /// an older version (working ahead has been replaced by "Keep going" extras).
     var selectedPlanDay: Date?
 
     var planDay: Date {
@@ -100,15 +101,6 @@ final class AppModel {
     /// The plan Today shows: the one for `planDay`.
     var todayPlan: DayPlanRecord? {
         session(for: planDay)
-    }
-
-    /// Opens the first unfinished day after `day` (finishing today unlocks tomorrow, and so on).
-    func workAhead(after day: Date? = nil) {
-        var next = calendar.startOfDay(for: day ?? planDay)
-        repeat {
-            next = calendar.date(byAdding: .day, value: 1, to: next)!
-        } while session(for: next)?.isComplete == true
-        selectedPlanDay = next
     }
 
     func showToday() {
@@ -428,8 +420,8 @@ final class AppModel {
         updateSpeakingStage()
         refreshReminders()
         celebrations += 1
-        if let plan = todayPlan, plan.sortedTasks.allSatisfy({ $0.status == .done || $0.status == .skipped }),
-           plan.sortedTasks.contains(where: { $0.status == .done }) {
+        // Confetti when this task finishes the plan (extras come after, so they don't set it off again).
+        if !task.isExtra, todayPlan?.isComplete == true {
             confettiBursts += 1
         }
     }
@@ -468,6 +460,38 @@ final class AppModel {
         task.duolingoUnitBefore = nil
         save()
         refreshReminders()
+    }
+
+    // MARK: - Keep going
+
+    /// Once today's plan is complete: every other task the learner can do, most-behind strand first.
+    /// An extra that was undone or stopped without logging (back to planned) is offered again.
+    var keepGoingOptions: [PlannedTask] {
+        guard let profile, let plan = todayPlan, plan.isComplete else { return [] }
+        let taken = Set(plan.sortedTasks.filter { !$0.isExtra || $0.status != .planned }.map(\.task))
+        return DayPlanner(calendar: calendar).extraTasks(learner: snapshot(for: profile), history: history, today: plan.day, excluding: taken)
+    }
+
+    /// Extras started or done today, in the order they were added.
+    var startedExtras: [PlannedTaskRecord] {
+        todayPlan?.extraTasks.filter { $0.status != .planned } ?? []
+    }
+
+    /// Adds a "Keep going" task to today's plan as an extra and starts it.
+    func startExtra(_ option: PlannedTask) -> PlannedTaskRecord? {
+        guard let profile, let plan = todayPlan else { return nil }
+        // Reuse one that was undone or stopped earlier rather than adding a duplicate.
+        if let existing = plan.extraTasks.first(where: { $0.task == option.kind && $0.status == .planned }) {
+            start(existing)
+            return existing
+        }
+        let order = (plan.sortedTasks.map(\.order).max() ?? -1) + 1
+        let record = PlannedTaskRecord(task: option, order: order, prompt: prompt(for: option.kind, band: profile.band, focus: nil, on: plan.day))
+        record.isExtra = true
+        context.insert(record)
+        record.plan = plan
+        start(record)
+        return record
     }
 
     func logBonusInput(minutes: Int) {
@@ -720,10 +744,12 @@ final class AppModel {
         guard let profile else { return }
         let today = calendar.startOfDay(for: .now)
         let plan = session(for: today)
-        var tasks = (plan?.sortedTasks ?? []).filter { $0.status != .skipped }.map {
+        // The plan (skips hidden), then "Keep going" extras once they're done.
+        let shown = (plan?.planTasks ?? []).filter { $0.status != .skipped } + (plan?.extraTasks ?? []).filter { $0.status == .done }
+        var tasks = shown.map {
             WidgetSnapshot.TaskLine(title: TaskCopy.title(for: $0.task), symbol: TaskCopy.symbol(for: $0.task),
                                     minutes: $0.status == .done ? loggedMinutes(for: $0) ?? $0.minutesPlanned : $0.minutesPlanned,
-                                    done: $0.status == .done, colorHex: $0.task.strand.hex)
+                                    done: $0.status == .done, colorHex: $0.task.strand.hex, isExtra: $0.isExtra)
         }
         // No plan yet: preview the one the gold-starred budget would give, so the widget shows what's on track.
         var suggested: Int?

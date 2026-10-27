@@ -158,6 +158,32 @@ import Testing
         #expect(b1.task(.extraIntensive) == nil)
     }
 
+    // MARK: Keep going (§2.5 step 8)
+
+    @Test func keepGoingOffersEveryOtherEligibleTaskOnce() {
+        let todays = plan(30)
+        let extras = planner.extraTasks(learner: authorAtStart, history: [], today: today, excluding: Set(todays.kinds))
+        #expect(Set(extras.map(\.kind)).isDisjoint(with: todays.kinds))
+        #expect(Set(extras.map(\.kind)).count == extras.count)
+        #expect(extras.allSatisfy { authorAtStart.isEligible($0.kind) && $0.minutes == $0.kind.minutes.standard && !$0.isAnchor })
+        let everything = Set(TaskKind.allCases.filter(authorAtStart.isEligible))
+        #expect(Set(extras.map(\.kind)).union(todays.kinds) == everything)
+    }
+
+    @Test func keepGoingLeadsWithTheMostBehindStrand() {
+        // A week of nothing but listening, today included: study and output come before more input.
+        let history = (0...6).map { ActivityRecord(date: TestCalendar.adding(days: -$0, to: today), kind: .dsWatch, minutes: 30) }
+        let extras = planner.extraTasks(learner: authorAtStart, history: history, today: today, excluding: [])
+        #expect(extras.first?.kind.strand != .input)
+        #expect(extras.last?.kind.strand == .input)
+    }
+
+    @Test func keepGoingPointsAtTheNextLessonAndEpisode() {
+        let extras = planner.extraTasks(learner: authorAtStart, history: [], today: today, excluding: [])
+        #expect(extras.first { $0.kind == .ltTrack }?.detail == .languageTransferTrack(13))
+        #expect(extras.first { $0.kind == .extraIntensive }?.detail == .extraPart(episode: 2, part: 1))
+    }
+
     @Test func duolingoIsNeverMoreThanFiveMinutes() {
         for budget in DayPlanner.budgetChoices {
             #expect((plan(budget).task(.duoLesson)?.minutes ?? 0) <= 5, "\(budget) min")

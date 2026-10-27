@@ -145,10 +145,27 @@ struct HomeWidgetView: View {
                     .foregroundStyle(Palette.secondaryText)
                     .lineLimit(1)
             }
+        } else if snapshot.dayComplete {
+            HStack(spacing: 6) {
+                Text("¡Hecho!")
+                    .foregroundStyle(Palette.leaf)
+                if snapshot.extrasDone > 0 {
+                    Text("+\(snapshot.extrasDone) extra")
+                        .font(.rounded(.caption, weight: .black))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(Palette.sky))
+                } else {
+                    Text("Day complete")
+                        .foregroundStyle(Palette.leaf)
+                }
+            }
+            .font(.rounded(.headline, weight: .black))
         } else {
-            Text(snapshot.dayComplete ? "¡Hecho! Day complete" : "Today")
+            Text("Today")
                 .font(.rounded(.headline, weight: .black))
-                .foregroundStyle(snapshot.dayComplete ? Palette.leaf : Palette.ink)
+                .foregroundStyle(Palette.ink)
         }
     }
 
@@ -159,14 +176,17 @@ struct HomeWidgetView: View {
                 .font(.rounded(.subheadline, weight: .semibold))
                 .foregroundStyle(Palette.secondaryText)
         } else {
-            ForEach(Array(snapshot.tasks.prefix(limit).enumerated()), id: \.offset) { _, task in
+            // Once the day is done, extras go first so they're visible when the list is cut short.
+            let extras = snapshot.tasks.filter { $0.isExtra == true }
+            let ordered = snapshot.dayComplete && snapshot.tasks.count > limit ? extras + snapshot.tasks.filter { $0.isExtra != true } : snapshot.tasks
+            ForEach(Array(ordered.prefix(limit).enumerated()), id: \.offset) { _, task in
                 HStack(spacing: 6) {
-                    Image(systemName: task.done ? "checkmark.circle.fill" : snapshot.isSuggestion ? task.symbol : "circle")
-                        .foregroundStyle(task.done ? Palette.leaf : Color(uiColor: UIColor(hex: task.colorHex)))
+                    Image(systemName: task.isExtra == true ? "plus.circle.fill" : task.done ? "checkmark.circle.fill" : snapshot.isSuggestion ? task.symbol : "circle")
+                        .foregroundStyle(task.isExtra == true ? Palette.sky : task.done ? Palette.leaf : Color(uiColor: UIColor(hex: task.colorHex)))
                         .frame(width: 16)
-                    Text(task.title)
-                        .strikethrough(task.done)
-                        .foregroundStyle(task.done ? Palette.secondaryText : Palette.ink)
+                    Text(task.isExtra == true ? "Extra: \(task.title)" : task.title)
+                        .strikethrough(task.done && task.isExtra != true)
+                        .foregroundStyle(task.isExtra == true ? Palette.ink : task.done ? Palette.secondaryText : Palette.ink)
                         .lineLimit(1)
                     Spacer(minLength: 0)
                     Text("\(task.minutes)′")
@@ -178,7 +198,9 @@ struct HomeWidgetView: View {
     }
 
     private func status(_ snapshot: WidgetSnapshot) -> String {
-        if snapshot.dayComplete { return "¡Hecho! Day complete" }
+        if snapshot.dayComplete {
+            return snapshot.extrasDone > 0 ? "¡Hecho! +\(snapshot.extrasDone) extra" : "¡Hecho! Day complete"
+        }
         if snapshot.isSuggestion, let minutes = snapshot.suggestedMinutes { return "Suggested: \(minutes) min, tap to start" }
         if let next = snapshot.nextTask { return "Next: \(next.title)" }
         return "Pick your time for today"
@@ -230,7 +252,7 @@ struct LockScreenWidgetView: View {
                     .minimumScaleFactor(0.75)
                     .lineLimit(1)
                 if snapshot.dayComplete {
-                    Text("Day complete ✓")
+                    Text(snapshot.extrasDone > 0 ? "Day complete ✓ +\(snapshot.extrasDone) extra" : "Day complete ✓")
                 } else if snapshot.isSuggestion, let minutes = snapshot.suggestedMinutes {
                     Text("Suggested: \(minutes) min")
                     Text("Tap to start").foregroundStyle(.secondary)

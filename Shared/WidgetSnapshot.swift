@@ -11,7 +11,12 @@ struct WidgetSnapshot: Codable, Equatable {
         var minutes: Int
         var done: Bool
         var colorHex: UInt32
+        /// A "Keep going" task done after the plan was complete. Optional so older snapshots still decode.
+        var isExtra: Bool? = nil
     }
+
+    /// Extras done today after finishing the plan.
+    var extrasDone: Int { tasks.filter { $0.isExtra == true && $0.done }.count }
 
     var updated: Date
     var day: Date

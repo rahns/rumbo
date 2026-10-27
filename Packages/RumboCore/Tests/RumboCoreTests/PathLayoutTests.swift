@@ -37,23 +37,16 @@ import Testing
         #expect(path.allNodes.prefix(6).map(\.status) == [.done, .partial, .missed, .done, .current, .upcoming])
     }
 
-    @Test func finishingTodayMakesItDoneAndOpensTomorrow() {
+    @Test func finishingTodayMakesItDoneAndTomorrowStaysLocked() {
         let path = map(today: 2, [2: finished])
         #expect(path.todayNode?.status == .done)
-        #expect(path.allNodes[3].status == .unlocked)
-        #expect(path.focusNode?.number == 4)
-        #expect(path.allNodes[4].status == .upcoming)
+        #expect(path.allNodes[3].status == .upcoming)
+        #expect(path.focusNode == nil)
     }
 
-    @Test func daysDoneEarlyStayDoneAndOpenTheNextOne() {
+    @Test func aDayFinishedEarlyInAnOlderVersionStillShowsDone() {
         let path = map(today: 2, [2: finished, 3: finished])
-        #expect(path.allNodes[2...4].map(\.status) == [.done, .done, .unlocked])
-    }
-
-    @Test func nothingOpensEarlyWhileTodayIsUnfinished() {
-        let path = map(today: 2, [2: PathLayout.Day(minutes: 5, session: .unfinished)])
-        #expect(path.todayNode?.status == .current)
-        #expect(!path.allNodes.contains { $0.status == .unlocked })
+        #expect(path.allNodes[2...4].map(\.status) == [.done, .done, .upcoming])
     }
 
     @Test func milestonesSitOnTheirExpectedDayAndExtendThePath() {

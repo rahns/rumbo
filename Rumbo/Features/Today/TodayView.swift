@@ -222,7 +222,7 @@ struct TodayView: View {
     // MARK: Plan
 
     private func planSection(_ plan: DayPlanRecord) -> some View {
-        let tasks = plan.sortedTasks
+        let tasks = plan.planTasks
         return VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text(plan.isComplete ? (model.isWorkingAhead ? "Done early! 🎉" : "Day complete! 🎉") : "Today's plan")
@@ -235,14 +235,6 @@ struct TodayView: View {
             }
             if model.canChangeBudget {
                 budgetChips(selected: plan.budgetMinutes)
-            }
-            if plan.isComplete {
-                Button {
-                    withAnimation { model.workAhead() }
-                } label: {
-                    Label("Keep going: do \(nextDayName) now", systemImage: "forward.fill")
-                }
-                .buttonStyle(ChunkyButtonStyle(color: Palette.sky))
             }
             if tasks.isEmpty {
                 Text("Nothing fits with the sources you have switched on. Check Settings → Sources.")
@@ -260,17 +252,85 @@ struct TodayView: View {
                 }
                 .transition(.asymmetric(insertion: .move(edge: .bottom).combined(with: .opacity), removal: .opacity))
             }
+            if plan.isComplete && !model.isWorkingAhead {
+                keepGoingSection
+                    .padding(.top, 10)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: tasks.map(\.statusRaw))
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: plan.sortedTasks.map(\.statusRaw))
+    }
+
+    // MARK: Keep going
+
+    /// Once the plan is complete: extras already started or done, then every other task to pick from.
+    @ViewBuilder
+    private var keepGoingSection: some View {
+        let extras = model.startedExtras
+        let options = model.keepGoingOptions
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Label("Keep going", systemImage: "plus.circle.fill")
+                    .font(.rounded(.title3, weight: .black))
+                    .foregroundStyle(Palette.ink)
+                Text("Today's plan is done. Want more? The ones at the top help where your week is lightest. Extra time counts toward your weekly goal, streak and XP.")
+                    .font(.rounded(.subheadline, weight: .medium))
+                    .foregroundStyle(Palette.secondaryText)
+            }
+            ForEach(extras) { task in
+                TaskCardView(task: task, detail: model.detailText(for: task), loggedMinutes: model.loggedMinutes(for: task)) {
+                    if task.status == .active { model.resumeSession(task) } else { model.start(task) }
+                    openTask = task
+                } onSkip: {
+                } onUndo: {
+                    withAnimation { model.undo(task) }
+                }
+            }
+            ForEach(options, id: \.kind) { option in
+                ExtraOptionRow(option: option, detail: TaskCopy.detail(option.detail)) {
+                    if let record = model.startExtra(option) {
+                        openTask = record
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// One "Keep going" choice: compact, with a Start button.
+struct ExtraOptionRow: View {
+    let option: PlannedTask
+    let detail: String?
+    let onStart: () -> Void
+
+    var body: some View {
+        let color = option.kind.strand.color
+        HStack(spacing: 12) {
+            Image(systemName: TaskCopy.symbol(for: option.kind))
+                .font(.headline.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 38, height: 38)
+                .background(Circle().fill(color))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(TaskCopy.title(for: option.kind))
+                    .font(.rounded(.subheadline, weight: .heavy))
+                    .foregroundStyle(Palette.ink)
+                Text([detail, "\(option.minutes) min", option.kind.strand.label].compactMap { $0 }.joined(separator: " · "))
+                    .font(.rounded(.caption, weight: .semibold))
+                    .foregroundStyle(Palette.secondaryText)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 8)
+            Button("Start", action: onStart)
+                .buttonStyle(ChunkyButtonStyle(color: color, fullWidth: false))
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Palette.card))
+        .accessibilityElement(children: .combine)
     }
 }
 
 extension TodayView {
-    /// "tomorrow", or the weekday when already working ahead.
-    var nextDayName: String {
-        let next = Calendar.current.date(byAdding: .day, value: 1, to: model.planDay) ?? .now
-        return Calendar.current.isDateInTomorrow(next) ? "tomorrow" : next.formatted(.dateTime.weekday(.wide))
-    }
 
     /// Extra listening logged today, each with an undo.
     @ViewBuilder
