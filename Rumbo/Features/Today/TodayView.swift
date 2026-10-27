@@ -450,6 +450,7 @@ struct TaskCardView: View {
     let onSkip: () -> Void
     let onUndo: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var showingWeeklyTip = false
 
     var body: some View {
         let kind = task.task
@@ -481,9 +482,24 @@ struct TaskCardView: View {
                             Text(TaskCopy.title(for: kind))
                                 .font(.rounded(.headline, weight: .heavy))
                             if task.isAnchor {
-                                Image(systemName: "star.circle.fill")
-                                    .foregroundStyle(Palette.sun)
-                                    .accessibilityLabel("Weekly task")
+                                // Tap for a tiny "Weekly task" tooltip.
+                                Button {
+                                    showingWeeklyTip = true
+                                } label: {
+                                    Image(systemName: "star.circle.fill")
+                                        .foregroundStyle(Palette.sun)
+                                        .contentShape(Circle().inset(by: -8))
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Weekly task")
+                                .popover(isPresented: $showingWeeklyTip, arrowEdge: .bottom) {
+                                    Text("Weekly task")
+                                        .font(.rounded(.caption, weight: .heavy))
+                                        .foregroundStyle(Palette.ink)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .presentationCompactAdaptation(.popover)
+                                }
                             }
                         }
                         .foregroundStyle(Palette.ink)
