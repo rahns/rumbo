@@ -13,7 +13,9 @@ struct StrandBalanceChart: View {
             Text("This week's balance")
                 .font(.rounded(.headline, weight: .black))
                 .foregroundStyle(Palette.ink)
-            Text("Your last 7 days. The marks show the mix your level needs; Rumbo plans toward them.")
+            Text(minutes.values.reduce(0, +) == 0
+                 ? "Nothing logged in the last 7 days yet. Finish a task and your mix shows up here, next to the marks your level needs."
+                 : "Your last 7 days. The marks show the mix your level needs; Rumbo plans toward them.")
                 .font(.rounded(.subheadline, weight: .semibold))
                 .foregroundStyle(Palette.secondaryText)
             Chart {
@@ -24,6 +26,8 @@ struct StrandBalanceChart: View {
                     )
                     .foregroundStyle(strand.color)
                     .cornerRadius(6)
+                    .accessibilityLabel(strand.label)
+                    .accessibilityValue("\(minutes[strand] ?? 0) minutes, \(Int(Double(minutes[strand] ?? 0) / Double(total) * 100)) percent. Target \(Int((targets[strand] ?? 0) * 100)) percent.")
                     .annotation(position: .trailing) {
                         Text("\(minutes[strand] ?? 0)′")
                             .font(.rounded(.caption, weight: .heavy))
@@ -36,6 +40,7 @@ struct StrandBalanceChart: View {
                     )
                     .lineStyle(StrokeStyle(lineWidth: 26))
                     .foregroundStyle(Palette.ink.opacity(0.7))
+                    .accessibilityHidden(true)
                 }
             }
             .chartXScale(domain: 0...100)
@@ -110,6 +115,14 @@ struct JourneyChart: View {
             }
         }
         .frame(height: 200)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Projected input hours")
+        .accessibilityValue(summary(points))
+    }
+
+    private func summary(_ points: [ProgressStats.Point]) -> String {
+        guard let last = points.last else { return "" }
+        return "About \(Int(last.hours)) hours by \(last.date.formatted(.dateTime.month(.wide).year())), from \(Int(currentHours)) now."
     }
 }
 
@@ -123,6 +136,11 @@ struct PracticeHeatMap: View {
             Text("Last 12 weeks")
                 .font(.rounded(.headline, weight: .black))
                 .foregroundStyle(Palette.ink)
+            if activeDays == 0 {
+                Text("Each square is a day. They fill in green as you practise.")
+                    .font(.rounded(.subheadline, weight: .semibold))
+                    .foregroundStyle(Palette.secondaryText)
+            }
             HStack(alignment: .top, spacing: 4) {
                 VStack(spacing: 4) {
                     ForEach(0..<7, id: \.self) { row in
@@ -158,8 +176,15 @@ struct PracticeHeatMap: View {
             }
             .font(.rounded(.caption2, weight: .bold))
             .foregroundStyle(Palette.secondaryText)
+            .accessibilityHidden(true)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Last 12 weeks")
+        .accessibilityValue("You practised on \(activeDays) days, \(totalMinutes) minutes in all.")
     }
+
+    private var activeDays: Int { weeks.joined().filter { $0.minutes > 0 }.count }
+    private var totalMinutes: Int { weeks.joined().reduce(0) { $0 + $1.minutes } }
 
     private func weekdayInitial(_ row: Int) -> String {
         let symbols = calendar.veryShortStandaloneWeekdaySymbols

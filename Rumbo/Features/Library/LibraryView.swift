@@ -21,7 +21,13 @@ struct LibraryView: View {
                             }
                         }
                         section("For your level", subtitle: "\(profile.band.label) · \(profile.band.rawValue)") {
-                            ForEach(suggestions.now.filter { $0.id != model.currentContent?.id }) { item in
+                            let others = suggestions.now.filter { $0.id != model.currentContent?.id }
+                            if others.isEmpty {
+                                Text("That's everything for your level right now. New suggestions arrive with app updates and when you level up.")
+                                    .font(.rounded(.subheadline, weight: .medium))
+                                    .foregroundStyle(Palette.secondaryText)
+                            }
+                            ForEach(others) { item in
                                 ContentCard(item: item, isWatching: false, toggle: { model.toggleWatching(item) }, open: open)
                             }
                         }

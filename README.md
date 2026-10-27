@@ -25,7 +25,7 @@ Every source can be turned off. The planner reallocates its time to whatever els
 | App name | Rumbo |
 | Bundle ID | `com.rahns.rumbo` |
 | Widget/Live Activity extension | `com.rahns.rumbo.widgets` |
-| App Group | `group.com.rahns.rumbo` |
+| Shared data (widgets) | Keychain default access group (App Groups aren't available with a personal certificate) |
 | Minimum iOS | 27.0 |
 
 ## Spec
@@ -39,6 +39,8 @@ Every source can be turned off. The planner reallocates its time to whatever els
 7. [Roadmap](docs/07-roadmap.md)
 
 ## Install
+
+**Friends:** grab the latest `.ipa` from [Releases](../../releases/latest), sign it with your own certificate, and follow the setup on first launch. The release page has step-by-step instructions.
 
 The **Build** workflow (run manually from the Actions tab, or on `v*` tags) builds an **unsigned** `Rumbo.ipa` on GitHub Actions (macOS runner, Xcode 27). Download it from the latest run on the [Actions tab](../../actions) (artifact `Rumbo-0.1.<build>`) or from [Releases](../../releases), and sign/install it with your own certificate. The artifact also contains the two `.entitlements` files in case your signing tool asks for them.
 

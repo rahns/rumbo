@@ -183,6 +183,21 @@ struct SettingsView: View {
         }
 
         Section {
+            ShareLink(item: URL(string: "https://github.com/rahns/rumbo/releases/latest")!,
+                      subject: Text("Rumbo"),
+                      message: Text("I'm using Rumbo to plan my Spanish. Download it here (you sign it with your own certificate):")) {
+                Label("Share Rumbo with a friend", systemImage: "square.and.arrow.up")
+            }
+            Link(destination: URL(string: "https://github.com/rahns/rumbo/releases")!) {
+                Label("Downloads and what's new", systemImage: "arrow.down.circle")
+            }
+        } header: {
+            Text("Share")
+        } footer: {
+            Text("Friends get their own setup: Rumbo asks where they are in each source on first launch.")
+        }
+
+        Section {
             NavigationLink("Diagnostics") { DiagnosticsView() }
             Button("Start over", role: .destructive) { confirmingReset = true }
         } footer: {

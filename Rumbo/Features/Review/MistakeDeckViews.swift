@@ -106,7 +106,16 @@ struct MistakeDeckView: View {
             } footer: {
                 Text("Mistakes from your writing are added automatically. Add your Tandem partner's corrections with +.")
             }
-            Section("\(cards.count) cards") {
+            if cards.isEmpty {
+                Section {
+                    ContentUnavailableView {
+                        Label("No cards yet", systemImage: "rectangle.stack")
+                    } description: {
+                        Text("When a writing task is corrected, each mistake becomes a card here. Tap + to add a correction from your Tandem partner.")
+                    }
+                }
+            }
+            Section(cards.isEmpty ? "" : "\(cards.count) cards") {
                 ForEach(cards) { card in
                     VStack(alignment: .leading, spacing: 4) {
                         Text(card.front.components(separatedBy: "\n").first ?? card.front)

@@ -122,5 +122,8 @@ struct ChunkyProgressBar: View {
         }
         .frame(height: height)
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: value)
+        .accessibilityElement()
+        .accessibilityLabel("Progress")
+        .accessibilityValue("\(Int((min(max(value, 0), 1) * 100).rounded())) percent")
     }
 }

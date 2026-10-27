@@ -108,7 +108,7 @@ struct PathView: View {
                 open(node)
             } label: {
                 VStack(spacing: 6) {
-                    PathNodeView(status: node.status, isToday: node.isToday)
+                    PathNodeView(status: node.status, isToday: node.isToday, date: node.date, minutes: node.minutes)
                     Text(node.isToday ? "Today" : node.date.formatted(.dateTime.weekday(.abbreviated).day()))
                         .font(.rounded(.caption, weight: node.isToday ? .black : .bold))
                         .foregroundStyle(node.isToday ? Palette.ink : Palette.secondaryText)
@@ -233,6 +233,9 @@ struct PathNodeView: View {
     let status: PathNode.Status
     var isToday = false
     var isGate = false
+    /// For VoiceOver: the node's day and minutes.
+    var date: Date?
+    var minutes = 0
 
     @State private var pulse = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -317,6 +320,12 @@ struct PathNodeView: View {
 
     private var accessibilityText: String {
         if isGate { return "Level-up check" }
+        let day = date.map { $0.formatted(.dateTime.weekday(.wide).day().month(.wide)) + ": " } ?? ""
+        let done = minutes > 0 ? ", \(minutes) minutes" : ""
+        return day + statusText + done
+    }
+
+    private var statusText: String {
         switch status {
         case .done: return isToday ? "Today, complete" : "Day complete"
         case .partial: return "Day partly done"

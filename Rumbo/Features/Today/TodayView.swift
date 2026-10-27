@@ -66,8 +66,9 @@ struct TodayView: View {
                     }
                 }
                 Spacer()
-                StatPill(symbol: "flame.fill", value: "\(streak.streak)", color: Palette.sun, bounce: streak.streak)
-                StatPill(symbol: "star.fill", value: "\(model.xp)", color: Palette.sky)
+                StatPill(symbol: "flame.fill", value: "\(streak.streak)", color: Palette.sun, bounce: streak.streak,
+                         accessibilityText: "\(streak.streak) day streak")
+                StatPill(symbol: "star.fill", value: "\(model.xp)", color: Palette.sky, accessibilityText: "\(model.xp) XP")
             }
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
@@ -79,7 +80,9 @@ struct TodayView: View {
                 .font(.rounded(.caption, weight: .heavy))
                 .foregroundStyle(Palette.secondaryText)
                 ChunkyProgressBar(value: Double(streak.minutesThisWeek) / Double(max(goal, 1)), color: Palette.leaf)
+                    .accessibilityHidden(true)
             }
+            .accessibilityElement(children: .combine)
         }
     }
 
@@ -312,6 +315,8 @@ struct StatPill: View {
     let color: Color
     /// The icon bounces when this changes (e.g. the streak goes up).
     var bounce: Int = 0
+    /// What VoiceOver reads, e.g. "5 day streak".
+    var accessibilityText: String? = nil
 
     var body: some View {
         HStack(spacing: 4) {
@@ -326,6 +331,8 @@ struct StatPill: View {
         .padding(.vertical, 6)
         .padding(.horizontal, 10)
         .background(Capsule().fill(Palette.card))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityText ?? value)
     }
 }
 
@@ -353,6 +360,7 @@ struct TaskCardView: View {
     let onStart: () -> Void
     let onSkip: () -> Void
     let onUndo: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let kind = task.task
@@ -372,11 +380,13 @@ struct TaskCardView: View {
                             .background(Circle().fill(color.edge()).offset(y: 3).opacity(finished ? 0 : 1))
                             .contentTransition(.symbolEffect(.replace))
                             // Finishing a task flips its icon over to the tick.
-                            .rotation3DEffect(.degrees(task.status == .done ? 360 : 0), axis: (x: 0, y: 1, z: 0))
+                            .rotation3DEffect(.degrees(task.status == .done && !reduceMotion ? 360 : 0), axis: (x: 0, y: 1, z: 0))
                     }
                     .buttonStyle(.plain)
                     .disabled(!finished)
-                    .accessibilityLabel(finished ? "Undo" : TaskCopy.title(for: kind))
+                    .accessibilityLabel("Undo \(TaskCopy.title(for: kind))")
+                    .accessibilityHint("Marks it as not done again")
+                    .accessibilityHidden(!finished)
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 6) {
                             Text(TaskCopy.title(for: kind))
@@ -394,10 +404,13 @@ struct TaskCardView: View {
                                 .foregroundStyle(Palette.secondaryText)
                         }
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityValue(task.status == .done ? "Done" : task.status == .skipped ? "Skipped" : task.status == .active ? "In progress" : "")
                     Spacer()
                     Text(TaskCopy.minutesLabel(task.minutesPlanned))
                         .font(.rounded(.subheadline, weight: .heavy))
                         .foregroundStyle(finished ? Palette.secondaryText : color)
+                        .accessibilityLabel("\(task.minutesPlanned) minutes")
                 }
                 if !task.prompt.isEmpty && !finished {
                     Text(task.prompt)
