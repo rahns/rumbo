@@ -106,7 +106,7 @@ struct PathView: View {
             StatPill(symbol: "flame.fill", value: "\(model.streak.streak)", color: Palette.sun, bounce: model.streak.streak,
                      accessibilityText: "\(model.streak.streak) day streak")
                 .overlay { IceShatter(trigger: freezeShatters) }
-            StatPill(symbol: "clock.fill", value: "\(Int(model.trainingHours)) h", color: Palette.sky,
+            StatPill(symbol: "clock.fill", value: "\(Int(model.trainingHours)) h", color: Palette.sky, bounce: Int(model.trainingHours),
                      accessibilityText: "\(Int(model.trainingHours)) training hours")
         }
         .padding(.horizontal, 20)

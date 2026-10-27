@@ -410,6 +410,8 @@ struct StatPill: View {
                 .foregroundStyle(Palette.ink)
                 .contentTransition(.numericText())
         }
+        // The number rolls when it changes (hours going up, the streak ticking over).
+        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: value)
         .font(.rounded(.subheadline, weight: .heavy))
         .lineLimit(1)
         .padding(.vertical, 6)

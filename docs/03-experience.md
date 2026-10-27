@@ -171,7 +171,7 @@ Share (send a friend the latest release, see what's new), Goal (opens the goal p
 | Any chunky button | Face drops 4 pt onto its bottom edge, springs back | `.impact(weight: .light)` |
 | Card complete | Card flips, checkmark draws itself, hours number rolls (`.contentTransition(.numericText())`) | `.success` |
 | Streak +1 | Flame grows and flickers (`PhaseAnimator`) | `.impact(weight: .light)` |
-| Task logged | "+22 min" rises from below into the training-hours badge, whose clock bounces (`TimeFlyUp`) | Soft tap as it lands |
+| Task logged | On Today, "+22 min" rises from below into the training-hours badge, whose clock bounces (`TimeFlyUp`); the hours number rolls up. On the path header, the clock bounces and the number rolls whenever a new whole hour is reached | Soft tap as it lands |
 | Weekly minutes go up | A light sweep runs along the "This week" bar | A light tap for each 25% of the weekly goal just passed |
 | Weekly goal met | Fireworks (particle `Canvas`) behind a "¡Meta cumplida!" card with Pico cheering; over any tab, once a week | `.success`, then a tap per burst |
 | Streak milestone (7, 30, 100, 365 days) | A big flame swells and beats twice with the day count; Pico's message as a banner on Today; once per milestone | Heartbeat (heavy–medium, twice) |
