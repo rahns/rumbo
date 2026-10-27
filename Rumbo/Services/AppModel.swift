@@ -718,9 +718,27 @@ final class AppModel {
 
     // MARK: - Library
 
+    /// What the last check for new Library suggestions found, shown at the bottom of the Library.
+    private(set) var catalogStatus = ""
+    private var checkingCatalog = false
+
+    /// Checks GitHub for a newer suggestions list: when the Library opens or is pulled, and when the app comes back.
     func refreshCatalog() async {
-        if let newer = await ContentLibrary.fetchNewer(than: catalog) {
+        guard !checkingCatalog else { return }
+        checkingCatalog = true
+        defer { checkingCatalog = false }
+        // Runs in its own task, so leaving the Library mid-download doesn't cancel it.
+        let current = catalog
+        let result = await Task.detached { await ContentLibrary.check(against: current) }.value
+        let time = Date.now.formatted(date: .omitted, time: .shortened)
+        switch result {
+        case .updated(let newer):
             catalog = newer
+            catalogStatus = "Suggestions list v\(newer.version) · updated at \(time)"
+        case .upToDate(let version):
+            catalogStatus = "Suggestions list v\(version) · up to date (checked at \(time))"
+        case .failed(let reason):
+            catalogStatus = "Suggestions list v\(catalog.version) · couldn't check for new ones: \(reason)"
         }
     }
 

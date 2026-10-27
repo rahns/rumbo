@@ -57,6 +57,7 @@ struct RootView: View {
             if phase == .active {
                 model.save()
                 model.refreshReminders()
+                Task { await model.refreshCatalog() }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in

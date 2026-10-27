@@ -38,6 +38,11 @@ struct LibraryView: View {
                                 }
                             }
                         }
+                        Text(model.catalogStatus.isEmpty ? "Suggestions list v\(model.catalog.version) · pull down to check for new ones" : model.catalogStatus)
+                            .font(.rounded(.caption, weight: .semibold))
+                            .foregroundStyle(Palette.secondaryText)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 8)
                     }
                     .padding(20)
                 }

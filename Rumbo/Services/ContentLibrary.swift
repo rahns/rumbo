@@ -27,16 +27,34 @@ enum ContentLibrary {
         return bundled
     }
 
-    /// Downloads the latest catalog; returns it only if it's newer than `current`.
-    static func fetchNewer(than current: ContentCatalog) async -> ContentCatalog? {
-        var request = URLRequest(url: remoteURL)
-        request.timeoutInterval = 15
-        guard let result = try? await URLSession.shared.data(for: request),
-              (result.1 as? HTTPURLResponse)?.statusCode == 200,
-              let remote = try? ContentCatalog.decode(result.0),
-              remote.version > current.version
-        else { return nil }
-        try? result.0.write(to: cacheURL, options: .atomic)
-        return remote
+    enum CheckResult {
+        case updated(ContentCatalog)
+        case upToDate(version: Int)
+        case failed(String)
+    }
+
+    /// Downloads the latest catalog. Skips every local HTTP cache, so a new version shows up straight away.
+    static func check(against current: ContentCatalog) async -> CheckResult {
+        var request = URLRequest(url: remoteURL, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 20)
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+        let data: Data
+        do {
+            let (body, response) = try await URLSession.shared.data(for: request)
+            guard let status = (response as? HTTPURLResponse)?.statusCode, status == 200 else {
+                return .failed("The server answered \((response as? HTTPURLResponse)?.statusCode ?? 0).")
+            }
+            data = body
+        } catch {
+            return .failed(error.localizedDescription)
+        }
+        let remote: ContentCatalog
+        do {
+            remote = try ContentCatalog.decode(data)
+        } catch {
+            return .failed("The downloaded list couldn't be read (\(error.localizedDescription)).")
+        }
+        guard remote.version > current.version else { return .upToDate(version: current.version) }
+        try? data.write(to: cacheURL, options: .atomic)
+        return .updated(remote)
     }
 }
