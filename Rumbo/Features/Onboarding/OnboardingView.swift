@@ -13,7 +13,8 @@ struct OnboardingView: View {
     @State private var canDoIndex = 0
 
     enum Step: Int, CaseIterable {
-        case welcome, goal, sources, progress, canDo, placement, habit
+        // The goal comes after placement, so the weekly goal and target date can be worked out from your hours.
+        case welcome, name, sources, progress, canDo, placement, goal, habit
     }
 
     var body: some View {
@@ -101,6 +102,7 @@ struct OnboardingView: View {
     }
 
     private func go(to newStep: Step) {
+        if newStep == .goal { draft.prepareGoal() }
         step = newStep
     }
 
@@ -110,6 +112,7 @@ struct OnboardingView: View {
     private var content: some View {
         switch step {
         case .welcome: welcome
+        case .name: name
         case .goal: goal
         case .sources: sources
         case .progress: progress
@@ -141,7 +144,7 @@ struct OnboardingView: View {
         .frame(maxWidth: .infinity)
     }
 
-    private var goal: some View {
+    private var name: some View {
         VStack(alignment: .leading, spacing: 20) {
             StepTitle("What should I call you?")
             TextField("Your name (optional)", text: $draft.name)
@@ -149,31 +152,17 @@ struct OnboardingView: View {
                 .font(.rounded(.title3, weight: .semibold))
                 .padding(14)
                 .background(RoundedRectangle(cornerRadius: 14).fill(Palette.card))
-            StepTitle("Where are you heading?")
-            HStack {
-                ForEach(["B1", "B2", "C1"], id: \.self) { level in
-                    ChipButton(title: level, isSelected: draft.goal == level) { draft.goal = level }
-                }
-            }
-            Text(goalDescription)
-                .font(.rounded(.subheadline, weight: .medium))
-                .foregroundStyle(Palette.secondaryText)
-            Toggle(isOn: $draft.hasTargetDate.animation()) {
-                Text("I have a date in mind").font(.rounded(.body, weight: .semibold))
-            }
-            .tint(Palette.leaf)
-            if draft.hasTargetDate {
-                DatePicker("Target date", selection: $draft.targetDate, in: Date.now..., displayedComponents: .date)
-                    .font(.rounded(.body, weight: .semibold))
-            }
         }
     }
 
-    private var goalDescription: String {
-        switch draft.goal {
-        case "B1": "Get by confidently: travel, everyday conversations, simple opinions."
-        case "C1": "Near-native ease. Rumbo plans to B2, then keeps you growing with native content."
-        default: "Comfortably conversational: follow native speakers and hold your own in a group."
+    private var goal: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            StepTitle("Where are you heading?")
+            Text("Pick your goal, then either how much time you'll give it each week or when you want to get there. You can change this any time in Settings → Goal.")
+                .font(.rounded(.subheadline, weight: .medium))
+                .foregroundStyle(Palette.secondaryText)
+            GoalEditor(goal: $draft.goal, weeklyMinutes: $draft.weeklyGoalMinutes, targetDate: $draft.targetDate,
+                       currentHours: draft.inputHours, band: draft.placement.band)
         }
     }
 
@@ -205,7 +194,8 @@ struct OnboardingView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         SourceHeading(source: .dreamingSpanish)
                         NumberStepper(title: "Total hours watched", value: $draft.dreamingHours, range: 0...3000, step: 5)
-                        NumberStepper(title: "Difficulty you're watching (from)", value: $draft.dreamingDifficultyLow, range: 0...100, step: 1)
+                        NumberStepper(title: "Difficulty you're watching: \(draft.dreamingDifficultyLow)–\(draft.dreamingDifficultyLow + LearnerProfile.dreamingRangeWidth)",
+                                      value: $draft.dreamingDifficultyLow, range: 0...(100 - LearnerProfile.dreamingRangeWidth), step: 1)
                     }
                 }
             } else {
@@ -324,15 +314,12 @@ struct OnboardingView: View {
                 DatePicker("Time", selection: $draft.reminderTime, displayedComponents: .hourAndMinute)
                     .font(.rounded(.body, weight: .semibold))
             }
-            StepTitle("Weekly goal")
-            HStack {
-                ForEach(OnboardingDraft.weeklyGoals, id: \.self) { minutes in
-                    ChipButton(title: "\(minutes)", isSelected: draft.weeklyGoalMinutes == minutes) {
-                        draft.weeklyGoalMinutes = minutes
-                    }
-                }
+            StepTitle("Your week starts on")
+            HStack(spacing: 10) {
+                ChipButton(title: "Monday", isSelected: !draft.weekStartsOnSunday) { draft.weekStartsOnSunday = false }
+                ChipButton(title: "Sunday", isSelected: draft.weekStartsOnSunday) { draft.weekStartsOnSunday = true }
             }
-            Text("Minutes a week. \(draft.weeklyGoalMinutes / 7) a day on average; busy days are fine.")
+            Text("Your weekly goal and streak freezes reset at the start of each week.")
                 .font(.rounded(.subheadline, weight: .medium))
                 .foregroundStyle(Palette.secondaryText)
         }

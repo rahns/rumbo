@@ -28,6 +28,12 @@ struct GuidedWritingView: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: stage)
+        .onAppear {
+            // Back into a draft that was already checked: pick up where it was left.
+            if stage == .writing, feedback != nil {
+                stage = rewrite.isEmpty ? .feedback : .rewriting
+            }
+        }
     }
 
     // MARK: Stages

@@ -61,20 +61,29 @@ Pico is a chubby cartoon **toucan**. *Pico* is Spanish for "beak", and toucans a
 The first screen also offers "Restore from a backup". Without a backup, onboarding again is the recovery path (see [04-data-model.md](04-data-model.md#43-no-sync-manual-backup)).
 
 1. Welcome: Pico bobs in. "¿Rumbo a dónde?"
-2. Name (optional) and goal: B1 / **B2** / C1, plus an optional target date ("Moving to Latin America in 2028").
+2. Name (optional).
 3. Sources: toggle the ones you use (all on by default). The Tandem row reads "I have a language exchange partner".
 4. Progress per source, each on its own card (only for enabled sources):
-   - Dreaming Spanish: total hours and the difficulty you're watching (the range is that value + 8)
+   - Dreaming Spanish: total hours and the difficulty you're watching, as a 5-point range ("40–45") that the stepper slides by 1
    - Language Transfer: last finished track (0–90)
    - Duolingo: section and unit
    - Extra en Español: episodes watched (0–13)
    - Not using Dreaming Spanish: estimated hours of Spanish listening
 5. Can-do check: 10 statements, one at a time, "¡Sí!" / "Todavía no". 5 come from the band the hours point to and 5 from the next band, interleaved. Placement uses the same thresholds as §2.1 scaled to 5 (≥ 4/5 of the next band → up, < 3/5 of your own → down).
 6. Placement reveal: band badge with the reasoning in one line ("154 hours of input and 7 of 10 can-dos").
-7. Habit: cue chips ("After breakfast", "On my commute", …), daily reminder toggle and time (asks for notification permission), weekly goal (60/100/150/210/300 min).
+7. Goal: the same goal editor as Settings → Goal (below). It comes after placement so the date can be worked out from the learner's hours; the date starts where the default 150 min a week leads.
+8. Habit: cue chips ("After breakfast", "On my commute", …), daily reminder toggle and time (asks for notification permission), and which day the week starts on.
+
+### Goal (onboarding step and Settings → Goal)
+Implemented in `Rumbo/Features/Goal/GoalEditor.swift`, with `GoalPace` in RumboCore (§2.9).
+- **Goal level:** B1 / **B2** / C1 chips with a one-line description. C1 is measured against B2.2, the end of Rumbo's path.
+- **Weekly goal:** a big number with − and + buttons, 10 minutes per tap (hold to repeat), from 30 to 900 min a week, with the daily average and how much of it is listening.
+- **Target date:** "Reach B2 by …". The two are **linked**: changing the weekly goal moves the date to when that pace reaches the goal; picking a date sets the weekly goal (rounded up to 10 minutes) that gets there. A date too soon for even 900 min a week is flagged.
+- **At this pace:** the same level timeline as Progress, updating as you change things.
+- In Settings it's its own page, opened from the Goal row ("B2 by Jun 2034 · 150 min a week"), and saves as it changes. Profiles from before this have a target date filled in from their weekly goal.
 
 ### Tabs
-**Path** (home), **Progress**, **Settings**. Today isn't a tab: it opens from today's node, like starting a lesson in Duolingo.
+**Path** (home), **Progress**, **Mistakes** (badge: cards due), **Library**, **Settings**. Today isn't a tab: it opens from today's node, like starting a lesson in Duolingo.
 
 ### Path (home tab)
 Implemented in `Rumbo/Features/Path/PathView.swift`, laid out by `PathLayout` in RumboCore.
@@ -97,7 +106,7 @@ Intro → the next band's 10 can-do statements one at a time → ≥ 7 "¡Sí!" 
 ### Today
 - Budget picker at the top: chips for 10 / 15 / 20 / 30 / 45 / 60. Changing it reshuffles the cards with a spring animation.
 - **Goal advice** above the chips: what's left of the weekly goal, spread over the days left this week, e.g. "To reach your 150-minute goal: about 25 min each of the 4 days left this week. **30 min** keeps you on track." The recommended chip (the smallest choice that covers it, `BudgetAdvisor` in RumboCore) has a gold ring and star. Weeks start on Monday, or Sunday if chosen in Settings → Habit → Week starts on; the weekly goal bar, freezes and this advice all follow it. Once the goal is met, it says any time is a bonus and recommends 10.
-- Up to 4 task cards in order. Each card shows: source icon, task title, minutes, strand color strip, and the specific instruction ("Track 13", "Rated 40–48", "Episode 2, part 1: watch with Spanish subtitles").
+- Up to 4 task cards in order. Each card shows: source icon, task title, minutes, strand color strip, and the specific instruction ("Track 13", "Videos rated 40–45", "Episode 2, part 1: watch with Spanish subtitles").
 - Swipe a card left to swap it for an alternative in the same strand. Tap "Busy day" for the minimum dose.
 - **Why, where it isn't obvious.** Tasks whose point isn't clear from the name carry a one-line reason under the title, on plan cards and in Keep going. Easy Dreaming: "Below your level on purpose: easy listening makes what you know come faster."
 - **Logged time on done cards.** When the time logged differs from the plan, the card shows the planned minutes struck through, then the logged minutes ("~~15 min~~ 22 min"). Widgets list the logged minutes for done tasks.
@@ -118,7 +127,9 @@ Implemented in `Rumbo/Features/Writing/GuidedWritingView.swift` (guided writing;
 3. **Feedback:** one or two specific strengths, the draft with each error highlighted in place, a card per correction (wrong words struck through in coral → fix in green, one-line explanation at the learner's level), and "A native speaker might say…" with the model's natural rewrite. Shows which checker ran.
 4. **Rewrite:** an editor prefilled with the draft, with the corrections listed above it (R11).
 5. **Compare:** before and after.
-6. **I'm done** saves the draft, feedback and rewrite, logs the time, and turns every correction into a mistake-deck card. A rewrite earns +25 XP.
+6. **I'm done** asks first ("Finish without checking?" before a check, "Finish writing?" after), then opens the log form, which says the writing is saved with the task and has a **Back** button to return to it. **Save** stores the draft, feedback and rewrite, logs the time, and turns every correction into a mistake-deck card. A rewrite earns +25 XP.
+
+Writing is never lost: the draft, rewrite and feedback are kept on the task as they're typed (closing the task screen keeps them, and coming back picks up at the same stage), and undoing a logged writing task turns its text back into the draft. While the keyboard is up, the bottom bar shows only "Hide keyboard", so "I'm done" can't be tapped by accident.
 
 If the check can't run (offline with no on-device model), the writing is still saved and logged.
 
@@ -129,14 +140,14 @@ Implemented in `Rumbo/Features/Review/MistakeDeckViews.swift`; cards are `Review
 - **Cards from Tandem:** after a Tandem task, "Save a correction from your partner" adds a card (what you said → the correct version, optional why). Also available with + in the deck.
 - **Review:** one card at a time, "Show answer", then Again / Good / Easy. Again brings the card back in 10 minutes; Good/Easy schedule it by FSRS.
 - Due cards feed the planner (`review.mistakes`: a warm-up from 5 due cards and 20 minutes; otherwise planned when language study is behind). The card shows "N cards due".
-- **Progress → Mistake deck** lists every card with when it's next due, reviews what's due, adds and deletes cards.
+- **The Mistakes tab** lists every card with when it's next due, reviews what's due, adds and deletes cards.
 - Undoing a writing task removes its cards.
 
 ### Progress tab
 - Hours ring toward the next band.
 - **Strand balance:** one row per strand, named Listening, Speaking & writing, Study and Fluency practice, each with what counts toward it (e.g. "Easy videos, quick writes and 4-3-2 talks"). Shows the last 7 days' minutes and share, a bar for the share, and a tick at the band's target share.
 - **Where you're heading:** a timeline from now (current level and hours) through each level's expected arrival, with the target as a flag in date order ("Your target: B2 · Jul 2028", what the goal needs in hours, and the hours and level the current pace reaches by then, or "on track"); the goal's level is starred; levels after the target are faded. Below it: what 10 more minutes a day would reach by the target.
-- Streak, freezes, XP; mistake deck.
+- Streak, freezes, XP.
 - **Heat map:** the last 12 calendar weeks, one square per day (weeks start on the learner's chosen day), shaded by minutes, today outlined.
 - Source progress: Language Transfer track bar, Extra episodes, Duolingo section.
 
@@ -149,7 +160,7 @@ Implemented in `Rumbo/Features/Review/MistakeDeckViews.swift`; cards are `Review
 A card under the header toggles Travel mode, explaining what it does: a real-world mission joins the plan, and offline days only get offline-capable tasks. It applies to the next plan (re-pick today's time to use it today). Pico wears the backpacker look while it's on.
 
 ### Settings
-Share (send a friend the latest release, see what's new), goal (B1 / B2 / C1) and optional target date, sources, Travel mode, weekly goal, reminders, AI correction (engine status, optional own API key), backup (save a file / restore from a file), reset (start onboarding again).
+Share (send a friend the latest release, see what's new), Goal (opens the goal page: level, weekly goal and target date, linked), sources, Travel mode, progress fixes (the Dreaming Spanish range slides by 1 and is always 5 wide), week start, reminders, AI correction (engine status, optional own API key), backup (save a file / restore from a file), reset (start onboarding again).
 
 ## 3.5 Motion and haptics catalog
 

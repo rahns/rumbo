@@ -68,6 +68,7 @@ final class AppModel {
         }
         pathMonitor.start(queue: DispatchQueue(label: "rumbo.network"))
         weekStartsOnSunday = profile?.weekStartsOnSunday ?? false
+        bringProfileUpToDate()
         // No task screen is open at launch, so any timer still showing is left over from a closed app.
         LiveActivities.endAll()
         publishWidgets()
@@ -249,6 +250,7 @@ final class AppModel {
             context.insert(card.makeCard())
         }
         save()
+        bringProfileUpToDate()
         refreshReminders()
     }
 
@@ -411,6 +413,9 @@ final class AppModel {
             entry.rewrite = completion.rewrite?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             context.insert(entry)
             task.writingID = entry.id
+            task.draftText = ""
+            task.draftRewrite = ""
+            task.draftFeedback = nil
             // Every corrected error becomes a mistake-deck card (R7, R11).
             for correction in completion.feedback?.corrections ?? [] {
                 let content = Mistakes.card(from: text, correction: correction)
@@ -454,6 +459,10 @@ final class AppModel {
             }
             if let id = task.writingID {
                 if let entry = try? context.fetch(FetchDescriptor<WritingEntry>(predicate: #Predicate { $0.id == id })).first {
+                    // The text goes back to being the task's draft, so undo never throws writing away.
+                    task.draftText = entry.text
+                    task.draftRewrite = entry.rewrite
+                    task.draftFeedback = entry.feedbackJSON
                     context.delete(entry)
                 }
                 for card in (try? context.fetch(FetchDescriptor<ReviewCard>(predicate: #Predicate { $0.writingID == id }))) ?? [] {
@@ -521,6 +530,23 @@ final class AppModel {
         save()
         refreshReminders()
         celebrateProgress(since: before, xp: minutes * XP.perMinute)
+    }
+
+    /// Profiles from older versions (or older backups): a 5-point Dreaming range, and a target date that
+    /// matches the weekly goal (the two are linked now; see Settings → Goal).
+    func bringProfileUpToDate() {
+        guard let profile else { return }
+        var changed = false
+        if profile.dsDifficultyHigh - profile.dsDifficultyLow != LearnerProfile.dreamingRangeWidth {
+            profile.dsDifficultyHigh = profile.dsDifficultyLow + LearnerProfile.dreamingRangeWidth
+            changed = true
+        }
+        if profile.targetDate == nil {
+            profile.targetDate = GoalPace.arrival(of: profile.goalBand, currentHours: inputHours,
+                                                  weeklyMinutes: profile.weeklyGoalMinutes, band: profile.band, from: .now)
+            changed = true
+        }
+        if changed { try? context.save() }
     }
 
     // MARK: - Moments

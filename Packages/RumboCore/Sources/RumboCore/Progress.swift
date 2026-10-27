@@ -137,6 +137,45 @@ public struct Projection: Sendable {
     }
 }
 
+/// Links the weekly goal and the target date (docs/02-learning-engine.md §2.9): at a weekly goal, when the
+/// goal level is reached; for a target date, the weekly goal that gets there. Only listening counts toward
+/// level hours, so the pace is the goal's listening share.
+public enum GoalPace {
+    /// The weekly goal moves in 10-minute steps.
+    public static let step = 10
+    public static let minutes = 30...900
+
+    /// When `goal` is reached at `weeklyMinutes`; `today` if it already has been.
+    public static func arrival(of goal: Band, currentHours: Double, weeklyMinutes: Int, band: Band,
+                               from today: Date, calendar: Calendar = .current) -> Date {
+        let remaining = goal.inputHoursThreshold - currentHours
+        let weekly = Projection.weeklyInputHours(atGoalMinutes: weeklyMinutes, band: band)
+        guard remaining > 0, weekly > 0 else { return calendar.startOfDay(for: today) }
+        let days = Int((remaining / weekly * 7).rounded(.up))
+        return calendar.date(byAdding: .day, value: days, to: calendar.startOfDay(for: today))!
+    }
+
+    /// The weekly goal (rounded up to a step, within `minutes`) that reaches `goal` by `date`.
+    public static func weeklyMinutes(toReach goal: Band, by date: Date, currentHours: Double, band: Band,
+                                     from today: Date, calendar: Calendar = .current) -> Int {
+        let remaining = goal.inputHoursThreshold - currentHours
+        let share = band.strandTargets[.input] ?? 0
+        guard remaining > 0, share > 0 else { return minutes.lowerBound }
+        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: today), to: calendar.startOfDay(for: date)).day ?? 0
+        let weeks = max(Double(days) / 7, 1)
+        let needed = remaining / weeks / share * 60
+        let rounded = Int((needed / Double(step)).rounded(.up)) * step
+        return min(max(rounded, minutes.lowerBound), minutes.upperBound)
+    }
+
+    /// Whether `date` needs more than the largest weekly goal.
+    public static func isOutOfReach(_ goal: Band, by date: Date, currentHours: Double, band: Band,
+                                    from today: Date, calendar: Calendar = .current) -> Bool {
+        arrival(of: goal, currentHours: currentHours, weeklyMinutes: minutes.upperBound, band: band, from: today, calendar: calendar)
+            > calendar.startOfDay(for: date)
+    }
+}
+
 /// Which daily budget keeps the learner on track for their weekly goal: what's left of the goal,
 /// spread over the days left this week (today included), rounded up to a budget choice.
 public enum BudgetAdvisor {

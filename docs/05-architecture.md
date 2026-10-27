@@ -26,6 +26,7 @@ rumbo/
 │  ├─ Models/                    # SwiftData @Model types
 │  ├─ Features/
 │  │  ├─ Onboarding/
+│  │  ├─ Goal/                  # Goal editor (onboarding + Settings → Goal)
 │  │  ├─ Path/
 │  │  ├─ Today/
 │  │  ├─ TaskFlow/

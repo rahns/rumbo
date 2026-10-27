@@ -141,7 +141,7 @@ After every Dreaming Spanish session (`ds.watch`) the learner rates comprehensio
 | 🙂 Mostly | Understood ~80–90% |
 | 😎 Easy | Understood more than ~95% |
 
-Over the last 5 ratings at the current difficulty: 3 or more "Easy" → suggest raising the Dreaming Spanish difficulty range by 5. Two or more "Lost" → suggest lowering it by 5. The range is shown on the `ds.watch` card ("Look for videos rated 40–48").
+Over the last 5 ratings at the current difficulty: 3 or more "Easy" → suggest raising the Dreaming Spanish difficulty range by 5. Ranges are always 5 points wide (e.g. 40–45); moving one by hand in Settings slides it by 1. Two or more "Lost" → suggest lowering it by 5. The range is shown on the `ds.watch` card ("Look for videos rated 40–48").
 
 ## 2.7 Travel mode
 
@@ -153,7 +153,7 @@ Over the last 5 ratings at the current difficulty: 3 or more "Easy" → suggest 
 
 | Mechanic | Rule |
 |---|---|
-| Weekly goal | Main metric, chosen in onboarding (default 150 min/week). Shown as a ring. |
+| Weekly goal | Main metric, set on the goal page in onboarding and Settings (default 150 min/week, 10-minute steps from 30 to 900), linked to the target date (§2.9). Shown as a ring. |
 | Streak | A day counts if ≥ 10 minutes are logged (R12) |
 | Streak freeze | Earn 1 for each week you meet the weekly goal; hold at most 3; used automatically |
 | XP | 1 per minute logged, +10 per completed card, +25 for a writing rewrite, +50 for passing a gate |
@@ -163,3 +163,6 @@ Over the last 5 ratings at the current difficulty: 3 or more "Easy" → suggest 
 Weekly input hours = rolling average over the last 4 weeks, including bonus input. For a newer learner the average covers only the days since their first log (at least 7), so one short first session isn't read as a month-long pace. Until there's a week of history, the forecast assumes the learner meets their weekly goal (goal minutes × the band's input share). Rumbo projects a date for each remaining band threshold and shows it against the learner's target date ("At this pace you'll reach B1.2 by March 2028. +10 min/day → December 2027").
 
 Example (the author, at the time of writing): 154 h. At ~18 min/day of input → ~110 h/year → about 400–450 h by mid-2028 (B1). Logging an extra 30 min/day of outside listening → about 650 h (B2.1).
+
+
+**Weekly goal ↔ target date** (`GoalPace`). Both assume the weekly goal is met, so listening hours a week = weekly minutes × the band's listening share ÷ 60. The arrival date for the goal level (B1 → 300 h, B2 → 600 h, C1 → B2.2's 800 h) is `today + (threshold − current hours) ÷ weekly hours`. The other way, the weekly goal for a date is `(threshold − current hours) ÷ weeks left ÷ share × 60`, rounded up to 10 minutes and kept within 30–900. Changing either one on the goal page updates the other.

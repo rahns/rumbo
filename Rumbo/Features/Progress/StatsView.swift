@@ -19,7 +19,6 @@ struct StatsView: View {
                         RaisedCard(accent: Palette.leaf) {
                             PracticeHeatMap(weeks: model.heatMapWeeks(), calendar: model.calendar)
                         }
-                        mistakeDeckCard
                         coursesCard(profile)
                     }
                     .padding(20)
@@ -89,37 +88,6 @@ struct StatsView: View {
                 }
             }
         }
-    }
-
-    private var mistakeDeckCard: some View {
-        let total = model.allCards.count
-        let due = model.dueCards.count
-        return NavigationLink {
-            MistakeDeckView()
-        } label: {
-            RaisedCard(accent: Palette.coral) {
-                HStack(spacing: 14) {
-                    Image(systemName: "rectangle.stack.fill")
-                        .font(.title2.weight(.bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 48, height: 48)
-                        .background(Circle().fill(Palette.coral))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Mistake deck")
-                            .font(.rounded(.headline, weight: .black))
-                            .foregroundStyle(Palette.ink)
-                        Text(total == 0 ? "Your corrected mistakes will collect here." : "\(total) cards · \(due) due now")
-                            .font(.rounded(.subheadline, weight: .semibold))
-                            .foregroundStyle(Palette.secondaryText)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.headline)
-                        .foregroundStyle(Palette.secondaryText)
-                }
-            }
-        }
-        .buttonStyle(.plain)
     }
 
     private var streakCard: some View {

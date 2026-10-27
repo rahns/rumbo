@@ -23,7 +23,7 @@ import SwiftData
     /// Input hours before Rumbo (e.g. Dreaming Spanish's own counter at onboarding).
     var baselineInputHours: Double = 0
     var dsDifficultyLow: Int = 40
-    var dsDifficultyHigh: Int = 48
+    var dsDifficultyHigh: Int = 45
     var languageTransferLastTrack: Int = 0
     var languageTransferRepeatPending: Bool = false
     var extraEpisodesWatched: Int = 0
@@ -41,14 +41,11 @@ import SwiftData
 
     init() {}
 
+    /// Dreaming Spanish ranges are always this wide (40–45); moving them slides the whole window.
+    static let dreamingRangeWidth = 5
+
     /// The level the goal ("B1", "B2", "C1") is reached at. Rumbo's path ends at B2.2, so C1 maps there.
-    var goalBand: Band {
-        switch goal {
-        case "B1": .b1_1
-        case "C1": .b2_2
-        default: .b2_1
-        }
-    }
+    var goalBand: Band { GoalEditor.goalBand(for: goal) }
 
     var band: Band {
         get { Band(rawValue: currentBandRaw) ?? .a2_1 }
@@ -162,6 +159,11 @@ import SwiftData
     var isAnchor: Bool = false
     /// Added from "Keep going" after the day's plan was complete.
     var isExtra: Bool = false
+    /// Writing in progress, kept as it's typed so closing the task screen never loses it.
+    var draftText: String = ""
+    var draftRewrite: String = ""
+    /// Encoded `CorrectionService.Result` once the draft has been checked.
+    var draftFeedback: Data?
     /// Encoded `TaskDetail`, e.g. "lt:13", "extra:2:1", "ds:40:48".
     var detailRaw: String = ""
     /// The prompt shown for output tasks, fixed when the plan is made.

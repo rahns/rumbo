@@ -76,25 +76,21 @@ struct SettingsView: View {
         }
 
         Section {
-            Picker("Goal", selection: binding(get: { profile.goal }, set: { profile.goal = $0 })) {
-                Text("B1").tag("B1")
-                Text("B2").tag("B2")
-                Text("C1").tag("C1")
-            }
-            Toggle("Target date", isOn: binding(
-                get: { profile.targetDate != nil },
-                set: { on in
-                    profile.targetDate = on ? (Calendar.current.date(byAdding: .year, value: 1, to: .now) ?? .now) : nil
+            NavigationLink {
+                GoalSettingsView()
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(profile.targetDate.map { "\(profile.goal) by \($0.formatted(.dateTime.month(.abbreviated).year()))" } ?? profile.goal)
+                        .font(.rounded(.body, weight: .bold))
+                    Text("\(profile.weeklyGoalMinutes) min a week")
+                        .font(.rounded(.subheadline, weight: .medium))
+                        .foregroundStyle(Palette.secondaryText)
                 }
-            ))
-            if let date = profile.targetDate {
-                DatePicker("Reach it by", selection: binding(get: { date }, set: { profile.targetDate = $0 }),
-                           in: Date.now..., displayedComponents: .date)
             }
         } header: {
             Text("Goal")
         } footer: {
-            Text("Progress shows when you'll reach each level and where your pace gets you by this date.")
+            Text("Your level goal, weekly minutes and target date. Change the weekly goal and the date follows, or the other way round.")
         }
 
         Section {
@@ -104,10 +100,11 @@ struct SettingsView: View {
         }
 
         Section("Progress") {
+            // A 5-point window (e.g. 40–45) that slides by 1 per tap.
             Stepper("Dreaming Spanish: \(profile.dsDifficultyLow)–\(profile.dsDifficultyHigh)", value: binding(
                 get: { profile.dsDifficultyLow },
-                set: { low in profile.dsDifficulty = max(0, low)...(max(0, low) + OnboardingDraft.dreamingDifficultyWidth) }
-            ), in: 0...100)
+                set: { low in profile.dsDifficulty = max(0, low)...(max(0, low) + LearnerProfile.dreamingRangeWidth) }
+            ), in: 0...(100 - LearnerProfile.dreamingRangeWidth))
             Stepper("Language Transfer: track \(profile.languageTransferLastTrack)", value: binding(
                 get: { profile.languageTransferLastTrack },
                 set: { profile.languageTransferLastTrack = $0; profile.languageTransferRepeatPending = false }
@@ -144,9 +141,6 @@ struct SettingsView: View {
         }
 
         Section("Habit") {
-            Picker("Weekly goal", selection: binding(get: { profile.weeklyGoalMinutes }, set: { profile.weeklyGoalMinutes = $0 })) {
-                ForEach(OnboardingDraft.weeklyGoals, id: \.self) { Text("\($0) min").tag($0) }
-            }
             Picker("Week starts on", selection: Binding(
                 get: { profile.weekStartsOnSunday },
                 set: { model.setWeekStartsOnSunday($0) }

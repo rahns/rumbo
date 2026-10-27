@@ -79,8 +79,12 @@ struct MainTabView: View {
         TabView(selection: $tab) {
             Tab("Path", systemImage: "point.topleft.down.to.point.bottomright.curvepath.fill", value: 0) { PathView() }
             Tab("Progress", systemImage: "chart.line.uptrend.xyaxis", value: 1) { StatsView() }
-            Tab("Library", systemImage: "books.vertical.fill", value: 2) { LibraryView() }
-            Tab("Settings", systemImage: "gearshape.fill", value: 3) { SettingsView() }
+            Tab("Mistakes", systemImage: "rectangle.stack.fill", value: 2) {
+                NavigationStack { MistakeDeckView() }
+            }
+            .badge(model.dueCards.count)
+            Tab("Library", systemImage: "books.vertical.fill", value: 3) { LibraryView() }
+            Tab("Settings", systemImage: "gearshape.fill", value: 4) { SettingsView() }
         }
         // A widget tap (rumbo://today or rumbo://plan) brings up the Path tab, which pushes Today.
         .onChange(of: model.todayRequests) { tab = 0 }

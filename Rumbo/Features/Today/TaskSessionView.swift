@@ -23,6 +23,8 @@ struct TaskSessionView: View {
     @State private var addingCorrection = false
     @State private var duolingoSection = 1
     @State private var duolingoUnit = 1
+    @State private var keyboardVisible = false
+    @State private var confirmingFinish = false
 
     private var kind: TaskKind { task.task }
     private var color: Color { kind.strand.color }
@@ -47,8 +49,22 @@ struct TaskSessionView: View {
         }
         .background(Palette.background.ignoresSafeArea())
         .onAppear {
+            restoreDraft()
             if startLogging && !logging { beginLogging() }
         }
+        // Writing is kept on the task as it's typed, so closing the screen never loses it.
+        .onChange(of: writing) { _, text in task.draftText = text }
+        .onChange(of: rewrite) { _, text in task.draftRewrite = text }
+        .onChange(of: feedback) { _, result in task.draftFeedback = result.flatMap { try? JSONEncoder().encode($0) } }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardVisible = true }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardVisible = false }
+    }
+
+    private func restoreDraft() {
+        guard isWriting, writing.isEmpty else { return }
+        writing = task.draftText
+        rewrite = task.draftRewrite
+        feedback = task.draftFeedback.flatMap { try? JSONDecoder().decode(CorrectionService.Result.self, from: $0) }
     }
 
     // MARK: Pieces
@@ -192,6 +208,18 @@ struct TaskSessionView: View {
                             ? "Counts toward your weekly goal, streak and level hours."
                             : "Counts toward your weekly goal and streak.")
             }
+            if isWriting {
+                let words = (rewrite.isEmpty ? writing : rewrite).split(whereSeparator: \.isWhitespace).count
+                Label(kind == .writeGuided && feedback != nil
+                      ? "Your writing (\(words) words) and its corrections are saved with this task. Each correction becomes a mistake-deck card."
+                      : "Your writing (\(words) words) is saved with this task. Tap Back to keep working on it.",
+                      systemImage: "doc.text.fill")
+                    .font(.rounded(.subheadline, weight: .semibold))
+                    .foregroundStyle(Palette.ink)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 14).fill(Palette.cream))
+            }
             // Only questions whose answers change something are asked (docs/03-experience.md §3.3).
             if kind == .dsWatch {
                 question("How much did you understand?",
@@ -262,18 +290,65 @@ struct TaskSessionView: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 
+    @ViewBuilder
     private var bottomBar: some View {
-        Group {
-            if logging {
-                Button("Save") { save() }
-                    .buttonStyle(ChunkyButtonStyle(color: Palette.leaf))
-                    .disabled(!canSave)
-            } else {
-                Button("I'm done") { beginLogging() }
+        // While typing, only "Hide keyboard" sits above the keyboard; "I'm done" waits until it's down.
+        if keyboardVisible && isWriting {
+            HStack {
+                Spacer()
+                Button {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                } label: {
+                    Label("Hide keyboard", systemImage: "keyboard.chevron.compact.down")
+                        .font(.rounded(.subheadline, weight: .heavy))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Palette.secondaryText)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 8)
+        } else {
+            Group {
+                if logging {
+                    HStack(spacing: 10) {
+                        Button {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { logging = false }
+                        } label: {
+                            Label("Back", systemImage: "chevron.left")
+                        }
+                        .buttonStyle(ChunkySecondaryButtonStyle(fullWidth: false))
+                        Button("Save") { save() }
+                            .buttonStyle(ChunkyButtonStyle(color: Palette.leaf))
+                            .disabled(!canSave)
+                    }
+                } else {
+                    Button("I'm done") {
+                        if needsFinishConfirmation { confirmingFinish = true } else { beginLogging() }
+                    }
                     .buttonStyle(ChunkyButtonStyle(color: color))
+                }
+            }
+            .padding(20)
+            .confirmationDialog(kind == .writeGuided && feedback == nil ? "Finish without checking?" : "Finish writing?",
+                                isPresented: $confirmingFinish, titleVisibility: .visible) {
+                if kind == .writeGuided && feedback == nil {
+                    Button("Keep writing, I'll check it first") {}
+                    Button("Finish without a check") { beginLogging() }
+                } else {
+                    Button("Finish and log it") { beginLogging() }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text(kind == .writeGuided && feedback == nil
+                     ? "Tap \"Check my writing\" for Pico's corrections. Your text is kept either way."
+                     : "Your text is kept and saved with this task when you log it.")
             }
         }
-        .padding(20)
+    }
+
+    /// Writing tasks ask before moving on, so text is never left behind by accident.
+    private var needsFinishConfirmation: Bool {
+        isWriting && !writing.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var canSave: Bool {

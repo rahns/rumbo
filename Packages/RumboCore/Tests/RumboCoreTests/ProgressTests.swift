@@ -52,6 +52,38 @@ import Testing
         #expect(calculator.status(history: history, today: TestCalendar.adding(days: 35, to: monday)).freezes == 3)
     }
 
+    // MARK: Goal pace
+
+    @Test func weeklyGoalSetsTheArrivalDate() {
+        // 150 h → B2.1 (600 h): 450 h at 150 min × 45% = 1.125 h a week = 400 weeks.
+        let arrival = GoalPace.arrival(of: .b2_1, currentHours: 150, weeklyMinutes: 150, band: .a2_1, from: monday, calendar: TestCalendar.utc)
+        #expect(TestCalendar.utc.dateComponents([.day], from: TestCalendar.utc.startOfDay(for: monday), to: arrival).day == 2800)
+        // Twice the goal, half the time.
+        let faster = GoalPace.arrival(of: .b2_1, currentHours: 150, weeklyMinutes: 300, band: .a2_1, from: monday, calendar: TestCalendar.utc)
+        #expect(faster < arrival)
+    }
+
+    @Test func targetDateSetsTheWeeklyGoalAndTheTwoAgree() {
+        let date = TestCalendar.adding(days: 7 * 90, to: monday)
+        let minutes = GoalPace.weeklyMinutes(toReach: .b2_1, by: date, currentHours: 150, band: .a2_1, from: monday, calendar: TestCalendar.utc)
+        #expect(minutes % GoalPace.step == 0)
+        // 450 h over 90 weeks = 5 h a week of listening ÷ 45% ≈ 667 min → 670.
+        #expect(minutes == 670)
+        // Going back the other way lands on or just before the chosen date.
+        let back = GoalPace.arrival(of: .b2_1, currentHours: 150, weeklyMinutes: minutes, band: .a2_1, from: monday, calendar: TestCalendar.utc)
+        #expect(back <= TestCalendar.utc.startOfDay(for: date))
+    }
+
+    @Test func goalPaceStaysInRange() {
+        let tomorrow = TestCalendar.adding(days: 1, to: monday)
+        #expect(GoalPace.weeklyMinutes(toReach: .b2_1, by: tomorrow, currentHours: 150, band: .a2_1, from: monday) == GoalPace.minutes.upperBound)
+        #expect(GoalPace.isOutOfReach(.b2_1, by: tomorrow, currentHours: 150, band: .a2_1, from: monday, calendar: TestCalendar.utc))
+        let farAway = TestCalendar.adding(days: 365 * 100, to: monday)
+        #expect(GoalPace.weeklyMinutes(toReach: .b2_1, by: farAway, currentHours: 150, band: .a2_1, from: monday) == GoalPace.minutes.lowerBound)
+        // Already there: no extra time needed.
+        #expect(GoalPace.weeklyMinutes(toReach: .b1_1, by: farAway, currentHours: 400, band: .b1_1, from: monday) == GoalPace.minutes.lowerBound)
+    }
+
     @Test func xpAddsUp() {
         #expect(XP.total(minutes: 30, completedCards: 3, rewrites: 1, gatesPassed: 1) == 30 + 30 + 25 + 50)
     }

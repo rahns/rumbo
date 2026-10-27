@@ -8,8 +8,9 @@ import RumboCore
 final class OnboardingDraft {
     var name = ""
     var goal = "B2"
-    var hasTargetDate = false
-    var targetDate = Calendar.current.date(from: DateComponents(year: 2028, month: 1, day: 1)) ?? .now
+    /// Set from the weekly goal when the goal step first opens; the two stay linked from then on.
+    var targetDate = Date.now
+    var targetDateSet = false
 
     var sources: Set<SourceKind> = Set(SourceKind.allCases)
 
@@ -28,16 +29,23 @@ final class OnboardingDraft {
     var reminderEnabled = true
     var reminderTime = Calendar.current.date(from: DateComponents(hour: 8, minute: 30)) ?? .now
     var weeklyGoalMinutes = 150
+    var weekStartsOnSunday = false
 
     static let habitCues = ["After breakfast", "On my commute", "At lunch", "After work", "Before bed"]
-    static let weeklyGoals = [60, 100, 150, 210, 300]
-    static let dreamingDifficultyWidth = 8
 
     var inputHours: Double {
         Double(sources.contains(.dreamingSpanish) ? dreamingHours : otherListeningHours)
     }
 
     var bandByHours: Band { Band.forInputHours(inputHours) }
+
+    /// The first time the goal step opens: the date the default weekly goal leads to.
+    func prepareGoal() {
+        guard !targetDateSet else { return }
+        targetDate = GoalPace.arrival(of: GoalEditor.goalBand(for: goal), currentHours: inputHours,
+                                      weeklyMinutes: weeklyGoalMinutes, band: placement.band, from: .now)
+        targetDateSet = true
+    }
 
     /// Statements to show: 5 from the band the hours point to, 5 from the next, interleaved.
     var canDoStatements: [(text: String, isNextBand: Bool)] {
@@ -61,11 +69,11 @@ final class OnboardingDraft {
         let calendar = Calendar.current
         profile.displayName = name.trimmingCharacters(in: .whitespaces)
         profile.goal = goal
-        profile.targetDate = hasTargetDate ? targetDate : nil
+        profile.targetDate = targetDate
         profile.enabledSources = sources
         profile.baselineInputHours = inputHours
         profile.band = placement.band
-        profile.dsDifficulty = dreamingDifficultyLow...(dreamingDifficultyLow + Self.dreamingDifficultyWidth)
+        profile.dsDifficulty = dreamingDifficultyLow...(dreamingDifficultyLow + LearnerProfile.dreamingRangeWidth)
         profile.languageTransferLastTrack = languageTransferLastTrack
         profile.extraEpisodesWatched = extraEpisodesWatched
         profile.duolingoSection = duolingoSection
@@ -75,5 +83,6 @@ final class OnboardingDraft {
         profile.reminderHour = calendar.component(.hour, from: reminderTime)
         profile.reminderMinute = calendar.component(.minute, from: reminderTime)
         profile.weeklyGoalMinutes = weeklyGoalMinutes
+        profile.weekStartsOnSunday = weekStartsOnSunday
     }
 }
