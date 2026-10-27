@@ -51,6 +51,14 @@ enum TaskCopy {
         }
     }
 
+    /// A one-line "why", for tasks whose point isn't obvious from the name.
+    static func purpose(for task: TaskKind) -> String? {
+        switch task {
+        case .dsEasy: "Below your level on purpose: easy listening makes what you know come faster."
+        default: nil
+        }
+    }
+
     /// How to do the task, shown in the task session.
     static func instructions(for task: TaskKind, detail: TaskDetail, band: Band) -> String {
         switch task {

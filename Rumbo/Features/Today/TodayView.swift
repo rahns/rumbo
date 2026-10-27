@@ -319,6 +319,12 @@ struct ExtraOptionRow: View {
                     .font(.rounded(.caption, weight: .semibold))
                     .foregroundStyle(Palette.secondaryText)
                     .lineLimit(1)
+                if let purpose = TaskCopy.purpose(for: option.kind) {
+                    Text(purpose)
+                        .font(.rounded(.caption2, weight: .medium))
+                        .foregroundStyle(Palette.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             Spacer(minLength: 8)
             Button("Start", action: onStart)
@@ -464,6 +470,12 @@ struct TaskCardView: View {
                             Text(detail)
                                 .font(.rounded(.subheadline, weight: .semibold))
                                 .foregroundStyle(Palette.secondaryText)
+                        }
+                        if !finished, let purpose = TaskCopy.purpose(for: kind) {
+                            Text(purpose)
+                                .font(.rounded(.caption, weight: .medium))
+                                .foregroundStyle(Palette.secondaryText)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                     .accessibilityElement(children: .combine)
