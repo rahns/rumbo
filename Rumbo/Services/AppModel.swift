@@ -342,10 +342,28 @@ final class AppModel {
     /// Set by the Live Activity's Done button (rumbo://finish): opens the log screen for the active task.
     var finishingTask: PlannedTaskRecord?
 
+    /// Bumped to ask the app to show Today (from a widget tap).
+    private(set) var todayRequests = 0
+
     func handle(_ url: URL) {
         guard url.scheme == "rumbo" else { return }
-        if url.host == "finish" {
+        switch url.host {
+        case "finish":
             finishingTask = activeTask
+        case "plan":
+            // rumbo://plan?minutes=30 picks that time for today if there's no plan yet, then opens Today.
+            showToday()
+            let minutes = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+                .queryItems?.first { $0.name == "minutes" }?.value.flatMap(Int.init)
+            if todayPlan == nil, let minutes, DayPlanner.budgetChoices.contains(minutes) {
+                makeTodayPlan(budget: minutes)
+            }
+            todayRequests += 1
+        case "today":
+            showToday()
+            todayRequests += 1
+        default:
+            break
         }
     }
 
@@ -696,9 +714,20 @@ final class AppModel {
         guard let profile else { return }
         let today = calendar.startOfDay(for: .now)
         let plan = session(for: today)
-        let tasks = (plan?.sortedTasks ?? []).filter { $0.status != .skipped }.map {
+        var tasks = (plan?.sortedTasks ?? []).filter { $0.status != .skipped }.map {
             WidgetSnapshot.TaskLine(title: TaskCopy.title(for: $0.task), symbol: TaskCopy.symbol(for: $0.task),
                                     minutes: $0.minutesPlanned, done: $0.status == .done, colorHex: $0.task.strand.hex)
+        }
+        // No plan yet: preview the one the gold-starred budget would give, so the widget shows what's on track.
+        var suggested: Int?
+        if plan == nil {
+            let budget = budgetAdvice.recommended
+            let preview = DayPlanner(calendar: calendar).plan(budget: budget, learner: snapshot(for: profile), history: history, today: today)
+            suggested = budget
+            tasks = preview.tasks.map {
+                WidgetSnapshot.TaskLine(title: TaskCopy.title(for: $0.kind), symbol: TaskCopy.symbol(for: $0.kind),
+                                        minutes: $0.minutes, done: false, colorHex: $0.kind.strand.hex)
+            }
         }
         let status = streak
         let mood: String = switch picoMood {
@@ -709,7 +738,8 @@ final class AppModel {
         var snapshot = WidgetSnapshot(
             updated: .now, day: today, streak: status.streak, minutesThisWeek: status.minutesThisWeek,
             weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.band.label) · \(profile.band.rawValue)",
-            dayComplete: plan?.isComplete ?? false, hasPlan: plan != nil, tasks: tasks, mood: mood
+            dayComplete: plan?.isComplete ?? false, hasPlan: plan != nil, tasks: tasks, mood: mood,
+            suggestedMinutes: suggested
         )
         var comparable = snapshot
         comparable.updated = lastSnapshot?.updated ?? snapshot.updated

@@ -58,6 +58,9 @@ struct PathView: View {
             .fullScreenCover(isPresented: $showingGate) {
                 GateView()
             }
+            .onChange(of: model.todayRequests) {
+                showingToday = true
+            }
         }
     }
 
@@ -148,7 +151,8 @@ struct PathView: View {
         if node.isToday {
             model.showToday()
             showingToday = true
-        } else if node.status == .unlocked {
+        } else if node.status == .unlocked || (node.date > .now && model.session(for: node.date) != nil) {
+            // A day opened early, finished or not, opens in Today so its tasks can be continued or undone.
             model.selectedPlanDay = node.date
             showingToday = true
         } else {

@@ -24,6 +24,16 @@ struct WidgetSnapshot: Codable, Equatable {
     var tasks: [TaskLine]
     /// "hovering", "sleepy" or "backpacker".
     var mood: String
+    /// With no plan yet: the budget that keeps the weekly goal on track. `tasks` then previews its plan.
+    var suggestedMinutes: Int? = nil
+
+    var isSuggestion: Bool { !hasPlan && suggestedMinutes != nil && !tasks.isEmpty }
+
+    /// Tapping a suggestion picks that time and opens Today; otherwise it just opens Today.
+    var tapURL: URL? {
+        if isSuggestion, let suggestedMinutes { return URL(string: "rumbo://plan?minutes=\(suggestedMinutes)") }
+        return URL(string: "rumbo://today")
+    }
 
     static let placeholder = WidgetSnapshot(
         updated: .now, day: Calendar.current.startOfDay(for: .now), streak: 5, minutesThisWeek: 85, weeklyGoal: 150,
@@ -44,6 +54,7 @@ struct WidgetSnapshot: Codable, Equatable {
         fresh.dayComplete = false
         fresh.hasPlan = false
         fresh.tasks = []
+        fresh.suggestedMinutes = nil
         return fresh
     }
 

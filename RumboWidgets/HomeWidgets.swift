@@ -38,11 +38,11 @@ struct RumboHomeWidget: Widget {
         StaticConfiguration(kind: "RumboToday", provider: RumboProvider()) { entry in
             HomeWidgetView(entry: entry)
                 .containerBackground(Palette.background, for: .widget)
-                .widgetURL(URL(string: "rumbo://today"))
+                .widgetURL(entry.snapshot?.tapURL ?? URL(string: "rumbo://today"))
         }
         .configurationDisplayName("Rumbo")
         .description("Your streak, this week's minutes and today's plan.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 
@@ -54,6 +54,7 @@ struct HomeWidgetView: View {
         if let snapshot = entry.snapshot {
             switch family {
             case .systemMedium: medium(snapshot)
+            case .systemLarge: large(snapshot)
             default: small(snapshot)
             }
         } else {
@@ -91,36 +92,95 @@ struct HomeWidgetView: View {
                 WeekRing(snapshot: snapshot, size: 40)
             }
             VStack(alignment: .leading, spacing: 6) {
-                Text(snapshot.dayComplete ? "¡Hecho! Day complete" : "Today")
-                    .font(.rounded(.headline, weight: .black))
-                    .foregroundStyle(snapshot.dayComplete ? Palette.leaf : Palette.ink)
-                if snapshot.tasks.isEmpty {
-                    Text("Tap to pick your time for today.")
-                        .font(.rounded(.subheadline, weight: .semibold))
-                        .foregroundStyle(Palette.secondaryText)
-                } else {
-                    ForEach(Array(snapshot.tasks.prefix(4).enumerated()), id: \.offset) { _, task in
-                        HStack(spacing: 6) {
-                            Image(systemName: task.done ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(task.done ? Palette.leaf : Color(uiColor: UIColor(hex: task.colorHex)))
-                            Text(task.title)
-                                .strikethrough(task.done)
-                                .foregroundStyle(task.done ? Palette.secondaryText : Palette.ink)
-                                .lineLimit(1)
-                            Spacer(minLength: 0)
-                            Text("\(task.minutes)′")
-                                .foregroundStyle(Palette.secondaryText)
-                        }
+                planHeader(snapshot)
+                taskList(snapshot, limit: 4)
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    private func large(_ snapshot: WidgetSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
+                PicoStill(mood: snapshot.dayComplete ? .cheering : mood(snapshot), size: 64)
+                VStack(alignment: .leading, spacing: 4) {
+                    StreakLabel(streak: snapshot.streak)
+                    Text("\(snapshot.minutesThisWeek) / \(snapshot.weeklyGoal) min this week")
                         .font(.rounded(.caption, weight: .bold))
-                    }
+                        .foregroundStyle(Palette.secondaryText)
+                    Text(snapshot.bandLabel)
+                        .font(.rounded(.caption, weight: .bold))
+                        .foregroundStyle(Palette.secondaryText)
                 }
                 Spacer(minLength: 0)
+                WeekRing(snapshot: snapshot, size: 54)
+            }
+            Divider()
+            planHeader(snapshot)
+            taskList(snapshot, limit: 7)
+            Spacer(minLength: 0)
+            if snapshot.isSuggestion {
+                Text("Tap to start this plan")
+                    .font(.rounded(.subheadline, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(Capsule().fill(Palette.coral))
+            }
+        }
+    }
+
+    /// "Today", "¡Hecho!", or, before a plan is picked, the on-track suggestion.
+    @ViewBuilder
+    private func planHeader(_ snapshot: WidgetSnapshot) -> some View {
+        if snapshot.isSuggestion, let minutes = snapshot.suggestedMinutes {
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 4) {
+                    Image(systemName: "star.fill").foregroundStyle(Palette.sun)
+                    Text("Suggested: \(minutes) min")
+                }
+                .font(.rounded(.headline, weight: .black))
+                .foregroundStyle(Palette.ink)
+                Text("Keeps you on track for your weekly goal")
+                    .font(.rounded(.caption2, weight: .bold))
+                    .foregroundStyle(Palette.secondaryText)
+                    .lineLimit(1)
+            }
+        } else {
+            Text(snapshot.dayComplete ? "¡Hecho! Day complete" : "Today")
+                .font(.rounded(.headline, weight: .black))
+                .foregroundStyle(snapshot.dayComplete ? Palette.leaf : Palette.ink)
+        }
+    }
+
+    @ViewBuilder
+    private func taskList(_ snapshot: WidgetSnapshot, limit: Int) -> some View {
+        if snapshot.tasks.isEmpty {
+            Text("Tap to pick your time for today.")
+                .font(.rounded(.subheadline, weight: .semibold))
+                .foregroundStyle(Palette.secondaryText)
+        } else {
+            ForEach(Array(snapshot.tasks.prefix(limit).enumerated()), id: \.offset) { _, task in
+                HStack(spacing: 6) {
+                    Image(systemName: task.done ? "checkmark.circle.fill" : snapshot.isSuggestion ? task.symbol : "circle")
+                        .foregroundStyle(task.done ? Palette.leaf : Color(uiColor: UIColor(hex: task.colorHex)))
+                        .frame(width: 16)
+                    Text(task.title)
+                        .strikethrough(task.done)
+                        .foregroundStyle(task.done ? Palette.secondaryText : Palette.ink)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                    Text("\(task.minutes)′")
+                        .foregroundStyle(Palette.secondaryText)
+                }
+                .font(.rounded(family == .systemLarge ? .subheadline : .caption, weight: .bold))
             }
         }
     }
 
     private func status(_ snapshot: WidgetSnapshot) -> String {
         if snapshot.dayComplete { return "¡Hecho! Day complete" }
+        if snapshot.isSuggestion, let minutes = snapshot.suggestedMinutes { return "Suggested: \(minutes) min, tap to start" }
         if let next = snapshot.nextTask { return "Next: \(next.title)" }
         return "Pick your time for today"
     }
@@ -141,7 +201,7 @@ struct RumboLockScreenWidget: Widget {
         StaticConfiguration(kind: "RumboLockScreen", provider: RumboProvider()) { entry in
             LockScreenWidgetView(entry: entry)
                 .containerBackground(.clear, for: .widget)
-                .widgetURL(URL(string: "rumbo://today"))
+                .widgetURL(entry.snapshot?.tapURL ?? URL(string: "rumbo://today"))
         }
         .configurationDisplayName("Rumbo")
         .description("This week's minutes, your streak and the next task.")
@@ -169,6 +229,9 @@ struct LockScreenWidgetView: View {
                     .font(.headline)
                 if snapshot.dayComplete {
                     Text("Day complete ✓")
+                } else if snapshot.isSuggestion, let minutes = snapshot.suggestedMinutes {
+                    Text("Suggested: \(minutes) min")
+                    Text("Tap to start").foregroundStyle(.secondary)
                 } else if let next = snapshot.nextTask {
                     Text("Next: \(next.title)").lineLimit(1)
                     Text("\(next.minutes) min").foregroundStyle(.secondary)

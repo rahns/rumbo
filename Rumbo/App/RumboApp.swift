@@ -72,15 +72,18 @@ struct RootView: View {
 
 struct MainTabView: View {
     @Environment(AppModel.self) private var model
+    @State private var tab = 0
 
     var body: some View {
         @Bindable var model = model
-        TabView {
-            Tab("Path", systemImage: "point.topleft.down.to.point.bottomright.curvepath.fill") { PathView() }
-            Tab("Progress", systemImage: "chart.line.uptrend.xyaxis") { StatsView() }
-            Tab("Library", systemImage: "books.vertical.fill") { LibraryView() }
-            Tab("Settings", systemImage: "gearshape.fill") { SettingsView() }
+        TabView(selection: $tab) {
+            Tab("Path", systemImage: "point.topleft.down.to.point.bottomright.curvepath.fill", value: 0) { PathView() }
+            Tab("Progress", systemImage: "chart.line.uptrend.xyaxis", value: 1) { StatsView() }
+            Tab("Library", systemImage: "books.vertical.fill", value: 2) { LibraryView() }
+            Tab("Settings", systemImage: "gearshape.fill", value: 3) { SettingsView() }
         }
+        // A widget tap (rumbo://today or rumbo://plan) brings up the Path tab, which pushes Today.
+        .onChange(of: model.todayRequests) { tab = 0 }
         .fullScreenCover(item: $model.finishingTask) { task in
             TaskSessionView(task: task, startLogging: true)
         }

@@ -82,7 +82,7 @@ Implemented in `Rumbo/Features/Path/PathView.swift`, laid out by `PathLayout` in
 - **One node per calendar day** since onboarding, labelled with its weekday and date; 7 nodes per unit ("Unidad N", with its dates). Day complete (its plan finished, or ≥ 10 minutes logged with no plan) = green tick; partly done = yellow; missed = grey moon; upcoming = locked and faded.
 - **Today** is the big node with Pico beside it. Unfinished: coral star, pulsing, with a "START"/"CONTINUE" bubble; tapping zooms into Today.
 - **Finished today is unmistakable:** the node turns into a big green tick inside a gold ring with sparkles, the bubble says "¡HECHO!", Pico cheers, and the header shows a green "Day done" badge.
-- **Working ahead:** finishing today opens tomorrow (blue, pulsing, "KEEP GOING"). Tapping it, or "Keep going: do tomorrow now" on Today, plans tomorrow's session now. It's planned for that day, so everything done so far counts toward the balance, and finishing it marks tomorrow's node complete in advance and opens the day after.
+- **Working ahead:** finishing today opens tomorrow (blue, pulsing, "KEEP GOING"). Tapping it, or "Keep going: do tomorrow now" on Today, plans tomorrow's session now. It's planned for that day, so everything done so far counts toward the balance, and finishing it marks tomorrow's node complete in advance and opens the day after. A day done (or started) early can be tapped again: it opens in Today, where its tasks can be continued or undone (tap the grey tick); once every task is undone, its time can be re-picked.
 - **The future:** locked units continue at least 4 units after today's, and as far as the last projected level-up (up to about two years). Trophy markers sit on the day each level-up is expected ("Viajero · A2.2, around February 2027"), at the forecast pace: the learner's own after a week of history, the weekly goal before that.
 - **Gate node:** when the hours for the next band are reached (and no failed check in the last 14 days), a golden trophy node appears right after today. Today also shows a "Level-up check ready" banner.
 - Tapping a past (or early-finished) node shows that day's plan and any other practice.
@@ -167,14 +167,17 @@ Every animation respects **Reduce Motion** (switches to fades).
 
 ## 3.6 Widgets and Live Activity
 
-Implemented in `RumboWidgets/`. Widgets read a `WidgetSnapshot` the app writes after every change (streak, this week's minutes and goal, today's tasks, whether the day is complete, Pico's mood), shared through the Keychain's default group. A plan from yesterday never shows today; the timeline refreshes just after midnight. Tapping any widget opens Rumbo.
+Implemented in `RumboWidgets/`. Widgets read a `WidgetSnapshot` the app writes after every change (streak, this week's minutes and goal, today's tasks, whether the day is complete, Pico's mood), shared through the Keychain's default group. A plan from yesterday never shows today; the timeline refreshes just after midnight. Tapping a widget opens Today (`rumbo://today`).
+
+**Before today's time is picked**, the widgets show the **suggested plan**: the plan the gold-starred, on-track budget would give ("★ Suggested: 30 min · Keeps you on track for your weekly goal" and its tasks). Tapping it (`rumbo://plan?minutes=30`) picks that time and opens Today; if a plan already exists by then, it just opens Today.
 
 | Surface | Content |
 |---|---|
-| Small widget | Pico (cheering once the day is complete), weekly ring with %, streak, and "Next: …" or "¡Hecho! Day complete" |
-| Medium widget | The same, plus today's tasks with ticks, colour-coded by strand, and minutes |
+| Small widget | Pico (cheering once the day is complete), weekly ring with %, streak, and "Next: …", "Suggested: 30 min, tap to start" or "¡Hecho! Day complete" |
+| Medium widget | The same, plus today's tasks (or the suggested plan) with ticks, colour-coded by strand, and minutes |
+| Large widget | Pico, streak, this week's minutes, level and weekly ring, then up to 7 tasks; for a suggestion, a "Tap to start this plan" button |
 | Lock Screen circular | Weekly-goal gauge with the streak number |
-| Lock Screen rectangular | "🔥 5 · 85/150 min", then the next task (or "Day complete ✓") |
+| Lock Screen rectangular | "🔥 5 · 85/150 min", then the next task ("Suggested: 30 min" before a plan, or "Day complete ✓") |
 | Lock Screen inline | "🔥 5 · 85/150 min this week" |
 | Live Activity (Lock Screen) | Task icon in its strand colour, title, elapsed time, progress bar, **Pause/Resume** and **Done** |
 | Dynamic Island compact | Task icon (pause icon while paused) + elapsed time |
