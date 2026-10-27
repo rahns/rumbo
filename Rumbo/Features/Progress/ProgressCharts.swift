@@ -96,7 +96,7 @@ struct LevelTimeline: View {
     var body: some View {
         let stops = makeStops()
         VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(stops.enumerated()), id: \.element.id) { index, stop in
+            ForEach(Array(stops.enumerated()), id: \.offset) { index, stop in
                 row(stop, isLast: index == stops.count - 1)
             }
         }

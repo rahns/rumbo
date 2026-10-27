@@ -77,7 +77,7 @@ struct StatsView: View {
                 } else {
                     let expected = profile.targetDate.map { projection.inputHours(by: $0, from: .now, current: model.inputHours, weeklyHours: weekly) }
                     LevelTimeline(band: profile.band, hours: model.inputHours, arrivals: arrivals, targetDate: profile.targetDate,
-                                  atTarget: expected.map { ($0, Band.forInputHours($0)) })
+                                  atTarget: expected.map { (hours: $0, band: Band.forInputHours($0)) })
                         .padding(.top, 6)
                 }
                 if let target = profile.targetDate, target > .now {
