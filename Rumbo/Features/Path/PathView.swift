@@ -169,7 +169,7 @@ struct PathView: View {
             } label: {
                 VStack(spacing: 6) {
                     PathNodeView(status: node.status, isToday: node.isToday, date: node.date, minutes: node.minutes)
-                    Text(node.isToday ? "Today" : node.date.formatted(.dateTime.weekday(.abbreviated).day()))
+                    Text(node.isToday ? "Today" : SpanishDate.shortDay(node.date))
                         .font(.rounded(.caption, weight: node.isToday ? .black : .bold))
                         .foregroundStyle(node.isToday ? Palette.ink : Palette.secondaryText)
                 }
@@ -543,7 +543,7 @@ struct DaySummarySheet: View {
         let minutes = planned.compactMap { task in logs.first { $0.id == task.logID }?.minutes }.reduce(0, +)
             + others.reduce(0) { $0 + $1.minutes }
         VStack(alignment: .leading, spacing: 14) {
-            Text(date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+            Text(SpanishDate.longDay(date))
                 .font(.rounded(.title2, weight: .black))
                 .foregroundStyle(Palette.ink)
             Text(minutes == 0 ? "Nothing logged that day." : "\(minutes) minutes\(plan?.isComplete == true ? " · day complete" : "")")
@@ -577,4 +577,21 @@ struct DaySummarySheet: View {
                 .foregroundStyle(Palette.secondaryText)
         }
     }
+}
+
+/// Day names on the path in Spanish: "Lun 26" on nodes, "Lunes 26 de octubre" on a day's summary.
+enum SpanishDate {
+    private static let spanish = Locale(identifier: "es")
+
+    static func shortDay(_ date: Date) -> String {
+        date.formatted(.dateTime.weekday(.abbreviated).day().locale(spanish)).capitalizedFirstLetter
+    }
+
+    static func longDay(_ date: Date) -> String {
+        date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(spanish)).capitalizedFirstLetter
+    }
+}
+
+private extension String {
+    var capitalizedFirstLetter: String { prefix(1).uppercased() + dropFirst() }
 }
