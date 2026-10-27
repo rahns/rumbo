@@ -2,59 +2,63 @@ import Charts
 import RumboCore
 import SwiftUI
 
-/// The last 7 days' minutes per strand against the band's targets (§2.2).
+/// The last 7 days' minutes per strand against the band's targets (§2.2): one row per strand,
+/// the bar is the learner's share and the dark tick is the target share.
 struct StrandBalanceChart: View {
     let minutes: [Strand: Int]
     let targets: [Strand: Double]
 
     var body: some View {
-        let total = max(minutes.values.reduce(0, +), 1)
-        VStack(alignment: .leading, spacing: 10) {
+        let total = minutes.values.reduce(0, +)
+        VStack(alignment: .leading, spacing: 14) {
             Text("This week's balance")
                 .font(.rounded(.headline, weight: .black))
                 .foregroundStyle(Palette.ink)
-            Text(minutes.values.reduce(0, +) == 0
+            Text(total == 0
                  ? "Nothing logged in the last 7 days yet. Finish a task and your mix shows up here, next to the marks your level needs."
-                 : "Your last 7 days. The marks show the mix your level needs; Rumbo plans toward them.")
+                 : "Your last 7 days. The bar is your share of time; the mark is the share your level needs.")
                 .font(.rounded(.subheadline, weight: .semibold))
                 .foregroundStyle(Palette.secondaryText)
-            Chart {
-                ForEach(Strand.allCases, id: \.self) { strand in
-                    BarMark(
-                        x: .value("Share", Double(minutes[strand] ?? 0) / Double(total) * 100),
-                        y: .value("Strand", strand.label)
-                    )
-                    .foregroundStyle(strand.color)
-                    .cornerRadius(6)
-                    .accessibilityLabel(strand.label)
-                    .accessibilityValue("\(minutes[strand] ?? 0) minutes, \(Int(Double(minutes[strand] ?? 0) / Double(total) * 100)) percent. Target \(Int((targets[strand] ?? 0) * 100)) percent.")
-                    .annotation(position: .trailing) {
-                        Text("\(minutes[strand] ?? 0)′")
-                            .font(.rounded(.caption, weight: .heavy))
-                            .foregroundStyle(Palette.secondaryText)
-                    }
-                    RuleMark(
-                        xStart: .value("Target", (targets[strand] ?? 0) * 100 - 0.6),
-                        xEnd: .value("Target", (targets[strand] ?? 0) * 100 + 0.6),
-                        y: .value("Strand", strand.label)
-                    )
-                    .lineStyle(StrokeStyle(lineWidth: 26))
-                    .foregroundStyle(Palette.ink.opacity(0.7))
-                    .accessibilityHidden(true)
-                }
+            ForEach(Strand.allCases, id: \.self) { strand in
+                row(strand, share: total == 0 ? 0 : Double(minutes[strand] ?? 0) / Double(total))
             }
-            .chartXScale(domain: 0...100)
-            .chartXAxis {
-                AxisMarks(values: [0, 25, 50, 75, 100]) { value in
-                    AxisGridLine()
-                    AxisValueLabel { Text("\(value.as(Int.self) ?? 0)%") }
-                }
-            }
-            .chartYAxis {
-                AxisMarks { _ in AxisValueLabel().font(.rounded(.caption, weight: .bold)) }
-            }
-            .frame(height: 170)
         }
+    }
+
+    private func row(_ strand: Strand, share: Double) -> some View {
+        let target = targets[strand] ?? 0
+        let spent = minutes[strand] ?? 0
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(strand.label)
+                    .foregroundStyle(Palette.ink)
+                Spacer()
+                Text("\(spent) min · \(Int((share * 100).rounded()))%")
+                    .foregroundStyle(Palette.secondaryText)
+                Text("aim \(Int((target * 100).rounded()))%")
+                    .foregroundStyle(Palette.secondaryText.opacity(0.8))
+            }
+            .font(.rounded(.subheadline, weight: .bold))
+            GeometryReader { proxy in
+                let width = proxy.size.width
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Palette.lilac)
+                    Capsule()
+                        .fill(strand.color)
+                        .frame(width: share > 0 ? max(12, width * share) : 0)
+                    RoundedRectangle(cornerRadius: 1.5)
+                        .fill(Palette.ink)
+                        .frame(width: 3, height: 20)
+                        .offset(x: min(max(width * target - 1.5, 0), width - 3))
+                }
+            }
+            .frame(height: 12)
+            .padding(.vertical, 4)
+            .animation(.spring(response: 0.5, dampingFraction: 0.8), value: share)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(strand.label)
+        .accessibilityValue("\(spent) minutes, \(Int((share * 100).rounded())) percent. Target \(Int((target * 100).rounded())) percent.")
     }
 }
 
@@ -69,20 +73,21 @@ struct JourneyChart: View {
         let end = targetDate.flatMap { $0 > .now ? $0 : nil } ?? calendar.date(byAdding: .year, value: 1, to: .now)!
         let points = ProgressStats.projection(currentHours: currentHours, weeklyHours: weeklyHours, from: .now, until: end, calendar: calendar)
         let top = max((points.last?.hours ?? currentHours) * 1.1, currentHours + 10)
-        let bands = Band.allCases.filter { $0.inputHoursThreshold > currentHours * 0.8 && $0.inputHoursThreshold <= top }
+        let bottom = max(0, currentHours * 0.9)
+        let bands = Band.allCases.filter { $0.inputHoursThreshold > currentHours && $0.inputHoursThreshold <= top }
         Chart {
             ForEach(bands, id: \.self) { band in
                 RuleMark(y: .value("Hours", band.inputHoursThreshold))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
                     .foregroundStyle(Palette.secondaryText.opacity(0.6))
-                    .annotation(position: .top, alignment: .leading) {
+                    .annotation(position: .top, alignment: .leading, spacing: 2) {
                         Text("\(band.label) · \(Int(band.inputHoursThreshold)) h")
                             .font(.rounded(.caption2, weight: .heavy))
                             .foregroundStyle(Palette.secondaryText)
                     }
             }
             ForEach(points, id: \.date) { point in
-                AreaMark(x: .value("Date", point.date), y: .value("Hours", point.hours))
+                AreaMark(x: .value("Date", point.date), yStart: .value("Hours", bottom), yEnd: .value("Hours", point.hours))
                     .foregroundStyle(LinearGradient(colors: [Palette.sky.opacity(0.35), Palette.sky.opacity(0.02)], startPoint: .top, endPoint: .bottom))
                     .interpolationMethod(.monotone)
                 LineMark(x: .value("Date", point.date), y: .value("Hours", point.hours))
@@ -94,24 +99,22 @@ struct JourneyChart: View {
                 PointMark(x: .value("Date", first.date), y: .value("Hours", first.hours))
                     .foregroundStyle(Palette.coral)
                     .symbolSize(90)
-                    .annotation(position: .top) {
-                        Text("Now").font(.rounded(.caption2, weight: .heavy)).foregroundStyle(Palette.coral)
-                    }
             }
             if let targetDate, targetDate > .now {
                 RuleMark(x: .value("Target", targetDate))
                     .foregroundStyle(Palette.sun)
                     .lineStyle(StrokeStyle(lineWidth: 2))
-                    .annotation(position: .top, alignment: .trailing) {
+                    .annotation(position: .top, alignment: .trailing, spacing: 2) {
                         Text("Target").font(.rounded(.caption2, weight: .heavy)).foregroundStyle(Palette.sun)
                     }
             }
         }
-        .chartYScale(domain: (currentHours * 0.8)...top)
+        .chartYScale(domain: bottom...top)
+        .chartPlotStyle { $0.clipped() }
         .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+            AxisMarks(values: .automatic(desiredCount: 3)) { _ in
                 AxisGridLine()
-                AxisValueLabel(format: .dateTime.month(.abbreviated).year(.twoDigits))
+                AxisValueLabel(format: .dateTime.month(.abbreviated).year())
             }
         }
         .frame(height: 200)

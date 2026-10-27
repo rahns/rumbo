@@ -2,7 +2,7 @@ import RumboCore
 import SwiftUI
 
 /// Library tab (docs/03-experience.md §3.5): shows and podcasts for the learner's level now and next,
-/// with their destination's accent first. "Watching this" makes "Watch or listen" tasks point at it.
+/// with the destination's accent (Settings → Heading to) first. "Watching this" makes "Watch or listen" tasks point at it.
 struct LibraryView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openURL) private var openURL
@@ -14,7 +14,6 @@ struct LibraryView: View {
                     let suggestions = model.contentSuggestions
                     VStack(alignment: .leading, spacing: 18) {
                         intro(profile)
-                        destinationPicker(profile)
                         if let current = model.currentContent {
                             section("Watching now", subtitle: nil) {
                                 ContentCard(item: current, isWatching: true, toggle: { model.toggleWatching(current) }, open: open)
@@ -56,27 +55,6 @@ struct LibraryView: View {
             Text("Real shows and podcasts for when you want a change from your courses. \"Watch or listen\" tasks use the one you're watching.")
                 .font(.rounded(.subheadline, weight: .semibold))
                 .foregroundStyle(Palette.secondaryText)
-        }
-    }
-
-    private func destinationPicker(_ profile: LearnerProfile) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Heading to")
-                .font(.rounded(.caption, weight: .heavy))
-                .foregroundStyle(Palette.secondaryText)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ChipButton(title: "Anywhere", isSelected: profile.destination.isEmpty, color: Palette.sky) {
-                        model.setDestination("")
-                    }
-                    ForEach(ContentLibrary.destinations, id: \.self) { place in
-                        ChipButton(title: place, isSelected: profile.destination == place, color: Palette.sky) {
-                            model.setDestination(place)
-                        }
-                    }
-                }
-                .padding(.vertical, 2)
-            }
         }
     }
 
