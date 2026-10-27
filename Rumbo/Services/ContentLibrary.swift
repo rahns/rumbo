@@ -6,9 +6,6 @@ import RumboCore
 enum ContentLibrary {
     static let remoteURL = URL(string: "https://raw.githubusercontent.com/rahns/rumbo/main/Rumbo/Resources/catalog/content.json")!
 
-    /// Places the learner might be heading; suggestions with that accent come first.
-    static let destinations = ["Mexico", "Colombia", "Argentina", "Peru", "Chile", "Spain"]
-
     private static var cacheURL: URL {
         URL.cachesDirectory.appendingPathComponent("content-catalog.json")
     }

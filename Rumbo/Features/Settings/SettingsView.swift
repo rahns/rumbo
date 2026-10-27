@@ -77,12 +77,8 @@ struct SettingsView: View {
 
         Section {
             Toggle("Travel mode", isOn: binding(get: { profile.travelMode }, set: { profile.travelMode = $0 }))
-            Picker("Heading to", selection: Binding(get: { profile.destination }, set: { model.setDestination($0) })) {
-                Text("Anywhere").tag("")
-                ForEach(ContentLibrary.destinations, id: \.self) { Text($0).tag($0) }
-            }
         } footer: {
-            Text("Travel mode adds real-world missions and copes with no signal. Library puts shows with your destination's accent first.")
+            Text("Adds real-world missions and copes with no signal.")
         }
 
         Section("Progress") {

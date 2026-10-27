@@ -22,9 +22,9 @@ import Testing
         #expect(suggestions.next.map(\.id) == ["b1-co"])
     }
 
-    @Test func destinationAccentComesFirst() {
-        #expect(catalog.suggestions(for: .a2_1, destination: "Spain").now.first?.id == "easy-es")
-        #expect(catalog.suggestions(for: .a2_1, destination: "Mexico").now.first?.id == "easy-mx")
+    @Test func easiestComesFirst() {
+        let items = ContentCatalog(version: 1, items: [item("harder", .b1_1, .b1_2, "Mexico"), item("easier", .a2_2, .b1_2, "Spain")])
+        #expect(items.suggestions(for: .b1_1).now.map(\.id) == ["easier", "harder"])
     }
 
     @Test func theLastBandHasNoNext() {

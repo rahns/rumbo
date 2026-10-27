@@ -36,8 +36,6 @@ import SwiftData
     var lastFailedGate: Date?
     /// Weeks (weekly goal, freezes, budget advice) start on Sunday instead of Monday.
     var weekStartsOnSunday: Bool = false
-    /// Where the learner is heading (e.g. "Mexico"); Library puts that accent first. Empty when not set.
-    var destination: String = ""
     /// The catalog item the learner is watching now; "Watch or listen" tasks point at it.
     var currentContentID: String = ""
 

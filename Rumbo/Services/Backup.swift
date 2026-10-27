@@ -45,7 +45,6 @@ struct BackupFile: Codable {
         var gatesPassed: Int?
         var lastFailedGate: Date?
         var weekStartsOnSunday: Bool?
-        var destination: String?
         var currentContentID: String?
     }
 
@@ -129,7 +128,7 @@ extension BackupFile.ProfileData {
             duolingoSection: profile.duolingoSection, duolingoUnit: profile.duolingoUnit,
             gatesPassed: profile.gatesPassed, lastFailedGate: profile.lastFailedGate,
             weekStartsOnSunday: profile.weekStartsOnSunday,
-            destination: profile.destination, currentContentID: profile.currentContentID
+            currentContentID: profile.currentContentID
         )
     }
 
@@ -161,7 +160,6 @@ extension BackupFile.ProfileData {
         profile.gatesPassed = gatesPassed ?? 0
         profile.lastFailedGate = lastFailedGate
         profile.weekStartsOnSunday = weekStartsOnSunday ?? false
-        profile.destination = destination ?? ""
         profile.currentContentID = currentContentID ?? ""
         return profile
     }

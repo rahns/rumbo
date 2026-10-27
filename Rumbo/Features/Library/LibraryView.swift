@@ -1,8 +1,8 @@
 import RumboCore
 import SwiftUI
 
-/// Library tab (docs/03-experience.md §3.5): shows and podcasts for the learner's level now and next,
-/// with the destination's accent (Settings → Heading to) first. "Watching this" makes "Watch or listen" tasks point at it.
+/// Library tab (docs/03-experience.md §3.5): shows and podcasts for the learner's level now and next.
+/// "Watching this" makes "Watch or listen" tasks point at it.
 struct LibraryView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openURL) private var openURL

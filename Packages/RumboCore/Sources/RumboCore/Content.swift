@@ -43,12 +43,10 @@ public struct ContentCatalog: Codable, Equatable, Sendable {
         self.items = items
     }
 
-    /// What suits the learner now, then what's coming next, each with the destination's accent first.
-    public func suggestions(for band: Band, destination: String? = nil) -> (now: [ContentItem], next: [ContentItem]) {
+    /// What suits the learner now, then what's coming next, easiest first.
+    public func suggestions(for band: Band) -> (now: [ContentItem], next: [ContentItem]) {
         func ordered(_ items: [ContentItem]) -> [ContentItem] {
             items.sorted { lhs, rhs in
-                let left = lhs.country == destination, right = rhs.country == destination
-                if left != right { return left }
                 if lhs.from != rhs.from { return lhs.from < rhs.from }
                 return lhs.title < rhs.title
             }

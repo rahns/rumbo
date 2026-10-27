@@ -38,4 +38,4 @@ Leaning Latin American, since the goal is living there. Each entry has a band, f
 | B2.2 | *La Casa de las Flores* | TV series | Mexico | Fast, funny, idiomatic |
 | B2.2 | *El Marginal* | TV series | Argentina | Heavy slang and voseo; a real challenge |
 
-The Library shows what suits the learner's band now and what comes next. **Watch this** marks one item as the current show; `content.watch` tasks (planned when Extra en Español has run out or isn't used from B1, or when there's no Dreaming Spanish) name it and offer an Open button. When the learner picks where they're heading (Settings → Heading to: Mexico, Colombia, Argentina, Peru, Chile, Spain, or anywhere), content with that accent comes first.
+The Library shows what suits the learner's band now and what comes next. **Watch this** marks one item as the current show; `content.watch` tasks (planned when Extra en Español has run out or isn't used from B1, or when there's no Dreaming Spanish) name it and offer an Open button. Within each list, the easiest comes first.

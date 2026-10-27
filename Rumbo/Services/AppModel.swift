@@ -572,7 +572,7 @@ final class AppModel {
 
     var contentSuggestions: (now: [ContentItem], next: [ContentItem]) {
         guard let profile else { return ([], []) }
-        return catalog.suggestions(for: profile.band, destination: profile.destination.isEmpty ? nil : profile.destination)
+        return catalog.suggestions(for: profile.band)
     }
 
     /// What the learner marked "Watching this", if it's still in the catalog.
@@ -589,11 +589,6 @@ final class AppModel {
 
     func setTravelMode(_ on: Bool) {
         profile?.travelMode = on
-        save()
-    }
-
-    func setDestination(_ destination: String) {
-        profile?.destination = destination
         save()
     }
 

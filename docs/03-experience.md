@@ -147,7 +147,7 @@ Implemented in `Rumbo/Features/Review/MistakeDeckViews.swift`; cards are `Review
 A card under the header toggles Travel mode, explaining what it does: a real-world mission joins the plan, and offline days only get offline-capable tasks. It applies to the next plan (re-pick today's time to use it today). Pico wears the backpacker look while it's on.
 
 ### Settings
-Share (send a friend the latest release, see what's new), sources, Travel mode and where you're heading, weekly goal, reminders, AI correction (engine status, optional own API key), backup (save a file / restore from a file), reset (start onboarding again).
+Share (send a friend the latest release, see what's new), sources, Travel mode, weekly goal, reminders, AI correction (engine status, optional own API key), backup (save a file / restore from a file), reset (start onboarding again).
 
 ## 3.5 Motion and haptics catalog
 
