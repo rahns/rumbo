@@ -142,3 +142,40 @@ import Testing
         #expect(fsrs.intervalDays(stability: 10) == 10)
     }
 }
+
+@Suite struct BudgetAdvisorTests {
+    // ISO weeks start on Monday; 26 Oct 2026 is a Monday.
+    let calendar = TestCalendar.utc
+    let monday = TestCalendar.day(2026, 10, 26)
+
+    @Test func aFreshWeekSpreadsTheGoalOverSevenDays() {
+        let advice = BudgetAdvisor.advice(weeklyGoal: 150, minutesThisWeek: 0, today: monday, calendar: calendar)
+        #expect(advice.daysLeft == 7)
+        #expect(advice.minutesPerDay == 22)
+        #expect(advice.recommended == 30)
+    }
+
+    @Test func fallingBehindRaisesTheRecommendation() {
+        let thursday = TestCalendar.adding(days: 3, to: monday)
+        let advice = BudgetAdvisor.advice(weeklyGoal: 150, minutesThisWeek: 30, today: thursday, calendar: calendar)
+        #expect(advice.daysLeft == 4)
+        #expect(advice.minutesPerDay == 30)
+        #expect(advice.recommended == 30)
+        let sunday = TestCalendar.adding(days: 6, to: monday)
+        #expect(BudgetAdvisor.advice(weeklyGoal: 150, minutesThisWeek: 30, today: sunday, calendar: calendar).recommended == 60,
+                "more than an hour left on the last day still recommends the largest choice")
+    }
+
+    @Test func gettingAheadLowersIt() {
+        let wednesday = TestCalendar.adding(days: 2, to: monday)
+        let advice = BudgetAdvisor.advice(weeklyGoal: 150, minutesThisWeek: 120, today: wednesday, calendar: calendar)
+        #expect(advice.minutesPerDay == 6)
+        #expect(advice.recommended == 10)
+    }
+
+    @Test func aMetGoalRecommendsTheSmallestChoice() {
+        let advice = BudgetAdvisor.advice(weeklyGoal: 150, minutesThisWeek: 160, today: monday, calendar: calendar)
+        #expect(advice.goalAlreadyMet)
+        #expect(advice.recommended == 10)
+    }
+}

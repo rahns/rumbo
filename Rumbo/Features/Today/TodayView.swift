@@ -128,22 +128,64 @@ struct TodayView: View {
                 Text(model.isWorkingAhead ? "Getting ahead! How long?" : "How much time today?")
                     .font(.rounded(.title3, weight: .black))
                     .foregroundStyle(Palette.ink)
-                Text(model.isWorkingAhead
-                     ? "This is \(model.planDay.formatted(.dateTime.weekday(.wide)))'s session. Everything you've done so far is counted, so it balances out."
-                     : "Pick honestly. Ten minutes still counts.")
-                    .font(.rounded(.subheadline, weight: .medium))
-                    .foregroundStyle(Palette.secondaryText)
+                if model.isWorkingAhead {
+                    Text("This is \(model.planDay.formatted(.dateTime.weekday(.wide)))'s session. Everything you've done so far is counted, so it balances out.")
+                        .font(.rounded(.subheadline, weight: .medium))
+                        .foregroundStyle(Palette.secondaryText)
+                }
+                goalAdvice
                 budgetChips(selected: nil)
             }
         }
     }
 
+    /// What today needs for the weekly goal, e.g. "About 25 min a day for the 4 days left → pick 30".
+    private var goalAdvice: some View {
+        let advice = model.budgetAdvice
+        let goal = model.profile?.weeklyGoalMinutes ?? 150
+        let days = advice.daysLeft == 1 ? "today, the last day of the week" : "each of the \(advice.daysLeft) days left this week"
+        return HStack(alignment: .top, spacing: 10) {
+            Image(systemName: advice.goalAlreadyMet ? "checkmark.seal.fill" : "target")
+                .font(.title3.weight(.bold))
+                .foregroundStyle(advice.goalAlreadyMet ? Palette.leaf : Palette.sun)
+            // LocalizedStringKey so the **bold** recommendation renders as Markdown.
+            Text(LocalizedStringKey(advice.goalAlreadyMet
+                 ? "You've met your \(goal)-minute goal this week. Any time today is a bonus; 10 minutes keeps the streak."
+                 : "To reach your \(goal)-minute goal: about \(advice.minutesPerDay) min \(days). **\(advice.recommended) min** keeps you on track."))
+                .font(.rounded(.subheadline, weight: .semibold))
+                .foregroundStyle(Palette.ink)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Palette.cream))
+    }
+
     private func budgetChips(selected: Int?) -> some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 10) {
+        let recommended = model.budgetAdvice.recommended
+        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 14) {
             ForEach(DayPlanner.budgetChoices, id: \.self) { minutes in
                 ChipButton(title: minutes == 10 ? "10 · busy" : "\(minutes) min", isSelected: selected == minutes) {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                         model.makeTodayPlan(budget: minutes)
+                    }
+                }
+                .overlay {
+                    if minutes == recommended {
+                        // The chip that keeps the weekly goal on track.
+                        Capsule()
+                            .strokeBorder(Palette.sun, lineWidth: 3)
+                            .padding(.bottom, 3)
+                            .padding(-3)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .overlay(alignment: .top) {
+                    if minutes == recommended {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 11, weight: .black))
+                            .foregroundStyle(Palette.sun)
+                            .offset(y: -10)
+                            .accessibilityLabel("Recommended")
                     }
                 }
             }

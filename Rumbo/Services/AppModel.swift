@@ -124,6 +124,11 @@ final class AppModel {
         return XP.total(minutes: logs.reduce(0) { $0 + $1.minutes }, completedCards: completedCards, rewrites: rewriteCount, gatesPassed: profile?.gatesPassed ?? 0)
     }
 
+    /// Which budget keeps the learner on track for this week's goal.
+    var budgetAdvice: BudgetAdvisor.Advice {
+        BudgetAdvisor.advice(weeklyGoal: profile?.weeklyGoalMinutes ?? 150, minutesThisWeek: streak.minutesThisWeek, today: .now, calendar: calendar)
+    }
+
     var minutesToday: Int {
         logs.filter { calendar.isDateInToday($0.date) }.reduce(0) { $0 + $1.minutes }
     }

@@ -131,3 +131,36 @@ public struct Projection: Sendable {
         return current + max(0, days) * perDay
     }
 }
+
+/// Which daily budget keeps the learner on track for their weekly goal: what's left of the goal,
+/// spread over the days left this week (today included), rounded up to a budget choice.
+public enum BudgetAdvisor {
+    public struct Advice: Equatable, Sendable {
+        /// Minutes a day needed from today to the end of the week.
+        public let minutesPerDay: Int
+        /// The budget chip to pick.
+        public let recommended: Int
+        public let daysLeft: Int
+        public let goalAlreadyMet: Bool
+    }
+
+    public static func advice(
+        weeklyGoal: Int,
+        minutesThisWeek: Int,
+        today: Date,
+        choices: [Int] = DayPlanner.budgetChoices,
+        calendar: Calendar = .current
+    ) -> Advice {
+        let todayStart = calendar.startOfDay(for: today)
+        let weekEnd = calendar.dateInterval(of: .weekOfYear, for: today)?.end ?? todayStart
+        let daysLeft = max(1, calendar.dateComponents([.day], from: todayStart, to: weekEnd).day ?? 1)
+        let remaining = weeklyGoal - minutesThisWeek
+        let smallest = choices.min() ?? 10
+        guard remaining > 0 else {
+            return Advice(minutesPerDay: 0, recommended: smallest, daysLeft: daysLeft, goalAlreadyMet: true)
+        }
+        let perDay = Int((Double(remaining) / Double(daysLeft)).rounded(.up))
+        let recommended = choices.sorted().first { $0 >= perDay } ?? (choices.max() ?? perDay)
+        return Advice(minutesPerDay: perDay, recommended: recommended, daysLeft: daysLeft, goalAlreadyMet: false)
+    }
+}
