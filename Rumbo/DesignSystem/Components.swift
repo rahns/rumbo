@@ -102,14 +102,21 @@ struct ChunkyProgressBar: View {
     let value: Double
     var color: Color = Palette.leaf
     var height: CGFloat = 14
+    /// A light sweep runs along the fill whenever the value goes up.
+    var shimmers = false
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Position of the shimmer band, from -0.4 (before the start) to 1.4 (past the end).
+    @State private var sweep: CGFloat = -0.4
 
     var body: some View {
         GeometryReader { proxy in
+            let fillWidth = max(height, proxy.size.width * min(max(value, 0), 1))
             ZStack(alignment: .leading) {
                 Capsule().fill(Palette.lilac)
                 Capsule()
                     .fill(color)
-                    .frame(width: max(height, proxy.size.width * min(max(value, 0), 1)))
+                    .frame(width: fillWidth)
                     .overlay(alignment: .top) {
                         Capsule()
                             .fill(.white.opacity(0.35))
@@ -117,11 +124,29 @@ struct ChunkyProgressBar: View {
                             .padding(.horizontal, height * 0.4)
                             .padding(.top, height * 0.2)
                     }
+                    .overlay {
+                        if shimmers {
+                            // The band slides across the fill, clipped to it.
+                            ZStack {
+                                LinearGradient(colors: [.white.opacity(0), .white.opacity(0.7), .white.opacity(0)], startPoint: .leading, endPoint: .trailing)
+                                    .frame(width: max(30, fillWidth * 0.35))
+                                    .offset(x: fillWidth * (sweep - 0.5))
+                            }
+                            .frame(width: fillWidth, height: height)
+                            .clipShape(Capsule())
+                            .allowsHitTesting(false)
+                        }
+                    }
                     .opacity(value > 0 ? 1 : 0)
             }
         }
         .frame(height: height)
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: value)
+        .onChange(of: value) { old, new in
+            guard shimmers, new > old, !reduceMotion else { return }
+            sweep = -0.4
+            withAnimation(.easeInOut(duration: 0.9).delay(0.3)) { sweep = 1.4 }
+        }
         .accessibilityElement()
         .accessibilityLabel("Progress")
         .accessibilityValue("\(Int((min(max(value, 0), 1) * 100).rounded())) percent")

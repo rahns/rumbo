@@ -35,6 +35,22 @@ final class AppModel {
     /// Bumped on bigger moments (all of today done, level up) for confetti.
     private(set) var confettiBursts = 0
 
+    // One-off moments (docs/03-experience.md §3.5); views animate when these change.
+    struct XPGain: Equatable {
+        let id: Int
+        let amount: Int
+    }
+    /// The XP just earned, for the "+15 XP" fly-up.
+    private(set) var xpGain: XPGain?
+    /// Bumped the moment this week's minutes pass the weekly goal (at most once a week).
+    private(set) var goalReachedBursts = 0
+    struct StreakMilestone: Equatable {
+        let id = UUID()
+        let days: Int
+    }
+    private(set) var streakMilestone: StreakMilestone?
+    static let streakMilestones: Set<Int> = [7, 30, 100, 365]
+
     private let pathMonitor = NWPathMonitor()
     /// Library suggestions; the bundled list, replaced by a newer download when there is one.
     private(set) var catalog = ContentLibrary.load()
@@ -377,6 +393,7 @@ final class AppModel {
 
     func complete(_ task: PlannedTaskRecord, with completion: Completion) {
         guard let profile else { return }
+        let before = streak
         let log = ActivityLog(date: .now, task: task.task, minutes: completion.minutes)
         log.comprehension = completion.comprehension?.rawValue
         log.rating = completion.trackRating?.rawValue ?? completion.tandemFeeling
@@ -420,6 +437,8 @@ final class AppModel {
         updateSpeakingStage()
         refreshReminders()
         celebrations += 1
+        let rewrote = !(completion.rewrite?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+        celebrateProgress(since: before, xp: completion.minutes * XP.perMinute + XP.perCompletedCard + (rewrote ? XP.perRewrite : 0))
         // Confetti when this task finishes the plan (extras come after, so they don't set it off again).
         if !task.isExtra, todayPlan?.isComplete == true {
             confettiBursts += 1
@@ -495,11 +514,67 @@ final class AppModel {
     }
 
     func logBonusInput(minutes: Int) {
+        let before = streak
         let log = ActivityLog(date: .now, task: .contentWatch, minutes: minutes)
         log.isBonus = true
         context.insert(log)
         save()
         refreshReminders()
+        celebrateProgress(since: before, xp: minutes * XP.perMinute)
+    }
+
+    // MARK: - Moments
+
+    /// After logging: the XP fly-up, and the weekly-goal and streak-milestone moments when they're crossed.
+    private func celebrateProgress(since before: StreakCalculator.Status, xp: Int) {
+        xpGain = XPGain(id: (xpGain?.id ?? 0) + 1, amount: xp)
+        let after = streak
+        let goal = profile?.weeklyGoalMinutes ?? 150
+        let week = calendar.dateInterval(of: .weekOfYear, for: .now)?.start ?? calendar.startOfDay(for: .now)
+        if before.minutesThisWeek < goal, after.minutesThisWeek >= goal, Self.once("goal-\(Self.dayKey(week))") {
+            goalReachedBursts += 1
+        }
+        if after.streak > before.streak, Self.streakMilestones.contains(after.streak),
+           Self.once("streak-\(after.streak)-\(Self.dayKey(calendar.startOfDay(for: .now)))") {
+            streakMilestone = StreakMilestone(days: after.streak)
+            banner = Banner(title: "🔥 ¡\(after.streak) días seguidos!", message: Self.streakMessage(after.streak))
+        }
+    }
+
+    /// True once per unit: when it's newly complete (its last day is today or yesterday), for the stamp moment.
+    func takeUnitCompletion(_ unit: PathUnit) -> Bool {
+        guard unit.isComplete, let last = unit.nodes.last?.date,
+              let yesterday = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: .now)),
+              last >= yesterday else { return false }
+        return Self.once("unit-\(Self.dayKey(last))")
+    }
+
+    /// A day a streak freeze saved, not shown yet. Marks it shown.
+    func takeUnseenFreeze() -> Date? {
+        guard let day = streak.lastFreezeUsed, Self.once("freeze-\(Self.dayKey(day))") else { return nil }
+        return day
+    }
+
+    private static func streakMessage(_ days: Int) -> String {
+        switch days {
+        case 7: "A whole week, every day. Pico is impressed."
+        case 30: "A month of Spanish, every single day. That's a real habit now."
+        case 100: "100 days. Most people never get here. ¡Increíble!"
+        default: "A full year of Spanish, every day. Pico has no words. (In any language.)"
+        }
+    }
+
+    /// True the first time it's called for `key` on this device.
+    private static func once(_ key: String) -> Bool {
+        let defaults = UserDefaults.standard
+        var seen = Set(defaults.stringArray(forKey: "moments.seen") ?? [])
+        guard seen.insert(key).inserted else { return false }
+        defaults.set(Array(seen), forKey: "moments.seen")
+        return true
+    }
+
+    private static func dayKey(_ date: Date) -> String {
+        date.formatted(.iso8601.year().month().day())
     }
 
     /// Reschedules the daily reminder and the evening nudges (skipping today's once it's practised).

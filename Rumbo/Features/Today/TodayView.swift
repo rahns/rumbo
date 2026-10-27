@@ -6,6 +6,8 @@ struct TodayView: View {
     @State private var openTask: PlannedTaskRecord?
     @State private var showingBonus = false
     @State private var showingGate = false
+    /// Bumped when the "+XP" fly-up reaches the XP badge, so the star bounces.
+    @State private var xpLanded = 0
 
     /// Pushed from today's node on the path, so it lives inside the path's NavigationStack.
     var body: some View {
@@ -32,6 +34,13 @@ struct TodayView: View {
             }
             .background(Palette.background.ignoresSafeArea())
             ConfettiView(trigger: model.confettiBursts)
+        }
+        // A light tap for each quarter of the weekly goal just passed, as the bar fills.
+        .onChange(of: model.streak.minutesThisWeek) { old, new in
+            let goal = Double(max(model.profile?.weeklyGoalMinutes ?? 150, 1))
+            let crossed = min(4, Int(Double(new) / goal * 4)) - min(4, Int(Double(old) / goal * 4))
+            guard crossed > 0 else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { Haptics.taps(crossed) }
         }
         .navigationTitle(model.isWorkingAhead ? model.planDay.formatted(.dateTime.weekday(.wide)) : "Today")
         .navigationBarTitleDisplayMode(.inline)
@@ -68,7 +77,11 @@ struct TodayView: View {
                 Spacer()
                 StatPill(symbol: "flame.fill", value: "\(streak.streak)", color: Palette.sun, bounce: streak.streak,
                          accessibilityText: "\(streak.streak) day streak")
-                StatPill(symbol: "star.fill", value: "\(model.xp)", color: Palette.sky, accessibilityText: "\(model.xp) XP")
+                StatPill(symbol: "star.fill", value: "\(model.xp)", color: Palette.sky, bounce: xpLanded, accessibilityText: "\(model.xp) XP")
+                    .overlay(alignment: .top) {
+                        XPFlyUp(gain: model.xpGain) { xpLanded += 1 }
+                            .fixedSize()
+                    }
             }
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
@@ -79,7 +92,7 @@ struct TodayView: View {
                 }
                 .font(.rounded(.caption, weight: .heavy))
                 .foregroundStyle(Palette.secondaryText)
-                ChunkyProgressBar(value: Double(streak.minutesThisWeek) / Double(max(goal, 1)), color: Palette.leaf)
+                ChunkyProgressBar(value: Double(streak.minutesThisWeek) / Double(max(goal, 1)), color: Palette.leaf, shimmers: true)
                     .accessibilityHidden(true)
             }
             .accessibilityElement(children: .combine)

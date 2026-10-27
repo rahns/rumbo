@@ -10,6 +10,10 @@ struct PathView: View {
     @State private var selectedDate: SelectedDay?
     @State private var showingToday = false
     @State private var showingGate = false
+    /// Bumped to play the ice-shatter on the streak flame (a freeze saved the streak).
+    @State private var freezeShatters = 0
+    /// The unit whose banner is flipping to "¡Unidad completa!".
+    @State private var celebratingUnit: Int?
 
     var body: some View {
         let map = model.pathMap
@@ -19,7 +23,8 @@ struct PathView: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(map.units) { unit in
-                            UnitBanner(unit: unit, isFuture: unit.nodes.allSatisfy { $0.status == .upcoming })
+                            UnitBanner(unit: unit, isFuture: unit.nodes.allSatisfy { $0.status == .upcoming },
+                                       celebrating: celebratingUnit == unit.number)
                                 .padding(.top, unit.number == 1 ? 8 : 28)
                                 .padding(.bottom, 18)
                             ForEach(unit.nodes) { node in
@@ -43,6 +48,14 @@ struct PathView: View {
                 }
                 .onAppear {
                     if let today = map.todayNode { proxy.scrollTo(today.id, anchor: .center) }
+                    playMoments(map)
+                }
+                // Moments wait until the path is on screen again (not behind Today).
+                .onChange(of: showingToday) { _, showing in
+                    if !showing { playMoments(map) }
+                }
+                .onChange(of: map.units.filter(\.isComplete).count) {
+                    if !showingToday { playMoments(map) }
                 }
             }
             .background(Palette.background.ignoresSafeArea())
@@ -87,13 +100,32 @@ struct PathView: View {
                     .transition(.scale.combined(with: .opacity))
             }
             Spacer()
-            StatPill(symbol: "flame.fill", value: "\(model.streak.streak)", color: Palette.sun, bounce: model.streak.streak)
-            StatPill(symbol: "star.fill", value: "\(model.xp)", color: Palette.sky)
+            StatPill(symbol: "flame.fill", value: "\(model.streak.streak)", color: Palette.sun, bounce: model.streak.streak,
+                     accessibilityText: "\(model.streak.streak) day streak")
+                .overlay { IceShatter(trigger: freezeShatters) }
+            StatPill(symbol: "star.fill", value: "\(model.xp)", color: Palette.sky, accessibilityText: "\(model.xp) XP")
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 10)
         .background(.bar)
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: todayDone)
+    }
+
+    /// One-off moments for the path: a freeze that saved the streak, and a newly completed unit.
+    private func playMoments(_ map: PathMap) {
+        if let day = model.takeUnseenFreeze() {
+            freezeShatters += 1
+            model.banner = AppModel.Banner(
+                title: "🧊 A streak freeze saved you",
+                message: "You missed \(day.formatted(.dateTime.weekday(.wide))), so one of your freezes kept the streak going. Meet your weekly goal to earn more."
+            )
+        }
+        if let unit = map.units.last(where: { model.takeUnitCompletion($0) }) {
+            Task {
+                try? await Task.sleep(for: .milliseconds(500))
+                celebratingUnit = unit.number
+            }
+        }
     }
 
     // MARK: Rows
@@ -205,35 +237,71 @@ private struct SelectedDay: Identifiable {
 
 // MARK: - Pieces
 
+/// A unit's header. A complete unit turns gold ("¡Unidad completa!"); when it has just been
+/// completed (`celebrating`), the banner flips over to the gold side and the seal stamps down.
 struct UnitBanner: View {
     let unit: PathUnit
     let isFuture: Bool
+    var celebrating = false
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// During the flip: show the old (unfinished) side until it's edge-on.
+    @State private var showingOldSide = false
+    @State private var angle: Double = 0
+    @State private var sealScale: CGFloat = 1
 
     var body: some View {
-        let color = unit.isComplete ? Palette.leaf : isFuture ? Palette.secondaryText.opacity(0.55) : Palette.sky
+        let gold = unit.isComplete && !showingOldSide
+        let color = gold ? Palette.sun : isFuture ? Palette.secondaryText.opacity(0.55) : Palette.sky
         let dates = unit.nodes.map(\.date)
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Unidad \(unit.number)")
                     .font(.rounded(.title3, weight: .black))
-                if let first = dates.first, let last = dates.last {
+                if gold {
+                    Text("¡Unidad completa!")
+                        .font(.rounded(.subheadline, weight: .black))
+                } else if let first = dates.first, let last = dates.last {
                     Text("\(first.formatted(.dateTime.day().month(.abbreviated))) – \(last.formatted(.dateTime.day().month(.abbreviated)))")
                         .font(.rounded(.subheadline, weight: .bold))
                         .opacity(0.85)
                 }
             }
             Spacer()
-            if unit.isComplete {
-                Image(systemName: "checkmark.seal.fill").font(.title2)
+            if gold {
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.title)
+                    .scaleEffect(sealScale)
             } else if isFuture {
                 Image(systemName: "lock.fill").font(.title3)
             }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(gold ? Palette.ink : .white)
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(color))
         .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(color.edge()).offset(y: 4))
         .padding(.bottom, 4)
+        .rotation3DEffect(.degrees(angle), axis: (x: 1, y: 0, z: 0), perspective: 0.6)
+        .onChange(of: celebrating) { _, now in
+            if now { Task { await flip() } }
+        }
+    }
+
+    private func flip() async {
+        if !reduceMotion {
+            showingOldSide = true
+            withAnimation(.easeIn(duration: 0.25)) { angle = 90 }
+            try? await Task.sleep(for: .milliseconds(250))
+            showingOldSide = false
+            angle = -90
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.65)) { angle = 0 }
+            try? await Task.sleep(for: .milliseconds(350))
+        }
+        // The seal stamps down.
+        sealScale = 2.2
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.5)) { sealScale = 1 }
+        try? await Task.sleep(for: .milliseconds(120))
+        Haptics.stamp()
     }
 }
 

@@ -17,6 +17,8 @@ public struct StreakCalculator: Sendable {
         public var streak: Int
         public var freezes: Int
         public var minutesThisWeek: Int
+        /// The last day a freeze covered, if the streak it saved is still going.
+        public var lastFreezeUsed: Date? = nil
     }
 
     /// Replays the whole history day by day. Today only counts once it reaches the threshold,
@@ -34,6 +36,7 @@ public struct StreakCalculator: Sendable {
         var streak = 0
         var freezes = 0
         var weekMinutes = 0
+        var lastFreezeUsed: Date?
         var day = first
         while day <= todayStart {
             let minutes = minutesByDay[day] ?? 0
@@ -43,8 +46,10 @@ public struct StreakCalculator: Sendable {
             } else if day < todayStart {
                 if freezes > 0 {
                     freezes -= 1
+                    if streak > 0 { lastFreezeUsed = day }
                 } else {
                     streak = 0
+                    lastFreezeUsed = nil
                 }
             }
 
@@ -58,7 +63,7 @@ public struct StreakCalculator: Sendable {
             }
             day = nextDay
         }
-        return Status(streak: streak, freezes: freezes, minutesThisWeek: weekMinutes)
+        return Status(streak: streak, freezes: freezes, minutesThisWeek: weekMinutes, lastFreezeUsed: lastFreezeUsed)
     }
 }
 

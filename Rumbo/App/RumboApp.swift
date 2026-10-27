@@ -84,6 +84,13 @@ struct MainTabView: View {
         }
         // A widget tap (rumbo://today or rumbo://plan) brings up the Path tab, which pushes Today.
         .onChange(of: model.todayRequests) { tab = 0 }
+        // Big moments play over whichever tab is showing (a task can be finished from the Live Activity).
+        .overlay {
+            ZStack {
+                GoalReachedOverlay(trigger: model.goalReachedBursts, goal: model.profile?.weeklyGoalMinutes ?? 150)
+                StreakMilestoneOverlay(milestone: model.streakMilestone)
+            }
+        }
         .fullScreenCover(item: $model.finishingTask) { task in
             TaskSessionView(task: task, startLogging: true)
         }

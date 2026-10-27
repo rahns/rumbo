@@ -160,7 +160,13 @@ Share (send a friend the latest release, see what's new), goal (B1 / B2 / C1) an
 | Any chunky button | Face drops 4 pt onto its bottom edge, springs back | `.impact(weight: .light)` |
 | Card complete | Card flips, checkmark draws itself, XP number rolls (`.contentTransition(.numericText())`) | `.success` |
 | Streak +1 | Flame grows and flickers (`PhaseAnimator`) | `.impact(weight: .light)` |
-| Weekly goal met | Ring closes with a sparkle burst | `.success` |
+| Task logged | "+15 XP" rises from below into the XP badge, which bounces (`XPFlyUp`) | Soft tap as it lands |
+| Weekly minutes go up | A light sweep runs along the "This week" bar | A light tap for each 25% of the weekly goal just passed |
+| Weekly goal met | Fireworks (particle `Canvas`) behind a "¡Meta cumplida!" card with Pico cheering; over any tab, once a week | `.success`, then a tap per burst |
+| Streak milestone (7, 30, 100, 365 days) | A big flame swells and beats twice with the day count; Pico's message as a banner on Today; once per milestone | Heartbeat (heavy–medium, twice) |
+| Streak freeze used | On the next visit to the path, an ice crystal forms over the flame and shatters; a banner on Today says which day it saved | Crack (rigid, then light) |
+| Unit complete | The unit banner flips over to its gold "¡Unidad completa!" side and the seal stamps down; once, the first time the path shows it | Stamp (heavy + rigid) |
+| Pico tapped | A random trick: a flip, a spin, a squash-and-stretch hop, or a speech bubble ("¡Vamos!", "¡Olé!"…) | Light tap |
 | Gate passed | Lock shatters (particle `Canvas`), confetti, Pico spin | Custom pattern |
 | Error tapped in writing | Underline expands into an explanation bubble | `.selection` |
 | Pull to refresh path | Pico pulls the path down | — |

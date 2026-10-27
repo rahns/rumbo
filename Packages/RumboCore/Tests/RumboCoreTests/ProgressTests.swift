@@ -34,6 +34,17 @@ import Testing
         let status = calculator.status(history: history, today: TestCalendar.adding(days: 9, to: monday))
         #expect(status.streak == 9, "the missed day is covered, not counted")
         #expect(status.freezes == 0)
+        #expect(status.lastFreezeUsed == TestCalendar.utc.startOfDay(for: TestCalendar.adding(days: 8, to: monday)),
+                "the app shows that the freeze saved the streak")
+    }
+
+    @Test func noFreezeReportedWithoutOneOrAfterTheStreakBreaks() {
+        #expect(calculator.status(history: log([20, 20, 20], from: monday), today: TestCalendar.adding(days: 2, to: monday)).lastFreezeUsed == nil)
+        // The freeze saves day 8, then days 10–11 are missed with none left: the streak resets, so nothing to show.
+        let history = log([30, 30, 30, 30, 30, 30, 30, 20, 0, 20, 0, 0, 20], from: monday)
+        let status = calculator.status(history: history, today: TestCalendar.adding(days: 12, to: monday))
+        #expect(status.streak == 1)
+        #expect(status.lastFreezeUsed == nil)
     }
 
     @Test func freezesAreCappedAtThree() {

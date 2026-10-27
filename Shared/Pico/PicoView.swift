@@ -17,8 +17,17 @@ struct PicoView: View {
     var size: CGFloat = 80
     /// Change this value to play a loop-de-loop.
     var celebrate: Int = 0
+    /// Tapping Pico plays a random trick. Off where Pico sits inside another control.
+    var reactsToTaps = true
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var taps = 0
+    @State private var flipAngle: Double = 0
+    @State private var spinAngle: Double = 0
+    @State private var hops = 0
+    @State private var squawk: String?
+
+    private static let squawks = ["¡Vamos!", "¡Olé!", "¡Hola!", "¡Dale!", "¡Qué bien!", "¡Ánimo!"]
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60, paused: reduceMotion)) { timeline in
@@ -28,6 +37,46 @@ struct PicoView: View {
             }
         }
         .frame(width: size, height: size)
+        .rotation3DEffect(.degrees(flipAngle), axis: (x: 0, y: 1, z: 0))
+        .rotationEffect(.degrees(spinAngle))
+        .keyframeAnimator(initialValue: PicoMotion(), trigger: hops) { content, motion in
+            content
+                .offset(y: motion.lift)
+                .scaleEffect(x: 1 / motion.scale, y: motion.scale, anchor: .bottom)
+        } keyframes: { _ in
+            KeyframeTrack(\.lift) {
+                LinearKeyframe(0, duration: 0.08)
+                SpringKeyframe(-size * 0.35, duration: 0.25)
+                SpringKeyframe(0, duration: 0.35)
+            }
+            KeyframeTrack(\.scale) {
+                // Squash, stretch on the way up, squash on landing.
+                SpringKeyframe(0.85, duration: 0.08)
+                SpringKeyframe(1.12, duration: 0.2)
+                SpringKeyframe(0.9, duration: 0.3)
+                SpringKeyframe(1, duration: 0.2)
+            }
+        }
+        .overlay(alignment: .top) {
+            if let squawk {
+                Text(squawk)
+                    .font(.rounded(.caption, weight: .black))
+                    .foregroundStyle(Palette.ink)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Capsule().fill(.white))
+                    .overlay(Capsule().strokeBorder(Palette.ink.opacity(0.15), lineWidth: 1))
+                    .fixedSize()
+                    .offset(x: size * 0.35, y: -size * 0.15)
+                    .transition(.scale(scale: 0.3, anchor: .bottomLeading).combined(with: .opacity))
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard reactsToTaps else { return }
+            playTrick()
+        }
+        .sensoryFeedback(.impact(weight: .light), trigger: taps)
         .keyframeAnimator(initialValue: PicoMotion(), trigger: celebrate) { content, motion in
             content
                 .rotationEffect(.degrees(motion.spin))
@@ -48,6 +97,24 @@ struct PicoView: View {
             }
         }
         .accessibilityHidden(true)
+    }
+
+    /// A flip, a spin, a hop or a squawk, at random. With Reduce Motion, always the squawk.
+    private func playTrick() {
+        taps += 1
+        let trick = reduceMotion ? 3 : Int.random(in: 0..<4)
+        switch trick {
+        case 0: withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) { flipAngle += 360 }
+        case 1: withAnimation(.spring(response: 0.7, dampingFraction: 0.75)) { spinAngle -= 360 }
+        case 2: hops += 1
+        default:
+            let word = Self.squawks.randomElement()!
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { squawk = word }
+            Task {
+                try? await Task.sleep(for: .milliseconds(1300))
+                if squawk == word { withAnimation(.easeOut(duration: 0.2)) { squawk = nil } }
+            }
+        }
     }
 }
 
