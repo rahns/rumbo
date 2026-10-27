@@ -62,10 +62,19 @@ import Testing
         #expect(path.allNodes.count >= 121 + PathLayout.nodesPerUnit)
     }
 
-    @Test func farAwayMilestonesAreCappedAtTwoYears() {
-        let path = map(today: 0, arrivals: [.b2_2: day(3650)])
-        #expect(path.milestones.isEmpty)
+    @Test func farAwayMilestonesAreCappedAtTwoYearsButStillReported() {
+        let path = map(today: 0, arrivals: [.a2_2: day(60), .b2_2: day(3650)])
+        #expect(path.milestones.map(\.band) == [.a2_2])
+        #expect(path.laterMilestones.map(\.band) == [.b2_2])
         #expect(path.units.count == 1 + PathLayout.maximumUnitsAhead)
+    }
+
+    @Test func aMilestoneMovesOntoThePathAsItGetsCloser() {
+        let far = map(today: 0, arrivals: [.b1_1: day(900)])
+        #expect(far.milestones.isEmpty && far.laterMilestones.count == 1)
+        let closer = map(today: 300, arrivals: [.b1_1: day(900)])
+        #expect(closer.milestones.map(\.band) == [.b1_1])
+        #expect(closer.laterMilestones.isEmpty)
     }
 
     @Test func aCompleteUnitIsSevenDoneDays() {

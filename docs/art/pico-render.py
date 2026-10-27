@@ -31,13 +31,16 @@ def rot(pts, deg, c):
 def shift(pts, dx, dy): return [(x+dx, y+dy) for x, y in pts]
 
 class Canvas:
-    def __init__(self):
-        self.img = Image.new("RGBA", (N, N), (247, 248, 252, 255))
+    def __init__(self, background=None, ox=0.0, oy=0.0, sc=1.0):
+        self.ox, self.oy, self.sc = ox, oy, sc
+        self.img = background.copy() if background is not None else Image.new("RGBA", (N, N), (247, 248, 252, 255))
         yy, xx = np.mgrid[0:N, 0:N]
-        self.xx, self.yy = xx / S, yy / S
+        self.xx, self.yy = (xx / S - ox) / sc, (yy / S - oy) / sc
+
+    def _px(self, x, y): return ((self.ox + x * self.sc) * S, (self.oy + y * self.sc) * S)
 
     def _mask(self, pts):
-        m = Image.new("L", (N, N), 0); ImageDraw.Draw(m).polygon([(x*S, y*S) for x, y in pts], fill=255)
+        m = Image.new("L", (N, N), 0); ImageDraw.Draw(m).polygon([self._px(x, y) for x, y in pts], fill=255)
         return np.array(m, dtype=np.float32) / 255
 
     def _composite(self, rgba, mask):
@@ -67,10 +70,10 @@ class Canvas:
         self._composite(self._stops(t, stops), self._mask(pts))
 
     def stroke(self, pts, color, width, closed=True):
-        d = ImageDraw.Draw(self.img); seq = [(x*S, y*S) for x, y in pts]
+        d = ImageDraw.Draw(self.img); seq = [self._px(x, y) for x, y in pts]
         if closed: seq = seq + [seq[0]]
-        d.line(seq, fill=color, width=int(width * S), joint="curve")
-        r = width * S / 2
+        d.line(seq, fill=color, width=int(width * S * self.sc), joint="curve")
+        r = width * S * self.sc / 2
         for x, y in (seq[:1] + seq[-1:]):
             d.ellipse([x - r, y - r, x + r, y + r], fill=color)
 
@@ -87,11 +90,12 @@ def wing(up=0):
     pts = path((30, 45), ('c', (38, 45), (41, 58), (38, 70)), ('c', (35, 78), (26, 80), (21, 73)), ('c', (17, 63), (21, 48), (30, 45)))
     return rot(pts, up, WING_PIVOT)
 
-def draw(mood='idle', breathe=0.0):
-    c = Canvas()
+def draw(mood='idle', breathe=0.0, canvas=None, shadow=True):
+    c = canvas or Canvas()
     happy = mood in ('cheer', 'proud'); sleepy = mood == 'sleepy'
     # ground shadow
-    c.fill(ellipse(43, 94, 42, 6), hexc('1E2A4A', 0.12))
+    if shadow:
+        c.fill(ellipse(43, 94, 42, 6), hexc('1E2A4A', 0.12))
     # feet
     for fx in (37, 49):
         for dx in (-3, 0, 3):
@@ -188,7 +192,10 @@ def draw(mood='idle', breathe=0.0):
             c.stroke([(zx, zy), (zx + zs, zy), (zx, zy + zs), (zx + zs, zy + zs)], SKY_D, 1.4, closed=False)
     return c.out()
 
-row = Image.new("RGBA", (1200, 800))
-for i, m in enumerate(['idle', 'cheer', 'sleepy', 'backpacker', 'listening', 'proud']):
-    row.paste(draw(m), ((i % 3) * 400, (i // 3) * 400))
-row.save('toucan.png')
+if __name__ != "__main__":
+    pass
+if __name__ == "__main__":
+  row = Image.new("RGBA", (1200, 800))
+  for i, m in enumerate(['idle', 'cheer', 'sleepy', 'backpacker', 'listening', 'proud']):
+      row.paste(draw(m), ((i % 3) * 400, (i // 3) * 400))
+  row.save('toucan.png')

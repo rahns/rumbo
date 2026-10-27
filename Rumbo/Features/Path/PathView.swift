@@ -32,6 +32,10 @@ struct PathView: View {
                                 }
                             }
                         }
+                        if !map.laterMilestones.isEmpty {
+                            FurtherAheadCard(milestones: map.laterMilestones)
+                                .padding(.top, 28)
+                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 40)
@@ -348,6 +352,34 @@ struct MilestoneRow: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// The end of the drawn path: level-ups projected more than about two years out.
+struct FurtherAheadCard: View {
+    let milestones: [PathMilestone]
+
+    var body: some View {
+        RaisedCard(accent: Palette.sun) {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Further ahead", systemImage: "binoculars.fill")
+                    .font(.rounded(.headline, weight: .black))
+                    .foregroundStyle(Palette.ink)
+                ForEach(milestones) { milestone in
+                    HStack {
+                        Text("\(milestone.band.label) · \(milestone.band.rawValue)")
+                        Spacer()
+                        Text("around \(milestone.expectedDate.formatted(.dateTime.month(.abbreviated).year()))")
+                            .foregroundStyle(Palette.secondaryText)
+                    }
+                    .font(.rounded(.subheadline, weight: .bold))
+                    .foregroundStyle(Palette.ink)
+                }
+                Text("These appear on the path as you get closer. More listening each week brings them nearer.")
+                    .font(.rounded(.caption, weight: .medium))
+                    .foregroundStyle(Palette.secondaryText)
+            }
+        }
     }
 }
 

@@ -47,10 +47,13 @@ public struct PathUnit: Equatable, Sendable, Identifiable {
 public struct PathMap: Equatable, Sendable {
     public let units: [PathUnit]
     public let milestones: [PathMilestone]
+    /// Level-ups projected beyond the end of the drawn path. They move onto it as they get closer.
+    public let laterMilestones: [PathMilestone]
 
-    public init(units: [PathUnit], milestones: [PathMilestone]) {
+    public init(units: [PathUnit], milestones: [PathMilestone], laterMilestones: [PathMilestone] = []) {
         self.units = units
         self.milestones = milestones
+        self.laterMilestones = laterMilestones
     }
 
     public var allNodes: [PathNode] { units.flatMap(\.nodes) }
@@ -102,7 +105,9 @@ public enum PathLayout {
         let todayUnit = todayIndex / nodesPerUnit
         let lastMilestoneUnit = milestones.map { ($0.afterNode - 1) / nodesPerUnit }.max() ?? todayUnit
         let lastUnit = min(max(todayUnit + minimumUnitsAhead, lastMilestoneUnit + 1), todayUnit + maximumUnitsAhead)
-        milestones = milestones.filter { $0.afterNode <= (lastUnit + 1) * nodesPerUnit }
+        let pathEnd = (lastUnit + 1) * nodesPerUnit
+        let later = milestones.filter { $0.afterNode > pathEnd }
+        milestones = milestones.filter { $0.afterNode <= pathEnd }
 
         var nodes: [PathNode] = []
         var chainUnbroken = true
@@ -136,6 +141,6 @@ public enum PathLayout {
         let units = stride(from: 0, to: nodes.count, by: nodesPerUnit).map { start in
             PathUnit(number: start / nodesPerUnit + 1, nodes: Array(nodes[start..<min(start + nodesPerUnit, nodes.count)]))
         }
-        return PathMap(units: units, milestones: milestones)
+        return PathMap(units: units, milestones: milestones, laterMilestones: later)
     }
 }

@@ -86,6 +86,7 @@ Implemented in `Rumbo/Features/Path/PathView.swift`, laid out by `PathLayout` in
 - **The future:** locked units continue at least 4 units after today's, and as far as the last projected level-up (up to about two years). Trophy markers sit on the day each level-up is expected ("Viajero · A2.2, around February 2027"), at the forecast pace: the learner's own after a week of history, the weekly goal before that.
 - **Gate node:** when the hours for the next band are reached (and no failed check in the last 14 days), a golden trophy node appears right after today. Today also shows a "Level-up check ready" banner.
 - Tapping a past (or early-finished) node shows that day's plan and any other practice.
+- The path ends about two years out. Level-ups projected beyond that are listed in a **"Further ahead"** card at the end, and move onto the path (as trophy markers) once they're projected within two years.
 - The pulse ring is centred on the node's face and its 3D edge together.
 
 ### Level-up check
@@ -163,4 +164,14 @@ The Live Activity ends when the task is logged, or after the planned time + 30 m
 
 ## 3.7 Notifications
 
-At most one per day, at the time chosen during onboarding, using the habit cue ("After breakfast: 15 minutes with Pico?"). An evening nudge only if the streak would break and no freeze is left. No marketing-style notifications.
+Implemented in `Reminders` (`Rumbo/Services/Platform.swift`), rescheduled after every change to the reminder settings or today's practice, and whenever the app comes back to the foreground.
+
+- **Daily reminder** at the learner's chosen time, phrased around their habit cue ("After breakfast: time for Spanish with Pico. Even 10 minutes counts."). Repeats every day.
+- **Evening nudge** at 8 pm on days with fewer than 10 minutes logged ("Pico's still awake 🌙"). Scheduled for the coming week and removed for today as soon as today reaches 10 minutes. Not sent if the daily reminder is itself set for 8 pm or later.
+- Notifications also appear while Rumbo is open (a notification-centre delegate allows banners in the foreground).
+- Settings → Habit → **Send a test notification** sends one after 5 seconds, or explains how to turn notifications on if they're off.
+- No marketing-style notifications.
+
+## 3.8 App icon
+
+Pico (idle) on a warm sun-to-coral gradient with a soft sun disc behind his beak. Rendered from the same reference geometry as the in-app mascot: `docs/art/icon-render.py` (options compared in `docs/art/icon-options.png`).

@@ -30,33 +30,82 @@ enum LiveActivities {
     }
 }
 
-/// One gentle daily reminder at the learner's chosen time, phrased around their habit cue (R13).
+/// Notifications (docs/03-experience.md §3.7): a daily reminder at the learner's time, phrased around
+/// their habit cue (R13), and an evening nudge on days with nothing logged yet.
 enum Reminders {
-    static let identifier = "rumbo.daily"
+    static let dailyID = "rumbo.daily"
+    static let nudgePrefix = "rumbo.nudge."
+    static let testID = "rumbo.test"
+    static let nudgeHour = 20
+    static let nudgeDaysAhead = 7
 
     static func requestPermission() async -> Bool {
         (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])) ?? false
     }
 
-    static func schedule(for profile: LearnerProfile) {
-        cancel()
+    /// Reschedules everything. Called after anything that changes the reminder settings or today's practice.
+    static func refresh(for profile: LearnerProfile, practisedToday: Bool, calendar: Calendar = .current) {
+        let center = UNUserNotificationCenter.current()
+        let nudgeIDs = (0..<nudgeDaysAhead).map { "\(nudgePrefix)\($0)" }
+        center.removePendingNotificationRequests(withIdentifiers: [dailyID] + nudgeIDs)
         guard profile.reminderEnabled else { return }
-        let content = UNMutableNotificationContent()
-        content.title = "¿Rumbo a dónde?"
+
+        let daily = UNMutableNotificationContent()
+        daily.title = "¿Rumbo a dónde?"
         let cue = profile.habitCue.trimmingCharacters(in: .whitespaces)
-        content.body = cue.isEmpty
+        daily.body = cue.isEmpty
             ? "Pico has today's plan ready. Even 10 minutes counts."
             : "\(cue): time for Spanish with Pico. Even 10 minutes counts."
+        daily.sound = .default
+        let time = DateComponents(hour: profile.reminderHour, minute: profile.reminderMinute)
+        center.add(UNNotificationRequest(identifier: dailyID, content: daily, trigger: UNCalendarNotificationTrigger(dateMatching: time, repeats: true)))
+
+        // Evening nudges for the coming week; today's is skipped once something has been logged.
+        let now = Date.now
+        for offset in 0..<nudgeDaysAhead {
+            guard let day = calendar.date(byAdding: .day, value: offset, to: now),
+                  let fireDate = calendar.date(bySettingHour: nudgeHour, minute: 0, second: 0, of: day),
+                  fireDate > now,
+                  !(offset == 0 && practisedToday),
+                  // Don't nudge before the daily reminder has even had its turn.
+                  profile.reminderHour < nudgeHour
+            else { continue }
+            let nudge = UNMutableNotificationContent()
+            nudge.title = "Pico's still awake 🌙"
+            nudge.body = "Nothing logged today yet. Ten minutes keeps your streak going."
+            nudge.sound = .default
+            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
+            center.add(UNNotificationRequest(identifier: "\(nudgePrefix)\(offset)", content: nudge,
+                                             trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: false)))
+        }
+    }
+
+    /// A notification in 5 seconds, to check notifications reach the phone.
+    static func sendTest() async -> Bool {
+        guard await requestPermission() else { return false }
+        let content = UNMutableNotificationContent()
+        content.title = "¡Hola! 🐦"
+        content.body = "Notifications from Rumbo are working."
         content.sound = .default
-        var components = DateComponents()
-        components.hour = profile.reminderHour
-        components.minute = profile.reminderMinute
-        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
-        UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: identifier, content: content, trigger: trigger))
+        try? await UNUserNotificationCenter.current().add(
+            UNNotificationRequest(identifier: testID, content: content, trigger: UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false))
+        )
+        return true
     }
 
     static func cancel() {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [dailyID] + (0..<nudgeDaysAhead).map { "\(nudgePrefix)\($0)" })
+    }
+}
+
+/// Without a delegate, iOS hides an app's notifications while that app is open.
+final class NotificationPresenter: NSObject, UNUserNotificationCenterDelegate {
+    static let shared = NotificationPresenter()
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .list, .sound])
     }
 }
 

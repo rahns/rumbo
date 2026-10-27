@@ -2,6 +2,7 @@ import Combine
 import SwiftData
 import SwiftUI
 import UIKit
+import UserNotifications
 
 @main
 struct RumboApp: App {
@@ -18,6 +19,7 @@ struct RumboApp: App {
             fatalError("Couldn't open the Rumbo store: \(error)")
         }
         _model = State(initialValue: AppModel(context: container.mainContext))
+        UNUserNotificationCenter.current().delegate = NotificationPresenter.shared
     }
 
     var body: some Scene {
@@ -50,7 +52,10 @@ struct RootView: View {
         .tint(Palette.coral)
         // Refresh when the app comes back or the day changes, so Today rolls over at midnight.
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { model.save() }
+            if phase == .active {
+                model.save()
+                model.refreshReminders()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
             model.save()

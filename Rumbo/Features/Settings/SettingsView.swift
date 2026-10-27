@@ -129,8 +129,10 @@ struct SettingsView: View {
                 get: { profile.reminderEnabled },
                 set: { on in
                     profile.reminderEnabled = on
-                    if on { Task { _ = await Reminders.requestPermission() } }
-                    Reminders.schedule(for: profile)
+                    Task {
+                        if on { _ = await Reminders.requestPermission() }
+                        model.refreshReminders()
+                    }
                 }
             ))
             if profile.reminderEnabled {
@@ -139,9 +141,17 @@ struct SettingsView: View {
                     set: { date in
                         profile.reminderHour = Calendar.current.component(.hour, from: date)
                         profile.reminderMinute = Calendar.current.component(.minute, from: date)
-                        Reminders.schedule(for: profile)
+                        model.refreshReminders()
                     }
                 ), displayedComponents: .hourAndMinute)
+            }
+            Button("Send a test notification", systemImage: "bell.badge") {
+                Task {
+                    let allowed = await Reminders.sendTest()
+                    message = allowed
+                        ? "A test notification arrives in 5 seconds. It shows even with Rumbo open."
+                        : "Notifications are off for Rumbo. Turn them on in the iPhone's Settings → Notifications → Rumbo."
+                }
             }
         }
 

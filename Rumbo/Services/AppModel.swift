@@ -145,7 +145,7 @@ final class AppModel {
         draft.apply(to: profile)
         context.insert(profile)
         save()
-        Reminders.schedule(for: profile)
+        refreshReminders()
     }
 
     func reset() {
@@ -200,7 +200,7 @@ final class AppModel {
             context.insert(WritingEntry(date: entry.date, task: TaskKind(rawValue: entry.task) ?? .writeGuided, prompt: entry.prompt, text: entry.text))
         }
         save()
-        Reminders.schedule(for: profile)
+        refreshReminders()
     }
 
     // MARK: - Planning
@@ -314,6 +314,7 @@ final class AppModel {
         save()
         LiveActivities.endAll()
         updateSpeakingStage()
+        refreshReminders()
         celebrations += 1
         if let plan = todayPlan, plan.sortedTasks.allSatisfy({ $0.status == .done || $0.status == .skipped }),
            plan.sortedTasks.contains(where: { $0.status == .done }) {
@@ -350,6 +351,7 @@ final class AppModel {
         task.duolingoSectionBefore = nil
         task.duolingoUnitBefore = nil
         save()
+        refreshReminders()
     }
 
     func logBonusInput(minutes: Int) {
@@ -357,6 +359,13 @@ final class AppModel {
         log.isBonus = true
         context.insert(log)
         save()
+        refreshReminders()
+    }
+
+    /// Reschedules the daily reminder and the evening nudges (skipping today's once it's practised).
+    func refreshReminders() {
+        guard let profile else { return }
+        Reminders.refresh(for: profile, practisedToday: minutesToday >= StreakCalculator.minutesForStreakDay, calendar: calendar)
     }
 
     var bonusLogsToday: [ActivityLog] {
@@ -366,6 +375,7 @@ final class AppModel {
     func delete(_ log: ActivityLog) {
         context.delete(log)
         save()
+        refreshReminders()
     }
 
     /// Card subtitle: the planner's detail, or the learner's Duolingo position for the warm-up.
