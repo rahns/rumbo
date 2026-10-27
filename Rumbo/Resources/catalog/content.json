@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "items": [
     {
       "id": "peppa-latam",
@@ -19,8 +19,8 @@
       "from": "A2.1",
       "to": "B1.1",
       "country": "Mexico",
-      "whereToFind": "Free from Annenberg Learner (52 episodes)",
-      "url": "https://www.learner.org/series/destinos-an-introduction-to-spanish/",
+      "whereToFind": "Some local PBS stations; no longer free online (Annenberg Learner closed in 2026)",
+      "url": null,
       "why": "A telenovela made for learners: a mystery that pulls you into watching every day, across Spain, Argentina, Puerto Rico and Mexico."
     },
     {

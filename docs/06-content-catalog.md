@@ -22,7 +22,7 @@ Leaning Latin American, since the goal is living there. Each entry has a band, f
 | Band | Title | Format | Accent | Why |
 |---|---|---|---|---|
 | A2.1–A2.2 | *Peppa Pig* (Latin American dub) | Cartoon, YouTube | Various | Short, very clear, everyday life |
-| A2.1–B1.1 | *Destinos* | Learner telenovela (52 episodes, free) | Mexico, others | Made for learners; a story that rewards daily watching |
+| A2.1–B1.1 | *Destinos* | Learner telenovela (52 episodes; no longer free online, some PBS stations) | Mexico, others | Made for learners; a story that rewards daily watching |
 | A2.2–B1.1 | *Coco*, *Encanto* (Latin American dub) | Film | Mexico, Colombia | Familiar stories, clear speech; songs for shadowing |
 | A2.2–B1.2 | *Duolingo Spanish Podcast* | Podcast | Various | True stories in slow, clear Spanish |
 | B1.1–B1.2 | *Easy Spanish* | YouTube street interviews | Various | Real speakers with dual subtitles; many accents |
