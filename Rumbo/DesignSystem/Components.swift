@@ -159,6 +159,8 @@ extension View {
     func rumboListBackground() -> some View {
         scrollContentBackground(.hidden)
             .background(Palette.background.ignoresSafeArea())
+            .fontDesign(.rounded)
+            .fontWeight(.semibold)
     }
 
     /// Row colour for list and form sections, to sit on `rumboListBackground()`.

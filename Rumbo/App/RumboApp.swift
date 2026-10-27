@@ -21,7 +21,32 @@ struct RumboApp: App {
         let appModel = AppModel(context: container.mainContext)
         _model = State(initialValue: appModel)
         UNUserNotificationCenter.current().delegate = NotificationPresenter.shared
+        RumboApp.styleNavigationBars()
         TimerControl.togglePause = { appModel.togglePause() }
+    }
+
+    /// Screen titles in SF Rounded, heavy, like the rest of the app.
+    static func styleNavigationBars() {
+        func rounded(_ style: UIFont.TextStyle, _ weight: UIFont.Weight) -> UIFont {
+            let base = UIFont.preferredFont(forTextStyle: style)
+            let descriptor = base.fontDescriptor.withDesign(.rounded) ?? base.fontDescriptor
+            return UIFont(descriptor: descriptor.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: weight]]), size: base.pointSize)
+        }
+        // Only the title fonts change; the system's own bar backgrounds (glass) are kept.
+        let bar = UINavigationBar.appearance()
+        func withRoundedTitles(_ appearance: UINavigationBarAppearance) -> UINavigationBarAppearance {
+            let copy = appearance.copy()
+            copy.largeTitleTextAttributes[.font] = rounded(.largeTitle, .black)
+            copy.titleTextAttributes[.font] = rounded(.headline, .heavy)
+            return copy
+        }
+        bar.standardAppearance = withRoundedTitles(bar.standardAppearance)
+        let edge = bar.scrollEdgeAppearance ?? {
+            let transparent = UINavigationBarAppearance()
+            transparent.configureWithTransparentBackground()
+            return transparent
+        }()
+        bar.scrollEdgeAppearance = withRoundedTitles(edge)
     }
 
     var body: some Scene {
@@ -52,6 +77,8 @@ struct RootView: View {
         }
         .environment(model)
         .tint(Palette.coral)
+        // SF Rounded everywhere, including plain Text in lists and forms (Settings, Mistakes, Diagnostics).
+        .fontDesign(.rounded)
         // Refresh when the app comes back or the day changes, so Today rolls over at midnight.
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {

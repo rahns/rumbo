@@ -82,27 +82,14 @@ struct PathView: View {
 
     private func header(todayDone: Bool) -> some View {
         HStack(spacing: 8) {
-            if let profile = model.profile {
-                Text("\(profile.band.label) · \(profile.band.rawValue)")
-                    .font(.rounded(.subheadline, weight: .heavy))
-                    .foregroundStyle(.white)
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 12)
-                    .background(Capsule().fill(Palette.coral))
-                    .fixedSize()
+            // The left chips use the longest wording that fits the screen, so nothing is squashed or cut off:
+            // "Explorador · A2.1" + "Day done", then "A2.1" + "Day done", then "A2.1" + a tick.
+            ViewThatFits(in: .horizontal) {
+                leftChips(fullLevel: true, doneText: true, todayDone: todayDone)
+                leftChips(fullLevel: false, doneText: true, todayDone: todayDone)
+                leftChips(fullLevel: false, doneText: false, todayDone: todayDone)
             }
-            if todayDone {
-                Label("Day done", systemImage: "checkmark.circle.fill")
-                    .font(.rounded(.subheadline, weight: .heavy))
-                    .foregroundStyle(.white)
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 10)
-                    .background(Capsule().fill(Palette.leaf))
-                    // Chips keep their natural size; the spacer gives way instead.
-                    .fixedSize()
-                    .transition(.scale.combined(with: .opacity))
-            }
-            Spacer(minLength: 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
             StatPill(symbol: "flame.fill", value: "\(model.streak.streak)", color: Palette.sun, bounce: model.streak.streak,
                      accessibilityText: "\(model.streak.streak) day streak")
                 .overlay { IceShatter(trigger: freezeShatters) }
@@ -111,8 +98,41 @@ struct PathView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 10)
+        .frame(maxWidth: .infinity)
         .background(.bar)
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: todayDone)
+    }
+
+    private func leftChips(fullLevel: Bool, doneText: Bool, todayDone: Bool) -> some View {
+        HStack(spacing: 8) {
+            if let profile = model.profile {
+                Text(fullLevel ? "\(profile.band.label) · \(profile.band.rawValue)" : profile.band.rawValue)
+                    .font(.rounded(.subheadline, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 12)
+                    .background(Capsule().fill(Palette.coral))
+                    .fixedSize()
+                    .accessibilityLabel("\(profile.band.label), \(profile.band.rawValue)")
+            }
+            if todayDone {
+                Group {
+                    if doneText {
+                        Label("Day done", systemImage: "checkmark.circle.fill")
+                    } else {
+                        Image(systemName: "checkmark.circle.fill")
+                    }
+                }
+                .font(.rounded(.subheadline, weight: .heavy))
+                .foregroundStyle(.white)
+                .padding(.vertical, 6)
+                .padding(.horizontal, 10)
+                .background(Capsule().fill(Palette.leaf))
+                .fixedSize()
+                .accessibilityLabel("Day done")
+                .transition(.scale.combined(with: .opacity))
+            }
+        }
     }
 
     /// One-off moments for the path: a freeze that saved the streak, and a newly completed unit.

@@ -34,7 +34,7 @@ Strand accents: **Input = coral, Output = sky, Language-focused = leaf, Fluency 
 | Input cards (Dreaming, Extra, podcasts) | Rounded, ink-on-lilac or coral-on-ink cards with a thumbnail feel, calm and spacious | Dreaming |
 | Level badges | Small animated badge per band, like Dreaming's animated level icons | Dreaming |
 | Progress | Thick rounded progress bars with a highlight stripe | Duolingo |
-| Type | SF Pro Rounded, heavy weights for headings and numbers; SF Pro for body | Duolingo's rounded type |
+| Type | SF Pro Rounded throughout (`.fontDesign(.rounded)` at the root, rounded navigation titles), heavy weights for headings and numbers | Duolingo's rounded type |
 | Surfaces | Continuous-corner cards, glass tab bar (iOS 27 Liquid Glass) | iOS |
 | Light/dark | Both from the start. Dark mode uses `ink` as the base, which reads as Dreaming's night-time look. | |
 
@@ -100,7 +100,7 @@ Implemented in `Rumbo/Features/Path/PathView.swift`, laid out by `PathLayout` in
 
 ### Level-up check
 Intro → the next band's 10 can-do statements one at a time → ≥ 7 "¡Sí!" passes: confetti, proud Pico, new band badge, and the plan's strand mix changes from the next day. Otherwise "Not yet, and that's fine", and the check returns in 14 days.
-- Header: streak flame, training hours (clock badge), and "Day done" when today is finished. Chips keep their natural width.
+- Header: level chip, "Day done" when today is finished, streak flame and training hours (clock badge). On narrow screens the left chips shorten ("A2.1", then a tick for "Day done") rather than squashing or pushing the path off screen.
 - Tap today's node → its card **expands into the Today screen** (`matchedGeometryEffect` / zoom navigation transition).
 
 ### Today
