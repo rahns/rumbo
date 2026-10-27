@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "items": [
     {
       "id": "peppa-latam",
@@ -11,6 +11,83 @@
       "whereToFind": "YouTube: search \"Peppa Pig en español latino\"",
       "url": "https://www.youtube.com/results?search_query=peppa+pig+en+espa%C3%B1ol+latino",
       "why": "Short, very clear episodes about everyday life. Easy input like this builds speed and confidence."
+    },
+    {
+      "id": "pocoyo-latam",
+      "title": "Pocoyó (Español Latino)",
+      "kind": "series",
+      "from": "A2.1",
+      "to": "A2.1",
+      "country": "Mexico",
+      "whereToFind": "YouTube: \"Pocoyo – Español Latino (Canal Oficial)\"",
+      "url": "https://www.youtube.com/results?search_query=Pocoyo+Espa%C3%B1ol+Latino+Canal+Oficial",
+      "why": "Very short, very slow episodes where the narrator describes exactly what's on screen. Easy listening for tired days."
+    },
+    {
+      "id": "bluey-es",
+      "title": "Bluey (Spanish dub)",
+      "kind": "series",
+      "from": "A2.1",
+      "to": "A2.2",
+      "country": "Various",
+      "whereToFind": "Disney+ (Spanish audio, Spanish subtitles)",
+      "url": null,
+      "why": "Seven-minute episodes about family life, full of everyday phrases parents and kids really say. Funny for adults too."
+    },
+    {
+      "id": "super-easy-spanish",
+      "title": "Super Easy Spanish",
+      "kind": "youtube",
+      "from": "A2.1",
+      "to": "A2.2",
+      "country": "Various",
+      "whereToFind": "YouTube: Easy Spanish channel, \"Super Easy Spanish\" episodes",
+      "url": "https://www.youtube.com/results?search_query=Super+Easy+Spanish",
+      "why": "The beginner series from Easy Spanish: slow, clear everyday conversations in the street, with Spanish and English subtitles."
+    },
+    {
+      "id": "simple-stories",
+      "title": "Simple Stories in Spanish",
+      "kind": "podcast",
+      "from": "A2.1",
+      "to": "A2.2",
+      "country": "Various",
+      "whereToFind": "Any podcast app; transcripts at smalltownspanishteacher.com",
+      "url": null,
+      "why": "Short stories told slowly, with transcripts. Stories are easier to follow than conversations, so you understand more at A2."
+    },
+    {
+      "id": "coffee-break-spanish",
+      "title": "Coffee Break Spanish",
+      "kind": "podcast",
+      "from": "A2.1",
+      "to": "B1.1",
+      "country": "Spain",
+      "whereToFind": "Any podcast app (free; transcripts available)",
+      "url": null,
+      "why": "A teacher and a learner working through real conversations step by step. Uses some English, which helps on harder topics."
+    },
+    {
+      "id": "how-to-spanish",
+      "title": "How to Spanish Podcast",
+      "kind": "podcast",
+      "from": "A2.2",
+      "to": "B1.1",
+      "country": "Mexico",
+      "whereToFind": "Any podcast app (Spotify, Apple Podcasts)",
+      "url": null,
+      "why": "One topic per episode, all in Spanish, with a Mexican expression in each. A good step up from learner stories."
+    },
+    {
+      "id": "intensamente",
+      "title": "Intensa-Mente (Inside Out)",
+      "kind": "film",
+      "from": "A2.2",
+      "to": "B1.1",
+      "country": "Mexico",
+      "whereToFind": "Disney+ (Spanish audio, Latin American dub)",
+      "url": null,
+      "why": "A story you probably know, all about feelings: the vocabulary for describing emotions comes up again and again."
     },
     {
       "id": "destinos",

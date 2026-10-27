@@ -22,6 +22,13 @@ Leaning Latin American, since the goal is living there. Each entry has a band, f
 | Band | Title | Format | Accent | Why |
 |---|---|---|---|---|
 | A2.1–A2.2 | *Peppa Pig* (Latin American dub) | Cartoon, YouTube | Various | Short, very clear, everyday life |
+| A2.1 | *Pocoyó* (Español Latino) | Cartoon, YouTube | Mexico | Very slow narration of exactly what's on screen |
+| A2.1–A2.2 | *Bluey* (Spanish dub) | Series, Disney+ | Various | Short family episodes full of everyday phrases |
+| A2.1–A2.2 | *Super Easy Spanish* | YouTube | Various | Easy Spanish's beginner series: slow street conversations, dual subtitles |
+| A2.1–A2.2 | *Simple Stories in Spanish* | Podcast | Various | Slow stories with transcripts |
+| A2.1–B1.1 | *Coffee Break Spanish* | Podcast | Spain | Teacher-and-learner lessons; some English |
+| A2.2–B1.1 | *How to Spanish Podcast* | Podcast | Mexico | One topic per episode, all in Spanish, a Mexican expression each time |
+| A2.2–B1.1 | *Intensa-Mente* (Inside Out, Latin American dub) | Film | Mexico | Familiar story; vocabulary for feelings |
 | A2.1–B1.1 | *Destinos* | Learner telenovela (52 episodes; no longer free online, some PBS stations) | Mexico, others | Made for learners; a story that rewards daily watching |
 | A2.2–B1.1 | *Coco*, *Encanto* (Latin American dub) | Film | Mexico, Colombia | Familiar stories, clear speech; songs for shadowing |
 | A2.2–B1.2 | *Duolingo Spanish Podcast* | Podcast | Various | True stories in slow, clear Spanish |
