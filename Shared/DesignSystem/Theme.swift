@@ -71,10 +71,20 @@ extension Strand {
 
     var label: String {
         switch self {
-        case .input: "Listen"
-        case .output: "Produce"
-        case .languageFocused: "Learn"
-        case .fluency: "Flow"
+        case .input: "Listening"
+        case .output: "Speaking & writing"
+        case .languageFocused: "Study"
+        case .fluency: "Fluency practice"
+        }
+    }
+
+    /// What counts toward the strand, in the learner's own sources.
+    var detail: String {
+        switch self {
+        case .input: "Dreaming Spanish, Extra, shows and podcasts"
+        case .output: "Guided writing, Tandem and travel missions"
+        case .languageFocused: "Language Transfer, Duolingo and the mistake deck"
+        case .fluency: "Easy videos, quick writes and 4-3-2 talks: using what you know, faster"
         }
     }
 }

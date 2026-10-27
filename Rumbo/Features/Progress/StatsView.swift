@@ -70,29 +70,20 @@ struct StatsView: View {
                      : "\(String(format: "%.1f", weekly)) hours of listening a week: about \(Int(((profile.band.strandTargets[.input] ?? 0) * 100).rounded()))% of your \(profile.weeklyGoalMinutes)-minute weekly goal is listening, and only listening counts toward level hours. Your real pace takes over after a week.")
                     .font(.rounded(.subheadline, weight: .semibold))
                     .foregroundStyle(Palette.secondaryText)
-                if weekly > 0 {
-                    JourneyChart(currentHours: model.inputHours, weeklyHours: weekly, targetDate: profile.targetDate, calendar: model.calendar)
-                }
                 if arrivals.isEmpty {
                     Text("Log some listening and Rumbo will forecast when you reach each level.")
                         .font(.rounded(.subheadline, weight: .medium))
                         .foregroundStyle(Palette.secondaryText)
                 } else {
-                    ForEach(Band.allCases.filter { arrivals[$0] != nil }, id: \.self) { band in
-                        HStack {
-                            Text("\(band.label) · \(band.rawValue)")
-                            Spacer()
-                            Text(arrivals[band]!.formatted(.dateTime.month(.abbreviated).year()))
-                        }
-                        .font(.rounded(.subheadline, weight: .bold))
-                        .foregroundStyle(Palette.ink)
-                    }
+                    let expected = profile.targetDate.map { projection.inputHours(by: $0, from: .now, current: model.inputHours, weeklyHours: weekly) }
+                    LevelTimeline(band: profile.band, hours: model.inputHours, arrivals: arrivals, targetDate: profile.targetDate,
+                                  atTarget: expected.map { ($0, Band.forInputHours($0)) })
+                        .padding(.top, 6)
                 }
-                if let target = profile.targetDate {
-                    let expected = projection.inputHours(by: target, from: .now, current: model.inputHours, weeklyHours: weekly)
+                if let target = profile.targetDate, target > .now {
                     let extra = projection.inputHours(by: target, from: .now, current: model.inputHours, weeklyHours: weekly, extraMinutesPerDay: 10)
-                    Text("By \(target.formatted(date: .abbreviated, time: .omitted)): about \(Int(expected)) hours (\(Band.forInputHours(expected).rawValue)). With 10 more minutes a day: \(Int(extra)) hours (\(Band.forInputHours(extra).rawValue)).")
-                        .font(.rounded(.subheadline, weight: .medium))
+                    Label("With 10 more minutes a day: about \(Int(extra)) h by your target (\(Band.forInputHours(extra).label), \(Band.forInputHours(extra).rawValue)).", systemImage: "bolt.fill")
+                        .font(.rounded(.subheadline, weight: .semibold))
                         .foregroundStyle(Palette.secondaryText)
                 }
             }

@@ -132,8 +132,8 @@ Implemented in `Rumbo/Features/Review/MistakeDeckViews.swift`; cards are `Review
 
 ### Progress tab
 - Hours ring toward the next band.
-- **Strand balance:** one row per strand: minutes and share for the last 7 days, a bar for the share, and a tick at the band's target share.
-- **Projection chart:** input hours from now to the target date (or a year out), with dashed thresholds for the levels still ahead and the target date marked; the arrival dates and "+10 min a day" line sit under it.
+- **Strand balance:** one row per strand, named Listening, Speaking & writing, Study and Fluency practice, each with what counts toward it (e.g. "Easy videos, quick writes and 4-3-2 talks"). Shows the last 7 days' minutes and share, a bar for the share, and a tick at the band's target share.
+- **Where you're heading:** a timeline from now (current level and hours) through each level's expected arrival, with the target date as a flag in date order and the expected level there; levels after the target are faded. Below it: what 10 more minutes a day would reach by the target.
 - Streak, freezes, XP; mistake deck.
 - **Heat map:** the last 12 calendar weeks, one square per day (weeks start on the learner's chosen day), shaded by minutes, today outlined.
 - Source progress: Language Transfer track bar, Extra episodes, Duolingo section.

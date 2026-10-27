@@ -1,4 +1,3 @@
-import Charts
 import RumboCore
 import SwiftUI
 
@@ -32,13 +31,14 @@ struct StrandBalanceChart: View {
             HStack {
                 Text(strand.label)
                     .foregroundStyle(Palette.ink)
-                Spacer()
-                Text("\(spent) min · \(Int((share * 100).rounded()))%")
+                Spacer(minLength: 8)
+                Text("\(Int((share * 100).rounded()))% · aim \(Int((target * 100).rounded()))%")
                     .foregroundStyle(Palette.secondaryText)
-                Text("aim \(Int((target * 100).rounded()))%")
-                    .foregroundStyle(Palette.secondaryText.opacity(0.8))
             }
             .font(.rounded(.subheadline, weight: .bold))
+            Text("\(spent) min · \(strand.detail)")
+                .font(.rounded(.caption, weight: .medium))
+                .foregroundStyle(Palette.secondaryText)
             GeometryReader { proxy in
                 let width = proxy.size.width
                 ZStack(alignment: .leading) {
@@ -57,75 +57,129 @@ struct StrandBalanceChart: View {
             .animation(.spring(response: 0.5, dampingFraction: 0.8), value: share)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(strand.label)
+        .accessibilityLabel("\(strand.label): \(strand.detail)")
         .accessibilityValue("\(spent) minutes, \(Int((share * 100).rounded())) percent. Target \(Int((target * 100).rounded())) percent.")
     }
 }
 
-/// Input hours from now to the target date (or a year out), with each level's threshold.
-struct JourneyChart: View {
-    let currentHours: Double
-    let weeklyHours: Double
+/// The road ahead: now, each level's expected arrival, and the learner's target date, in date order.
+/// Levels reached before the target are green; ones after it are faded.
+struct LevelTimeline: View {
+    let band: Band
+    let hours: Double
+    let arrivals: [Band: Date]
     let targetDate: Date?
-    let calendar: Calendar
+    /// Expected hours and level on the target date.
+    let atTarget: (hours: Double, band: Band)?
 
-    var body: some View {
-        let end = targetDate.flatMap { $0 > .now ? $0 : nil } ?? calendar.date(byAdding: .year, value: 1, to: .now)!
-        let points = ProgressStats.projection(currentHours: currentHours, weeklyHours: weeklyHours, from: .now, until: end, calendar: calendar)
-        let top = max((points.last?.hours ?? currentHours) * 1.1, currentHours + 10)
-        let bottom = max(0, currentHours * 0.9)
-        let bands = Band.allCases.filter { $0.inputHoursThreshold > currentHours && $0.inputHoursThreshold <= top }
-        Chart {
-            ForEach(bands, id: \.self) { band in
-                RuleMark(y: .value("Hours", band.inputHoursThreshold))
-                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                    .foregroundStyle(Palette.secondaryText.opacity(0.6))
-                    .annotation(position: .top, alignment: .leading, spacing: 2) {
-                        Text("\(band.label) · \(Int(band.inputHoursThreshold)) h")
-                            .font(.rounded(.caption2, weight: .heavy))
-                            .foregroundStyle(Palette.secondaryText)
-                    }
-            }
-            ForEach(points, id: \.date) { point in
-                AreaMark(x: .value("Date", point.date), yStart: .value("Hours", bottom), yEnd: .value("Hours", point.hours))
-                    .foregroundStyle(LinearGradient(colors: [Palette.sky.opacity(0.35), Palette.sky.opacity(0.02)], startPoint: .top, endPoint: .bottom))
-                    .interpolationMethod(.monotone)
-                LineMark(x: .value("Date", point.date), y: .value("Hours", point.hours))
-                    .foregroundStyle(Palette.sky)
-                    .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round))
-                    .interpolationMethod(.monotone)
-            }
-            if let first = points.first {
-                PointMark(x: .value("Date", first.date), y: .value("Hours", first.hours))
-                    .foregroundStyle(Palette.coral)
-                    .symbolSize(90)
-            }
-            if let targetDate, targetDate > .now {
-                RuleMark(x: .value("Target", targetDate))
-                    .foregroundStyle(Palette.sun)
-                    .lineStyle(StrokeStyle(lineWidth: 2))
-                    .annotation(position: .top, alignment: .trailing, spacing: 2) {
-                        Text("Target").font(.rounded(.caption2, weight: .heavy)).foregroundStyle(Palette.sun)
-                    }
+    private enum Stop: Identifiable {
+        case now
+        case level(Band, Date)
+        case target(Date)
+
+        var id: String {
+            switch self {
+            case .now: "now"
+            case .level(let band, _): band.rawValue
+            case .target: "target"
             }
         }
-        .chartYScale(domain: bottom...top)
-        .chartPlotStyle { $0.clipped() }
-        .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 3)) { _ in
-                AxisGridLine()
-                AxisValueLabel(format: .dateTime.month(.abbreviated).year())
+
+        var date: Date {
+            switch self {
+            case .now: .distantPast
+            case .level(_, let date), .target(let date): date
             }
         }
-        .frame(height: 200)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Projected input hours")
-        .accessibilityValue(summary(points))
     }
 
-    private func summary(_ points: [ProgressStats.Point]) -> String {
-        guard let last = points.last else { return "" }
-        return "About \(Int(last.hours)) hours by \(last.date.formatted(.dateTime.month(.wide).year())), from \(Int(currentHours)) now."
+    var body: some View {
+        let stops = makeStops()
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(stops.enumerated()), id: \.element.id) { index, stop in
+                row(stop, isLast: index == stops.count - 1)
+            }
+        }
+    }
+
+    private func makeStops() -> [Stop] {
+        var stops: [Stop] = arrivals.map { Stop.level($0.key, $0.value) }
+        if let targetDate, targetDate > .now { stops.append(.target(targetDate)) }
+        return [.now] + stops.sorted { $0.date < $1.date }
+    }
+
+    private func row(_ stop: Stop, isLast: Bool) -> some View {
+        let afterTarget = targetDate.map { stop.date > $0 } ?? false
+        let style = style(for: stop, afterTarget: afterTarget)
+        return HStack(alignment: .top, spacing: 12) {
+            VStack(spacing: 0) {
+                Image(systemName: style.symbol)
+                    .font(.system(size: 13, weight: .black))
+                    .foregroundStyle(.white)
+                    .frame(width: 30, height: 30)
+                    .background(Circle().fill(style.color))
+                if !isLast {
+                    Rectangle()
+                        .fill(Palette.lilac)
+                        .frame(width: 4)
+                        .frame(minHeight: 22, maxHeight: .infinity)
+                }
+            }
+            .frame(width: 30)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(style.title)
+                        .font(.rounded(.subheadline, weight: .heavy))
+                        .foregroundStyle(style.isTarget ? Palette.sun : Palette.ink)
+                    Spacer(minLength: 8)
+                    Text(style.date)
+                        .font(.rounded(.subheadline, weight: .heavy))
+                        .foregroundStyle(style.isTarget ? Palette.sun : Palette.ink)
+                }
+                Text(style.subtitle)
+                    .font(.rounded(.caption, weight: .semibold))
+                    .foregroundStyle(Palette.secondaryText)
+            }
+            .padding(.top, 5)
+            .padding(.bottom, isLast ? 0 : 14)
+        }
+        .opacity(afterTarget ? 0.55 : 1)
+        .accessibilityElement(children: .combine)
+    }
+
+    private struct Style {
+        var symbol: String
+        var color: Color
+        var title: String
+        var date: String
+        var subtitle: String
+        var isTarget = false
+    }
+
+    private func style(for stop: Stop, afterTarget: Bool) -> Style {
+        switch stop {
+        case .now:
+            return Style(symbol: "location.fill", color: Palette.coral, title: "Now · \(band.label)",
+                         date: "\(Int(hours)) h", subtitle: "\(band.rawValue), hours of listening so far")
+        case .level(let level, let date):
+            return Style(symbol: "trophy.fill", color: afterTarget ? Palette.secondaryText : Palette.leaf,
+                         title: "\(level.label) · \(level.rawValue)",
+                         date: date.formatted(.dateTime.month(.abbreviated).year()),
+                         subtitle: "\(Int(level.inputHoursThreshold)) h · \(Self.distance(to: date))")
+        case .target(let date):
+            let expected = atTarget.map { "About \(Int($0.hours)) h by then: \($0.band.label) (\($0.band.rawValue))" } ?? ""
+            return Style(symbol: "flag.fill", color: Palette.sun, title: "Your target",
+                         date: date.formatted(.dateTime.month(.abbreviated).year()), subtitle: expected, isTarget: true)
+        }
+    }
+
+    /// "in 4 months", "in 2 years".
+    private static func distance(to date: Date) -> String {
+        let months = Calendar.current.dateComponents([.month], from: .now, to: date).month ?? 0
+        if months < 1 { return "within a month" }
+        if months < 18 { return months == 1 ? "in 1 month" : "in \(months) months" }
+        let years = (Double(months) / 12).rounded()
+        return "in about \(Int(years)) years"
     }
 }
 
