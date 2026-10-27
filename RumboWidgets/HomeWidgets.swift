@@ -87,9 +87,11 @@ struct HomeWidgetView: View {
     private func medium(_ snapshot: WidgetSnapshot) -> some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
-                PicoStill(mood: snapshot.dayComplete ? .cheering : mood(snapshot), size: 64)
-                StreakLabel(streak: snapshot.streak)
-                WeekRing(snapshot: snapshot, size: 40)
+                PicoStill(mood: snapshot.dayComplete ? .cheering : mood(snapshot), size: 58)
+                HStack(alignment: .top, spacing: 8) {
+                    StreakLabel(streak: snapshot.streak)
+                    WeekRing(snapshot: snapshot, size: 34)
+                }
             }
             VStack(alignment: .leading, spacing: 6) {
                 planHeader(snapshot)
@@ -105,15 +107,12 @@ struct HomeWidgetView: View {
                 PicoStill(mood: snapshot.dayComplete ? .cheering : mood(snapshot), size: 64)
                 VStack(alignment: .leading, spacing: 4) {
                     StreakLabel(streak: snapshot.streak)
-                    Text("\(snapshot.minutesThisWeek) / \(snapshot.weeklyGoal) min this week")
-                        .font(.rounded(.caption, weight: .bold))
-                        .foregroundStyle(Palette.secondaryText)
                     Text(snapshot.bandLabel)
                         .font(.rounded(.caption, weight: .bold))
                         .foregroundStyle(Palette.secondaryText)
                 }
                 Spacer(minLength: 0)
-                WeekRing(snapshot: snapshot, size: 54)
+                WeekRing(snapshot: snapshot, size: 50, showsMinutes: true)
             }
             Divider()
             planHeader(snapshot)
@@ -217,16 +216,19 @@ struct LockScreenWidgetView: View {
         let snapshot = entry.snapshot ?? .placeholder
         switch family {
         case .accessoryCircular:
+            // Weekly goal only (the streak is on the rectangular and inline widgets).
             Gauge(value: Double(min(snapshot.minutesThisWeek, snapshot.weeklyGoal)), in: 0...Double(max(snapshot.weeklyGoal, 1))) {
-                Image(systemName: "flame.fill")
+                Text("WEEK")
             } currentValueLabel: {
-                Text("\(snapshot.streak)")
+                Text("\(Int(Double(snapshot.minutesThisWeek) / Double(max(snapshot.weeklyGoal, 1)) * 100))%")
             }
             .gaugeStyle(.accessoryCircular)
         case .accessoryRectangular:
             VStack(alignment: .leading, spacing: 2) {
-                Text("🔥 \(snapshot.streak) · \(snapshot.minutesThisWeek)/\(snapshot.weeklyGoal) min")
+                Text("🔥 \(snapshot.streak) · \(snapshot.minutesThisWeek)/\(snapshot.weeklyGoal) min this week")
                     .font(.headline)
+                    .minimumScaleFactor(0.75)
+                    .lineLimit(1)
                 if snapshot.dayComplete {
                     Text("Day complete ✓")
                 } else if snapshot.isSuggestion, let minutes = snapshot.suggestedMinutes {
@@ -260,23 +262,38 @@ struct PicoStill: View {
     }
 }
 
+/// Progress toward the weekly goal (minutes logged this week ÷ weekly goal), labelled "this week".
 struct WeekRing: View {
     let snapshot: WidgetSnapshot
     let size: CGFloat
+    /// Adds "85/150 min" under the label, where there's room.
+    var showsMinutes = false
 
     var body: some View {
         let progress = Double(snapshot.minutesThisWeek) / Double(max(snapshot.weeklyGoal, 1))
-        ZStack {
-            Circle().stroke(Palette.lilac, lineWidth: size * 0.14)
-            Circle()
-                .trim(from: 0, to: min(progress, 1))
-                .stroke(Palette.leaf, style: StrokeStyle(lineWidth: size * 0.14, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-            Text("\(Int(min(progress, 9.99) * 100))%")
-                .font(.system(size: size * 0.26, weight: .black, design: .rounded))
-                .foregroundStyle(Palette.ink)
+        VStack(spacing: 2) {
+            ZStack {
+                Circle().stroke(Palette.lilac, lineWidth: size * 0.14)
+                Circle()
+                    .trim(from: 0, to: min(progress, 1))
+                    .stroke(Palette.leaf, style: StrokeStyle(lineWidth: size * 0.14, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                Text("\(Int(min(progress, 9.99) * 100))%")
+                    .font(.system(size: size * 0.26, weight: .black, design: .rounded))
+                    .foregroundStyle(Palette.ink)
+                    .minimumScaleFactor(0.7)
+            }
+            .frame(width: size, height: size)
+            Text(showsMinutes ? "\(snapshot.minutesThisWeek)/\(snapshot.weeklyGoal) min\nthis week" : "this week")
+                .font(.rounded(.caption2, weight: .heavy))
+                .foregroundStyle(Palette.secondaryText)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .fixedSize()
         }
-        .frame(width: size, height: size)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Weekly goal")
+        .accessibilityValue("\(snapshot.minutesThisWeek) of \(snapshot.weeklyGoal) minutes this week")
     }
 }
 

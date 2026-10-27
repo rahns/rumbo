@@ -173,11 +173,11 @@ Implemented in `RumboWidgets/`. Widgets read a `WidgetSnapshot` the app writes a
 
 | Surface | Content |
 |---|---|
-| Small widget | Pico (cheering once the day is complete), weekly ring with %, streak, and "Next: …", "Suggested: 30 min, tap to start" or "¡Hecho! Day complete" |
+| Small widget | Pico (cheering once the day is complete), the weekly-goal ring (minutes this week ÷ weekly goal, labelled "this week"; the large widget adds "85/150 min"), streak, and "Next: …", "Suggested: 30 min, tap to start" or "¡Hecho! Day complete" |
 | Medium widget | The same, plus today's tasks (or the suggested plan) with ticks, colour-coded by strand, and minutes |
 | Large widget | Pico, streak, this week's minutes, level and weekly ring, then up to 7 tasks; for a suggestion, a "Tap to start this plan" button |
-| Lock Screen circular | Weekly-goal gauge with the streak number |
-| Lock Screen rectangular | "🔥 5 · 85/150 min", then the next task ("Suggested: 30 min" before a plan, or "Day complete ✓") |
+| Lock Screen circular | Weekly-goal gauge: "57%" with "WEEK" |
+| Lock Screen rectangular | "🔥 5 · 85/150 min this week", then the next task ("Suggested: 30 min" before a plan, or "Day complete ✓") |
 | Lock Screen inline | "🔥 5 · 85/150 min this week" |
 | Live Activity (Lock Screen) | Task icon in its strand colour, title, elapsed time, progress bar, **Pause/Resume** and **Done** |
 | Dynamic Island compact | Task icon (pause icon while paused) + elapsed time |
