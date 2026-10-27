@@ -179,7 +179,7 @@ struct PathView: View {
             } label: {
                 VStack(spacing: 6) {
                     PathNodeView(status: node.status, isToday: node.isToday, date: node.date, minutes: node.minutes)
-                    Text(node.isToday ? "Today" : SpanishDate.shortDay(node.date))
+                    Text(node.isToday ? "Hoy" : SpanishDate.shortDay(node.date))
                         .font(.rounded(.caption, weight: node.isToday ? .black : .bold))
                         .foregroundStyle(node.isToday ? Palette.ink : Palette.secondaryText)
                 }
