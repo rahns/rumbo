@@ -78,6 +78,7 @@ struct MainTabView: View {
         TabView {
             Tab("Path", systemImage: "point.topleft.down.to.point.bottomright.curvepath.fill") { PathView() }
             Tab("Progress", systemImage: "chart.line.uptrend.xyaxis") { StatsView() }
+            Tab("Library", systemImage: "books.vertical.fill") { LibraryView() }
             Tab("Settings", systemImage: "gearshape.fill") { SettingsView() }
         }
         .fullScreenCover(item: $model.finishingTask) { task in

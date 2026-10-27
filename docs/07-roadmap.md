@@ -45,3 +45,6 @@ Written, not yet built: correction service (LanguageTool + on-device model, merg
 
 ## M5 status
 Written, not yet built: home widgets (small, medium) and Lock Screen widgets (circular, rectangular, inline) from a Keychain-shared snapshot; Live Activity redesign with Pause/Resume (App Intent) and Done (deep link to the log screen); timers removed when leaving a task, on quit and on launch, and marked stale after the planned end + 30 min; pause support in the app timer. Diagnostics widget removed.
+
+## M6 status
+Written, not yet built: Library tab (suggestions for now and next, Watch this, Open, Heading to), content catalog bundled at `Rumbo/Resources/catalog/content.json` with remote refresh from `main`, Progress charts (strand balance vs targets, projection with band thresholds and target date, 12-week heat map), Travel mode toggle on Today, destination in Settings and backups. Engine: `ContentCatalog`, `ProgressStats` (97 tests).

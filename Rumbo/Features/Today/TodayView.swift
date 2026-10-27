@@ -14,6 +14,7 @@ struct TodayView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     header
                     banners
+                    travelToggle
                     if let plan = model.todayPlan {
                         planSection(plan)
                     } else {
@@ -87,6 +88,29 @@ struct TodayView: View {
         let hour = Calendar.current.component(.hour, from: .now)
         let hello = hour < 12 ? "¡Buenos días" : hour < 20 ? "¡Buenas tardes" : "¡Buenas noches"
         return name.isEmpty ? "\(hello)!" : "\(hello), \(name)!"
+    }
+
+    // MARK: Travel mode
+
+    @ViewBuilder
+    private var travelToggle: some View {
+        if let profile = model.profile {
+            RaisedCard(accent: profile.travelMode ? Palette.sun : nil) {
+                Toggle(isOn: Binding(get: { profile.travelMode }, set: { model.setTravelMode($0) })) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Label("Travel mode", systemImage: "backpack.fill")
+                            .font(.rounded(.headline, weight: .black))
+                            .foregroundStyle(Palette.ink)
+                        Text(profile.travelMode
+                             ? "On the road: Rumbo adds a real-world mission and, when you're offline, only plans what works offline. Pick today's time again to use it today."
+                             : "Travelling? Turn this on for real-world Spanish missions and plans that cope with no signal.")
+                            .font(.rounded(.caption, weight: .semibold))
+                            .foregroundStyle(Palette.secondaryText)
+                    }
+                }
+                .tint(Palette.sun)
+            }
+        }
     }
 
     // MARK: Banners

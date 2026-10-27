@@ -75,7 +75,7 @@ enum TaskCopy {
         case .extraExtensive:
             "Watch the whole episode for enjoyment. Subtitles only if you get lost."
         case .contentWatch:
-            "Watch or listen to something from your Library suggestions, or any Spanish you enjoy."
+            "Watch or listen to what you picked in Library, or any Spanish you enjoy. Follow the story; don't stop to look words up."
         case .writeGuided:
             "Write \(Prompts.wordTarget(for: band).lowerBound)–\(Prompts.wordTarget(for: band).upperBound) words. Don't look things up while writing; check afterwards."
         case .writeQuick:

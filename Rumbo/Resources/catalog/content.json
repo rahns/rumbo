@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "peppa-latam",
+      "title": "Peppa Pig (Latin American dub)",
+      "kind": "series",
+      "from": "A2.1",
+      "to": "A2.2",
+      "country": "Various",
+      "whereToFind": "YouTube: search \"Peppa Pig en español latino\"",
+      "url": "https://www.youtube.com/results?search_query=peppa+pig+en+espa%C3%B1ol+latino",
+      "why": "Short, very clear episodes about everyday life. Easy input like this builds speed and confidence."
+    },
+    {
+      "id": "destinos",
+      "title": "Destinos",
+      "kind": "series",
+      "from": "A2.1",
+      "to": "B1.1",
+      "country": "Mexico",
+      "whereToFind": "Free from Annenberg Learner (52 episodes)",
+      "url": "https://www.learner.org/series/destinos-an-introduction-to-spanish/",
+      "why": "A telenovela made for learners: a mystery that pulls you into watching every day, across Spain, Argentina, Puerto Rico and Mexico."
+    },
+    {
+      "id": "coco",
+      "title": "Coco",
+      "kind": "film",
+      "from": "A2.2",
+      "to": "B1.1",
+      "country": "Mexico",
+      "whereToFind": "Disney+ (Spanish audio, Latin American dub, Spanish subtitles)",
+      "url": null,
+      "why": "A story you probably know, set in Mexico, with clear speech. Knowing the plot makes the Spanish easier to follow."
+    },
+    {
+      "id": "encanto",
+      "title": "Encanto",
+      "kind": "film",
+      "from": "A2.2",
+      "to": "B1.1",
+      "country": "Colombia",
+      "whereToFind": "Disney+ (Spanish audio, Latin American dub)",
+      "url": null,
+      "why": "Colombian setting and songs you can rewatch. Songs are great for shadowing."
+    },
+    {
+      "id": "duolingo-podcast",
+      "title": "Duolingo Spanish Podcast",
+      "kind": "podcast",
+      "from": "A2.2",
+      "to": "B1.2",
+      "country": "Various",
+      "whereToFind": "Any podcast app",
+      "url": "https://podcast.duolingo.com/spanish",
+      "why": "True stories told in slow, clear Spanish with short English bridges. Good for bus rides and walks."
+    },
+    {
+      "id": "easy-spanish",
+      "title": "Easy Spanish",
+      "kind": "youtube",
+      "from": "B1.1",
+      "to": "B1.2",
+      "country": "Various",
+      "whereToFind": "YouTube",
+      "url": "https://www.youtube.com/@EasySpanish",
+      "why": "Street interviews with real people in Mexico, Argentina, Spain and more, with Spanish and English subtitles. Hear many accents."
+    },
+    {
+      "id": "espanolistos",
+      "title": "Españolistos",
+      "kind": "podcast",
+      "from": "B1.1",
+      "to": "B1.2",
+      "country": "Colombia",
+      "whereToFind": "Any podcast app",
+      "url": "https://espanolistos.com",
+      "why": "Conversations made for intermediate learners, with a Colombian host. Natural topics at a friendly pace."
+    },
+    {
+      "id": "espanol-con-juan",
+      "title": "Español con Juan",
+      "kind": "youtube",
+      "from": "B1.1",
+      "to": "B1.2",
+      "country": "Spain",
+      "whereToFind": "YouTube",
+      "url": "https://www.youtube.com/@EspanolconJuan",
+      "why": "A funny teacher explaining grammar and culture entirely in Spanish. Peninsular accent."
+    },
+    {
+      "id": "notes-in-spanish",
+      "title": "Notes in Spanish",
+      "kind": "podcast",
+      "from": "B1.1",
+      "to": "B2.1",
+      "country": "Spain",
+      "whereToFind": "Any podcast app",
+      "url": "https://www.notesinspanish.com",
+      "why": "Real conversations between a Spanish speaker and a learner, from intermediate to advanced."
+    },
+    {
+      "id": "club-de-cuervos",
+      "title": "Club de Cuervos",
+      "kind": "series",
+      "from": "B1.2",
+      "to": "B2.1",
+      "country": "Mexico",
+      "whereToFind": "Netflix",
+      "url": null,
+      "why": "A comedy-drama about a football club. Everyday Mexican Spanish and lots of family arguments."
+    },
+    {
+      "id": "radio-ambulante",
+      "title": "Radio Ambulante",
+      "kind": "podcast",
+      "from": "B2.1",
+      "to": "B2.2",
+      "country": "Various",
+      "whereToFind": "Any podcast app; transcripts on the website and in the Lupa app",
+      "url": "https://radioambulante.org",
+      "why": "Beautifully told true stories from all over Latin America. Read the transcript when it gets hard."
+    },
+    {
+      "id": "el-hilo",
+      "title": "El Hilo",
+      "kind": "podcast",
+      "from": "B2.1",
+      "to": "B2.2",
+      "country": "Various",
+      "whereToFind": "Any podcast app",
+      "url": "https://elhilo.audio",
+      "why": "Weekly news from Latin America, clearly explained. Builds the vocabulary for living there."
+    },
+    {
+      "id": "luis-miguel",
+      "title": "Luis Miguel: La Serie",
+      "kind": "series",
+      "from": "B2.1",
+      "to": "B2.2",
+      "country": "Mexico",
+      "whereToFind": "Netflix",
+      "url": null,
+      "why": "A gripping biopic. Strong story pull is what makes long extensive viewing easy."
+    },
+    {
+      "id": "casa-de-papel",
+      "title": "La Casa de Papel",
+      "kind": "series",
+      "from": "B2.1",
+      "to": "B2.2",
+      "country": "Spain",
+      "whereToFind": "Netflix",
+      "url": null,
+      "why": "Fast and addictive. Spanish from Spain, so a good contrast to Latin American accents."
+    },
+    {
+      "id": "roma",
+      "title": "Roma",
+      "kind": "film",
+      "from": "B2.1",
+      "to": "B2.2",
+      "country": "Mexico",
+      "whereToFind": "Netflix",
+      "url": null,
+      "why": "Quiet, everyday Mexico City life in 1970s Spanish. Slow enough to follow without subtitles."
+    },
+    {
+      "id": "casa-de-las-flores",
+      "title": "La Casa de las Flores",
+      "kind": "series",
+      "from": "B2.2",
+      "to": "B2.2",
+      "country": "Mexico",
+      "whereToFind": "Netflix",
+      "url": null,
+      "why": "Fast, funny and full of idioms and Mexico City slang."
+    },
+    {
+      "id": "el-marginal",
+      "title": "El Marginal",
+      "kind": "series",
+      "from": "B2.2",
+      "to": "B2.2",
+      "country": "Argentina",
+      "whereToFind": "Netflix",
+      "url": null,
+      "why": "Heavy Rioplatense slang and voseo: a real challenge, and great if Argentina is on your map."
+    }
+  ]
+}

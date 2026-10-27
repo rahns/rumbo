@@ -136,6 +136,17 @@ struct TaskSessionView: View {
             } else if kind == .reviewMistakes {
                 ReviewDeckView()
             }
+            if kind == .contentWatch, let current = model.currentContent {
+                Label("\(current.title) · \(current.whereToFind)", systemImage: "sparkles.tv.fill")
+                    .font(.rounded(.subheadline, weight: .bold))
+                    .foregroundStyle(Palette.secondaryText)
+                if let url = current.url.flatMap(URL.init(string:)) {
+                    Link(destination: url) {
+                        Label("Open \(current.title)", systemImage: "arrow.up.forward.app.fill")
+                    }
+                    .buttonStyle(ChunkySecondaryButtonStyle())
+                }
+            }
             if DeepLinks.url(for: kind, detail: task.detail) != nil {
                 Button {
                     DeepLinks.open(kind, detail: task.detail)

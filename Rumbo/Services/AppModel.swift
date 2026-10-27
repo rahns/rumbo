@@ -36,6 +36,8 @@ final class AppModel {
     private(set) var confettiBursts = 0
 
     private let pathMonitor = NWPathMonitor()
+    /// Library suggestions; the bundled list, replaced by a newer download when there is one.
+    private(set) var catalog = ContentLibrary.load()
 
     struct Banner: Identifiable, Equatable {
         let id = UUID()
@@ -479,6 +481,9 @@ final class AppModel {
         if task.task == .duoLesson, let profile {
             return "Section \(profile.duolingoSection) · Unit \(profile.duolingoUnit)"
         }
+        if task.task == .contentWatch, let current = currentContent {
+            return current.title
+        }
         if task.task == .reviewMistakes {
             let due = dueCards.count
             return due == 1 ? "1 card due" : "\(due) cards due"
@@ -555,6 +560,52 @@ final class AppModel {
 
     func logs(on day: Date) -> [ActivityLog] {
         logs.filter { calendar.isDate($0.date, inSameDayAs: day) }
+    }
+
+    // MARK: - Library
+
+    func refreshCatalog() async {
+        if let newer = await ContentLibrary.fetchNewer(than: catalog) {
+            catalog = newer
+        }
+    }
+
+    var contentSuggestions: (now: [ContentItem], next: [ContentItem]) {
+        guard let profile else { return ([], []) }
+        return catalog.suggestions(for: profile.band, destination: profile.destination.isEmpty ? nil : profile.destination)
+    }
+
+    /// What the learner marked "Watching this", if it's still in the catalog.
+    var currentContent: ContentItem? {
+        guard let id = profile?.currentContentID, !id.isEmpty else { return nil }
+        return catalog.items.first { $0.id == id }
+    }
+
+    func toggleWatching(_ item: ContentItem) {
+        guard let profile else { return }
+        profile.currentContentID = profile.currentContentID == item.id ? "" : item.id
+        save()
+    }
+
+    func setTravelMode(_ on: Bool) {
+        profile?.travelMode = on
+        save()
+    }
+
+    func setDestination(_ destination: String) {
+        profile?.destination = destination
+        save()
+    }
+
+    // MARK: - Stats
+
+    /// Minutes per strand over the last 7 days.
+    var strandMinutesThisWeek: [Strand: Int] {
+        ProgressStats.strandMinutes(history: history, today: .now, calendar: calendar)
+    }
+
+    func heatMapWeeks(_ count: Int = 12) -> [[ProgressStats.Day]] {
+        ProgressStats.weeks(count, history: history, today: .now, calendar: calendar)
     }
 
     // MARK: - Path

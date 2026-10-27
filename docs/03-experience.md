@@ -132,17 +132,23 @@ Implemented in `Rumbo/Features/Review/MistakeDeckViews.swift`; cards are `Review
 
 ### Progress tab
 - Hours ring toward the next band.
-- **Strand balance:** a 7-day stacked bar showing actual vs target per strand.
-- **Projection chart:** hours over time with band thresholds and the target date marked.
+- **Strand balance:** the last 7 days' share per strand as bars, with each band target marked.
+- **Projection chart:** input hours from now to the target date (or a year out), with dashed band thresholds and the target date marked; the arrival dates and "+10 min a day" line sit under it.
+- Streak, freezes, XP; mistake deck.
+- **Heat map:** the last 12 calendar weeks, one square per day (weeks start on the learner's chosen day), shaded by minutes, today outlined.
 - Source progress: Language Transfer track bar, Extra episodes, Duolingo section.
-- Heat-map calendar of minutes.
 
 ### Library tab
-- Your sources with their status.
-- Suggested content filtered by band, with "Add to my plan".
+- **Heading to** chips (Anywhere, Mexico, Colombia, Argentina, Peru, Chile, Spain): that accent comes first.
+- **Watching now:** the item marked "Watch this"; `content.watch` tasks point at it.
+- **For your level** and **Coming up** (the next band), each card with format, accent, band range, why, where to find it, Watch this and Open.
+- Pull to refresh fetches a newer catalog (see [06](06-content-catalog.md)).
+
+### Travel mode on Today
+A card under the header toggles Travel mode, explaining what it does: a real-world mission joins the plan, and offline days only get offline-capable tasks. It applies to the next plan (re-pick today's time to use it today). Pico wears the backpacker look while it's on.
 
 ### Settings
-Sources, budget defaults, Travel mode, weekly goal, reminders, AI correction (engine status, optional own API key), backup (save a file / restore from a file), reset (start onboarding again).
+Sources, Travel mode and where you're heading, weekly goal, reminders, AI correction (engine status, optional own API key), backup (save a file / restore from a file), reset (start onboarding again).
 
 ## 3.5 Motion and haptics catalog
 

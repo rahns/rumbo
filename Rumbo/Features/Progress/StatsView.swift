@@ -1,7 +1,7 @@
 import RumboCore
 import SwiftUI
 
-/// Progress tab (M2 version): level, input hours, projection, streak and course progress.
+/// Progress tab: level, strand balance, projection chart, streak, 12-week heat map and course progress.
 struct StatsView: View {
     @Environment(AppModel.self) private var model
 
@@ -11,8 +11,14 @@ struct StatsView: View {
                 if let profile = model.profile {
                     VStack(alignment: .leading, spacing: 18) {
                         levelCard(profile)
+                        RaisedCard(accent: Palette.leaf) {
+                            StrandBalanceChart(minutes: model.strandMinutesThisWeek, targets: profile.band.strandTargets)
+                        }
                         projectionCard(profile)
                         streakCard
+                        RaisedCard(accent: Palette.leaf) {
+                            PracticeHeatMap(weeks: model.heatMapWeeks(), calendar: model.calendar)
+                        }
                         mistakeDeckCard
                         coursesCard(profile)
                     }
@@ -64,6 +70,9 @@ struct StatsView: View {
                      : "\(String(format: "%.1f", weekly)) hours of listening a week: about \(Int(((profile.band.strandTargets[.input] ?? 0) * 100).rounded()))% of your \(profile.weeklyGoalMinutes)-minute weekly goal is listening, and only listening counts toward level hours. Your real pace takes over after a week.")
                     .font(.rounded(.subheadline, weight: .semibold))
                     .foregroundStyle(Palette.secondaryText)
+                if weekly > 0 {
+                    JourneyChart(currentHours: model.inputHours, weeklyHours: weekly, targetDate: profile.targetDate, calendar: model.calendar)
+                }
                 if arrivals.isEmpty {
                     Text("Log some listening and Rumbo will forecast when you reach each level.")
                         .font(.rounded(.subheadline, weight: .medium))

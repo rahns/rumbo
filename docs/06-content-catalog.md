@@ -1,6 +1,8 @@
 # 6. Content catalog
 
-The catalog is a JSON file bundled with the app (`Resources/catalog/content.json`). Rumbo also checks for a newer copy at `https://raw.githubusercontent.com/rahns/rumbo/main/catalog/content.json` when online, so suggestions can be updated without a new build. Free, no server.
+The catalog is a JSON file bundled with the app (`Rumbo/Resources/catalog/content.json`). Each time the Library opens (or is pulled to refresh), Rumbo fetches `https://raw.githubusercontent.com/rahns/rumbo/main/Rumbo/Resources/catalog/content.json`, caches it, and uses it only if its `version` is higher than the bundled one. So suggestions can be updated by editing the file on `main` and bumping `version`, without a new build. Free, no server.
+
+Each item: `id`, `title`, `kind` (`series` / `film` / `podcast` / `youtube`), `from` and `to` bands, `country`, `whereToFind`, optional `url`, `why`. A RumboCore test checks that the bundled file decodes, ids are unique and every band has something.
 
 ## 6.1 Core sources
 
@@ -19,16 +21,21 @@ Leaning Latin American, since the goal is living there. Each entry has a band, f
 
 | Band | Title | Format | Accent | Why |
 |---|---|---|---|---|
-| A2.2–B1.1 | *Destinos* | Learner telenovela (52 episodes) | Mexico, others | Made for learners; a story that rewards daily watching |
-| A2.2–B1.1 | Pixar/Disney films, Latin American dub (*Coco*, *Encanto*) | Film | Mexico, Colombia | Familiar stories, clear speech, Spanish subtitles available |
-| B1.1 | *Easy Spanish* | YouTube street interviews | Mexico, Argentina, Colombia… | Real speakers with dual subtitles; hear many accents |
+| A2.1–A2.2 | *Peppa Pig* (Latin American dub) | Cartoon, YouTube | Various | Short, very clear, everyday life |
+| A2.1–B1.1 | *Destinos* | Learner telenovela (52 episodes, free) | Mexico, others | Made for learners; a story that rewards daily watching |
+| A2.2–B1.1 | *Coco*, *Encanto* (Latin American dub) | Film | Mexico, Colombia | Familiar stories, clear speech; songs for shadowing |
+| A2.2–B1.2 | *Duolingo Spanish Podcast* | Podcast | Various | True stories in slow, clear Spanish |
+| B1.1–B1.2 | *Easy Spanish* | YouTube street interviews | Various | Real speakers with dual subtitles; many accents |
 | B1.1–B1.2 | *Españolistos* | Podcast | Colombia | Built for intermediate learners; good for travel days |
-| B1.2 | *No Hay Tos* | Podcast | Colombia | Intermediate, natural pace, transcripts |
+| B1.1–B1.2 | *Español con Juan* | YouTube | Spain | Grammar and culture, all in Spanish |
+| B1.1–B2.1 | *Notes in Spanish* | Podcast | Spain | Real conversations, intermediate to advanced |
 | B1.2–B2.1 | *Club de Cuervos* | TV series | Mexico | Comedy-drama, everyday register |
-| B2.1 | *Radio Ambulante* | Narrative podcast | All of Latin America | Gold-standard stories; transcripts help the stretch |
-| B2.1 | *Luis Miguel: La Serie* | TV series | Mexico | Strong narrative pull for extensive viewing |
-| B2.1–B2.2 | *El Hilo* | News podcast | Latin America | Current events; topic vocabulary for living there |
+| B2.1–B2.2 | *Radio Ambulante* | Narrative podcast | Various | Gold-standard stories; transcripts help the stretch |
+| B2.1–B2.2 | *El Hilo* | News podcast | Various | Current events; vocabulary for living there |
+| B2.1–B2.2 | *Luis Miguel: La Serie* | TV series | Mexico | Strong narrative pull for extensive viewing |
+| B2.1–B2.2 | *La Casa de Papel* | TV series | Spain | Addictive; a contrast to Latin American accents |
+| B2.1–B2.2 | *Roma* | Film | Mexico | Quiet everyday speech, slow enough to follow |
 | B2.2 | *La Casa de las Flores* | TV series | Mexico | Fast, funny, idiomatic |
-| B2.2 | *El Marginal* | TV series | Argentina | Heavy slang; a real challenge |
+| B2.2 | *El Marginal* | TV series | Argentina | Heavy slang and voseo; a real challenge |
 
-Suggestions show up in the Library when the learner reaches the band, and are planned automatically into input slots when Extra en Español or another input source is finished. When the learner picks a destination country in Settings, content with that accent is shown first.
+The Library shows what suits the learner's band now and what comes next. **Watch this** marks one item as the current show; `content.watch` tasks (planned when Extra en Español has run out or isn't used from B1, or when there's no Dreaming Spanish) name it and offer an Open button. When the learner picks where they're heading (Library or Settings: Mexico, Colombia, Argentina, Peru, Chile, Spain, or anywhere), content with that accent comes first.

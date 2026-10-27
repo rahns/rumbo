@@ -35,9 +35,9 @@ rumbo/
 │  │  ├─ Library/
 │  │  └─ Settings/
 │  ├─ Pico/                      # Mascot shapes + animations
-│  ├─ Services/                  # Correction, DeepLinks, Notifications, LiveActivity
+│  ├─ Services/                  # Correction, DeepLinks, Notifications, LiveActivity, Backup, ContentLibrary
 │  ├─ DesignSystem/              # Colors, type, cards, haptics, motion presets
-│  └─ Resources/                 # Catalogs (JSON), prompts, can-do statements, assets
+│  └─ Resources/                 # catalog/content.json (Library suggestions), assets
 ├─ RumboWidgets/                 # Widget + Live Activity extension
 ├─ Shared/                       # ActivityAttributes, App Intents, App Group store
 ├─ docs/
@@ -45,6 +45,8 @@ rumbo/
 ```
 
 `RumboCore` has no dependency on SwiftUI, SwiftData or Apple-only frameworks, so its tests also run on Linux.
+
+The content catalog degrades gracefully: with no network (or a failed fetch) the Library uses the cached copy, then the bundled one.
 
 ## 5.3 AI writing correction (free, no billing)
 
