@@ -70,7 +70,7 @@ The first screen also offers "Restore from a backup". Without a backup, onboardi
    - Extra en Español: episodes watched (0–13)
    - Not using Dreaming Spanish: estimated hours of Spanish listening
 5. Can-do check: 10 statements, one at a time, "¡Sí!" / "Todavía no". 5 come from the band the hours point to and 5 from the next band, interleaved. Placement uses the same thresholds as §2.1 scaled to 5 (≥ 4/5 of the next band → up, < 3/5 of your own → down).
-6. Placement reveal: band badge with the reasoning in one line ("154 hours of input and 7 of 10 can-dos").
+6. Placement reveal: band badge with the reasoning in one line ("154 hours of listening (≈ 280 training hours) and 7 of 10 can-dos").
 7. Goal: the same goal editor as Settings → Goal (below). It comes after placement so the date can be worked out from the learner's hours; the date starts where the default 150 min a week leads.
 8. Habit: cue chips ("After breakfast", "On my commute", …), daily reminder toggle and time (asks for notification permission), and which day the week starts on.
 

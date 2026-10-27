@@ -51,6 +51,8 @@ public struct DayPlanner: Sendable {
         var builder = PlanBuilder(budget: budget, learner: learner, window: window)
 
         if budget <= 10 {
+            // Busy day: a 3-minute Duolingo lesson keeps that streak alive, then one task for the rest.
+            builder.planBusyDayWarmUp()
             builder.planSingleTask()
         } else {
             builder.planWarmUp()
@@ -100,7 +102,7 @@ struct AnchorTargets {
         switch band {
         case .a2_1, .a2_2:
             // Dreaming Spanish is the main input; Extra is a once-a-week change of pace.
-            self.init(writing: 1, extraIntensiveParts: 1, extraEpisodes: 0, tandemExchanges: 3, fluency432: 0)
+            self.init(writing: 1, extraIntensiveParts: 1, extraEpisodes: 0, tandemExchanges: 2, fluency432: 0)
         case .b1_1, .b1_2:
             self.init(writing: 2, extraIntensiveParts: 0, extraEpisodes: 1, tandemExchanges: 3, fluency432: 1)
         case .b2_1:
@@ -135,10 +137,17 @@ private struct PlanBuilder {
 
     var remaining: Int { budget - tasks.reduce(0) { $0 + $1.minutes } }
 
+    mutating func planBusyDayWarmUp() {
+        if learner.isEligible(.duoLesson) {
+            add(.duoLesson, minutes: TaskKind.duoLesson.minutes.min)
+        }
+    }
+
     // Step 1
     mutating func planWarmUp() {
+        // Every day, so the Duolingo streak survives; one 3-minute lesson leaves study time for Language Transfer.
         if budget >= 15, learner.isEligible(.duoLesson) {
-            add(.duoLesson, minutes: 5)
+            add(.duoLesson, minutes: TaskKind.duoLesson.minutes.standard)
         }
         if budget >= 20, learner.dueReviewCards >= 5, learner.isEligible(.reviewMistakes) {
             add(.reviewMistakes, minutes: budget >= 30 ? 5 : 3)
@@ -173,12 +182,13 @@ private struct PlanBuilder {
         return false
     }
 
-    // Step 6: prefer a task that can fill the whole budget (so not the 5-minute Duolingo warm-up).
+    // Step 7: one task for what's left of a 10-minute day, preferring one that fills it.
     mutating func planSingleTask() {
+        let left = remaining
         for strand in Strand.allCases.sorted(by: { deficit($0) > deficit($1) }) {
-            let fitting = candidates(for: strand).filter { $0.minutes.min <= budget }
-            if let kind = fitting.first(where: { $0.minutes.max >= budget }) ?? fitting.first {
-                add(kind, minutes: min(budget, kind.minutes.max))
+            let fitting = candidates(for: strand).filter { kind in kind.minutes.min <= left && !tasks.contains { $0.kind == kind } }
+            if let kind = fitting.first(where: { $0.minutes.max >= left }) ?? fitting.first {
+                add(kind, minutes: min(left, kind.minutes.max))
                 return
             }
         }
@@ -245,6 +255,8 @@ private struct PlanBuilder {
             let tandem = callDue ? .tandemCall : learner.preferredTandemTask
             var anchors: [TaskKind] = anchorsDue(.writeGuided)
             if isTandemAnchorDue && anchorSlotFree { anchors.append(tandem) }
+            // The week's call goes first: it's the one speaking task that doesn't fit into a short slot later.
+            if callDue && isTandemAnchorDue && anchorSlotFree { anchors.insert(.tandemCall, at: 0) }
             let travel: [TaskKind] = learner.travelMode ? [.missionTravel] : []
             ordered = travel + anchors + [tandem, learner.preferredTandemTask, .writeGuided, .tandemCall, .tandemText, .missionTravel]
         case .fluency:

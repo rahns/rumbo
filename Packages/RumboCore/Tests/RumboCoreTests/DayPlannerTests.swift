@@ -44,10 +44,13 @@ import Testing
 
     // MARK: Warm-up (step 1)
 
-    @Test func duolingoWarmUpFromFifteenMinutes() {
-        #expect(plan(15).task(.duoLesson)?.minutes == 5)
-        #expect(plan(15).kinds.first == .duoLesson)
-        #expect(plan(10).task(.duoLesson) == nil)
+    @Test func duolingoEveryDayForTheStreak() {
+        // One lesson (3 min) every day, first, including busy 10-minute days.
+        for budget in DayPlanner.budgetChoices {
+            #expect(plan(budget).kinds.first == .duoLesson, "\(budget) min")
+        }
+        #expect(plan(15).task(.duoLesson)?.minutes == 3)
+        #expect(plan(10).task(.duoLesson)?.minutes == 3)
     }
 
     @Test func duolingoFadesOutAtB2() {
@@ -67,13 +70,16 @@ import Testing
         #expect(!learner.isEligible(.reviewMistakes))
     }
 
-    // MARK: Tiny days (step 6)
+    // MARK: Tiny days (step 7)
 
-    @Test func tenMinuteDayIsOneTask() {
+    @Test func tenMinuteDayIsDuolingoAndOneTask() {
         let plan = plan(10)
-        #expect(plan.tasks.count == 1)
+        #expect(plan.kinds.first == .duoLesson)
+        #expect(plan.tasks.count == 2)
         #expect(plan.totalMinutes == 10)
-        #expect(plan.tasks.first?.kind.strand == .input, "with no history, input has the biggest deficit")
+        #expect(plan.tasks.last?.kind.strand == .input, "with no history, input has the biggest deficit")
+        // Without Duolingo, the one task takes the whole 10 minutes.
+        #expect(self.plan(10, LearnerSnapshot(band: .b2_1)).tasks.count == 1)
     }
 
     // MARK: Deficits (steps 2–3)
@@ -129,7 +135,7 @@ import Testing
         #expect(days(.ltTrack) >= 4, "Language Transfer is the A2 grammar backbone")
         #expect((1...3).contains(days(.extraIntensive)), "about one Extra part a week, for variety")
         #expect(days(.writeGuided) >= 2, "1 guided writing a week")
-        #expect(history.filter(\.kind.isTandemExchange).count >= 5, "about 3 Tandem exchanges a week")
+        #expect(history.filter(\.kind.isTandemExchange).count >= 3, "about 2 Tandem exchanges a week at A2")
         #expect(days(.dsWatch) >= 7)
     }
 
@@ -223,11 +229,11 @@ import Testing
         var learner = authorAtStart
         learner.enabledSources.remove(.extraEnEspanol)
         #expect(plan(45, learner).task(.dsWatch)?.detail == .dreamingDifficulty(40...48))
-        #expect(plan(10, learner).tasks.first?.detail == .dreamingDifficulty(40...48))
+        #expect(plan(10, learner).task(.dsWatch)?.detail == .dreamingDifficulty(40...48))
         learner.band = .b1_1
         // Everything but fluency was covered this week, so a 10-minute day is one easy video.
         let history = (1...6).flatMap { offset in
-            [(TaskKind.dsWatch, 15), (.ltTrack, 10), (.tandemText, 10)].map {
+            [(TaskKind.dsWatch, 25), (.ltTrack, 8), (.tandemText, 6)].map {
                 ActivityRecord(date: TestCalendar.adding(days: -offset, to: today), kind: $0.0, minutes: $0.1)
             }
         }

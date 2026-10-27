@@ -4,30 +4,36 @@ The engine is pure Swift with no UI or Apple-framework dependencies (`RumboCore`
 
 ## 2.1 Levels (bands)
 
-Rumbo uses six internal bands. Each band has an **input-hours threshold** (hours of comprehensible input, measured the way Dreaming Spanish counts them) and a **can-do check** (10 self-assessment statements adapted from the CEFR self-assessment grid).
+Rumbo uses six internal bands. Each band has a **training-hours threshold** and a **can-do check** (10 self-assessment statements adapted from the CEFR self-assessment grid).
 
-| Band | Label in app | Input hours | Example can-do statement |
-|---|---|---|---|
-| A2.1 | Explorador | 150–225 | "I can follow a slow, clear video about daily life on a familiar topic." |
-| A2.2 | Viajero | 225–300 | "I can describe my day and my plans in simple connected sentences." |
-| B1.1 | Andante | 300–450 | "I can understand the main points of a podcast about a topic I know." |
-| B1.2 | Conversador | 450–600 | "I can tell a story about something that happened to me, using past tenses." |
-| B2.1 | Fluido | 600–800 | "I can follow most of a TV series episode for native speakers." |
-| B2.2 | Local | 800–1000 | "I can keep up in a group conversation and give my opinion with reasons." |
+**Training hours** count every minute of practice logged in Rumbo, whatever the strand. The thresholds start from Dreaming Spanish's listening-hour milestones (150 / 225 / 300 / 450 / 600 / 800 / 1000) and divide them by the plan's listening share, **55%**, rounded to 10: a learner following the mix reaches each listening milestone at the same time as the training-hour threshold. Listening done before Rumbo (the Dreaming Spanish counter at onboarding) is converted the same way, ÷ 0.55, so 150 h becomes about 273 training hours. **[design]**
+
+Sanity check against other sources (checked October 2026): Cambridge English puts B1 at about 350–400 and B2 at about 500–600 *guided* (classroom) hours; total study is usually put at about twice that. The FSI's 600–750 class hours for Spanish to professional working proficiency is often quoted as about 1,200–1,500 hours with self-study. B1.1 at 550 and B2.1 at 1,090 sit inside those ranges.
+
+| Band | Label in app | Training hours | (Listening milestone) | Example can-do statement |
+|---|---|---|---|---|
+| A2.1 | Explorador | 270–410 | 150 | "I can follow a slow, clear video about daily life on a familiar topic." |
+| A2.2 | Viajero | 410–550 | 225 | "I can describe my day and my plans in simple connected sentences." |
+| B1.1 | Andante | 550–820 | 300 | "I can understand the main points of a podcast about a topic I know." |
+| B1.2 | Conversador | 820–1,090 | 450 | "I can tell a story about something that happened to me, using past tenses." |
+| B2.1 | Fluido | 1,090–1,450 | 600 | "I can follow most of a TV series episode for native speakers." |
+| B2.2 | Local | 1,450–1,820 | 800 | "I can keep up in a group conversation and give my opinion with reasons." |
+
+Speaking-stage unlocks (§2.4) still use **listening** hours, since they're about how much the learner understands.
 
 Reaching the end of B2.2 completes the goal. After that Rumbo switches to a **maintenance plan** (same engine, B2.2 targets, mostly native content).
 
-Learners below 150 h can still use Rumbo. Onboarding shows a note that it's designed from A2 and places them in A2.1.
+Learners below 270 training hours can still use Rumbo. Onboarding shows a note that it's designed from A2 and places them in A2.1.
 
 ### Placement (onboarding)
 
-1. `inputHours` = Dreaming Spanish hours, or, for people who don't use Dreaming Spanish, an estimate of total hours of Spanish watched or listened to with mostly-understood content.
+1. Listening hours = Dreaming Spanish hours, or, for people who don't use Dreaming Spanish, an estimate of total hours of Spanish watched or listened to with mostly-understood content. These are converted to training hours (÷ 0.55).
 2. Band by hours, using the table above.
 3. Can-do adjustment: if the learner ticks ≥ 8/10 statements from the **next** band, move up one. If they tick < 5/10 of their **own** band's statements, move down one. The adjustment is at most ±1.
 
 ### Promotion (level-up gates)
 
-- When `inputHours` crosses the next threshold, a **gate node** appears on the path.
+- When training hours cross the next threshold, a **gate node** appears on the path.
 - At the gate, the learner takes the next band's can-do check. Passing needs ≥ 7/10 → promotion, with a celebration and the new strand mix.
 - Failing has no penalty: the plan continues and the gate reopens in 14 days.
 - Hours never go down. Bands never go down automatically. A learner can move themselves down a band in Settings.
@@ -38,12 +44,12 @@ Every task belongs to exactly one strand (R1). The planner targets these shares 
 
 | Band | Input | Output | Language-focused | Fluency |
 |---|---|---|---|---|
-| A2.1 | 45% | 15% | 30% | 10% |
-| A2.2 | 45% | 18% | 27% | 10% |
-| B1.1 | 45% | 22% | 20% | 13% |
-| B1.2 | 45% | 25% | 15% | 15% |
-| B2.1 | 45% | 28% | 12% | 15% |
-| B2.2 | 45% | 30% | 10% | 15% |
+| A2.1 | 55% | 13% | 24% | 8% |
+| A2.2 | 55% | 15% | 22% | 8% |
+| B1.1 | 55% | 18% | 18% | 9% |
+| B1.2 | 55% | 20% | 15% | 10% |
+| B2.1 | 55% | 23% | 10% | 12% |
+| B2.2 | 55% | 25% | 8% | 12% |
 
 The trend: output grows and language-focused study shrinks as structured courses finish (R4, R5, R15). Why input stays above Nation's 25% is explained in [01-research.md](01-research.md#where-rumbo-deliberately-deviates).
 
@@ -78,8 +84,8 @@ Staged to reduce anxiety and add planning time (R5, R6):
 | Stage | Unlocks when | Tasks |
 |---|---|---|
 | 1. Text | Start | `tandem.text` |
-| 2. Planned voice notes | `inputHours ≥ 250` **and** ≥ 8 text exchanges logged over ≥ 3 weeks **and** the learner rates text chats as "comfortable" | adds `tandem.voice`, `fluency.432` |
-| 3. Live calls | `inputHours ≥ 400` **and** ≥ 6 voice notes logged | adds `tandem.call` |
+| 2. Planned voice notes | listening hours ≥ 250 **and** ≥ 8 text exchanges logged over ≥ 3 weeks **and** the learner rates text chats as "comfortable" | adds `tandem.voice`, `fluency.432` |
+| 3. Live calls | listening hours ≥ 400 **and** ≥ 6 voice notes logged | adds `tandem.call` |
 
 The learner can always unlock a stage early with "I feel ready". Autonomy matters more than the gate.
 
@@ -91,7 +97,7 @@ Band, today's budget `B` (10 / 15 / 20 / 30 / 45 / 60 min, chosen at the start o
 ### Algorithm
 Implemented in `RumboCore/DayPlanner.swift`.
 
-1. **Warm-up.** If `B ≥ 15` and the band uses Duolingo, plan `duo.lesson` 5 min. If `B ≥ 20` and ≥ 5 cards are due, plan `review.mistakes` (3 min, or 5 from 30 min).
+1. **Warm-up.** Every day the band uses Duolingo, plan `duo.lesson` first: one lesson, 3 min (it keeps the learner's Duolingo streak; never more than 5). If `B ≥ 20` and ≥ 5 cards are due, plan `review.mistakes` (3 min, or 5 from 30 min).
 2. **Deficits.** For each strand: `target = share × (logged last 6 days + B)`, then `deficit = target − logged last 6 days − planned today`.
 3. **Fill with new cards.** While there are fewer than 4 cards:
    - Pick the strand with the largest deficit.
@@ -100,7 +106,7 @@ Implemented in `RumboCore/DayPlanner.swift`.
 4. **Leftover.** Minutes too few for a new card go to existing cards that have headroom: input first, then the strand with the largest deficit.
 5. **Limits.** At most 4 cards per day (to keep cognitive load low) **[design]**, and at most **one weekly anchor per day (two from 45 min)**, so a fresh week spreads its anchors out instead of crowding out progression **[design]**.
 6. **Order.** Warm-up → language-focused → input → output → fluency (R4, R7 **[design]**). The output card's prompt reuses that day's Language Transfer track or Extra episode (R4).
-7. **Tiny days.** If `B = 10`, plan exactly one task: the strand with the largest deficit, using its first task that fits. Prefer a task that can fill the whole 10 minutes.
+7. **Tiny days.** If `B = 10`: the 3-minute Duolingo lesson (when the band uses it), then one task for the other 7 minutes: the strand with the largest deficit, using its first task that fits, preferring one that fills the time. Once calls are unlocked, the week's call comes before writing in the output queue, so it isn't squeezed out by shorter tasks.
 8. **Keep going.** Once every planned card is done or skipped (with at least one done), Today offers every other eligible task not already in the plan, at its standard length and with its progression detail (next track, next Extra part). They're ordered by strand deficit over the last 7 days *including today*, so the most-behind strand comes first. An extra is added to the day as its own card when started; it counts like any other practice (minutes, strand balance, streak, XP, course progress) but never changes whether the day is complete. (`DayPlanner.extraTasks`)
 
 ### Weekly anchors
@@ -110,7 +116,7 @@ Planned on the first day the budget allows, so they don't depend on a fixed week
 |---|---|---|---|
 | `write.guided` | 1×/week | 2×/week | 2–3×/week |
 | Extra en Español | 1 intensive part/week, on a day with 20+ min (an episode a fortnight) | 1 episode/week, on a day with 20+ min | — |
-| Tandem exchange (any stage) | 3×/week | 3×/week | 3×/week |
+| Tandem exchange (any stage) | 2×/week | 3×/week | 3×/week |
 | `fluency.432` | — | 1×/week once unlocked | 1×/week |
 | `tandem.call` | — | 1×/week once calls are unlocked | 1×/week once calls are unlocked |
 
@@ -122,14 +128,14 @@ Real planner output (no history yet, so every anchor is due; * = weekly anchor):
 
 | Budget | Plan |
 |---|---|
-| 10 min | Dreaming Spanish 10 |
-| 15 min | Duolingo 5 → Dreaming Spanish 10 |
-| 20 min | Duolingo 5 → Extra ep. 2 part 1* (10) → Tandem text 5 |
-| 30 min | Duolingo 5 → Extra ep. 2 part 1* (15) → Tandem text 10 |
-| 45 min | Duolingo 5 → LT track 13 (10) → Extra ep. 2 part 1* (15) → Guided writing* (15) |
-| 60 min | Duolingo 5 → LT track 13 (15) → Extra ep. 2 part 1* (15) → Dreaming Spanish 25 |
+| 10 min | Duolingo 3 → Dreaming Spanish 7 |
+| 15 min | Duolingo 3 → Dreaming Spanish 12 |
+| 20 min | Duolingo 3 → Extra ep. 2 part 1* (12) → Tandem text 5 |
+| 30 min | Duolingo 5 → LT track 13 (10) → Extra ep. 2 part 1* (15) |
+| 45 min | Duolingo 3 → LT track 13 (10) → Extra ep. 2 part 1* (15) → Dreaming Spanish 17 |
+| 60 min | Duolingo 3 → LT track 13 (10) → Extra ep. 2 part 1* (15) → Dreaming Spanish 32 |
 
-Over an irregular fortnight (15/45/20/30/10/45/30, twice) at A2.1 the planner gives 45% input, 14% output, 30% language-focused and 9% fluency, with Language Transfer on 5 days, Dreaming Spanish on 10, Extra on 2, guided writing twice and Tandem on 6 days. These are checked by tests at A2.1, B1.1 and B2.2 (within 5 points of every target).
+Over an irregular fortnight (15/45/20/30/10/45/30, twice) at A2.1 the planner gives 55% input, 14% output, 23% language-focused and 9% fluency, with Duolingo every day, Language Transfer on 4 days, Dreaming Spanish on 11, Extra on 2, guided writing twice and Tandem on 4 days. These are checked by tests at A2.1, B1.1 and B2.2 (within 5 points of every target).
 
 ## 2.6 Keeping input comprehensible
 
@@ -160,9 +166,9 @@ Over the last 5 ratings at the current difficulty: 3 or more "Easy" → suggest 
 
 ## 2.9 Projection
 
-Weekly input hours = rolling average over the last 4 weeks, including bonus input. For a newer learner the average covers only the days since their first log (at least 7), so one short first session isn't read as a month-long pace. Until there's a week of history, the forecast assumes the learner meets their weekly goal (goal minutes × the band's input share). Rumbo projects a date for each remaining band threshold and shows it against the learner's target date ("At this pace you'll reach B1.2 by March 2028. +10 min/day → December 2027").
+Weekly training hours = rolling average of everything logged over the last 4 weeks. For a newer learner the average covers only the days since their first log (at least 7), so one short first session isn't read as a month-long pace. Until there's a week of history, the forecast assumes the learner meets their weekly goal (every goal minute counts). Rumbo projects a date for each remaining band threshold and shows it against the learner's target date ("At this pace you'll reach B1.2 by March 2028. +10 min/day → December 2027").
 
 Example (the author, at the time of writing): 154 h. At ~18 min/day of input → ~110 h/year → about 400–450 h by mid-2028 (B1). Logging an extra 30 min/day of outside listening → about 650 h (B2.1).
 
 
-**Weekly goal ↔ target date** (`GoalPace`). Both assume the weekly goal is met, so listening hours a week = weekly minutes × the band's listening share ÷ 60. The arrival date for the goal level (B1 → 300 h, B2 → 600 h, C1 → B2.2's 800 h) is `today + (threshold − current hours) ÷ weekly hours`. The other way, the weekly goal for a date is `(threshold − current hours) ÷ weeks left ÷ share × 60`, rounded up to 10 minutes and kept within 30–900. Changing either one on the goal page updates the other.
+**Weekly goal ↔ target date** (`GoalPace`). Both assume the weekly goal is met, so training hours a week = weekly minutes ÷ 60. The arrival date for the goal level (B1 → 550 h, B2 → 1,090 h, C1 → B2.2's 1,450 h) is `today + (threshold − current hours) ÷ weekly hours`. The other way, the weekly goal for a date is `(threshold − current hours) ÷ weeks left × 60`, rounded up to 10 minutes and kept within 30–900. When levels moved to training hours, existing target dates were kept and the weekly goal recalculated once. Changing either one on the goal page updates the other.

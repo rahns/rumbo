@@ -33,17 +33,21 @@ final class OnboardingDraft {
 
     static let habitCues = ["After breakfast", "On my commute", "At lunch", "After work", "Before bed"]
 
+    /// Listening hours before Rumbo (Dreaming Spanish's counter, or an estimate).
     var inputHours: Double {
         Double(sources.contains(.dreamingSpanish) ? dreamingHours : otherListeningHours)
     }
 
-    var bandByHours: Band { Band.forInputHours(inputHours) }
+    /// Listening before Rumbo as training hours (÷ the listening share), which is what levels are measured in.
+    var trainingHours: Double { Band.trainingHours(fromListening: inputHours) }
+
+    var bandByHours: Band { Band.forHours(trainingHours) }
 
     /// The first time the goal step opens: the date the default weekly goal leads to.
     func prepareGoal() {
         guard !targetDateSet else { return }
-        targetDate = GoalPace.arrival(of: GoalEditor.goalBand(for: goal), currentHours: inputHours,
-                                      weeklyMinutes: weeklyGoalMinutes, band: placement.band, from: .now)
+        targetDate = GoalPace.arrival(of: GoalEditor.goalBand(for: goal), currentHours: trainingHours,
+                                      weeklyMinutes: weeklyGoalMinutes, from: .now)
         targetDateSet = true
     }
 
@@ -62,7 +66,7 @@ final class OnboardingDraft {
         let statements = canDoStatements
         let ownYes = statements.filter { !$0.isNextBand && canDoAnswers[$0.text] == true }.count
         let nextYes = statements.filter { $0.isNextBand && canDoAnswers[$0.text] == true }.count
-        return Placement.place(inputHours: inputHours, ownBandYes: ownYes, nextBandYes: nextYes, statementsPerBand: CanDo.placementSampleSize)
+        return Placement.place(hours: trainingHours, ownBandYes: ownYes, nextBandYes: nextYes, statementsPerBand: CanDo.placementSampleSize)
     }
 
     func apply(to profile: LearnerProfile) {

@@ -26,7 +26,7 @@ Gate attempts are stored on the profile (`gatesPassed`, `lastFailedGate`) rather
 
 The budget can be changed until the first task is started; after that the day's plan is fixed.
 
-**Derived, never stored:** total input hours (`baselineInputHours` + sum of `ActivityLog` input minutes), XP, streak, strand balance, projection. Computing them keeps a single source of truth.
+**Derived, never stored:** training hours (`baselineInputHours` ÷ 0.55 + every `ActivityLog` minute), listening hours (`baselineInputHours` + listening minutes, for speaking stages), XP, streak, strand balance, projection. Computing them keeps a single source of truth.
 
 ## 4.3 No sync; manual backup
 

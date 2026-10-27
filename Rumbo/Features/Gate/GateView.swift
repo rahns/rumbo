@@ -74,7 +74,7 @@ struct GateView: View {
                 .font(.rounded(.largeTitle, weight: .black))
                 .foregroundStyle(Palette.ink)
                 .multilineTextAlignment(.center)
-            Text("You've reached \(Int(next.inputHoursThreshold)) hours of input. Answer 10 quick questions honestly. Seven \"¡Sí!\" and you level up.")
+            Text("You've reached \(Int(next.hoursThreshold)) training hours. Answer 10 quick questions honestly. Seven \"¡Sí!\" and you level up.")
                 .font(.rounded(.body, weight: .medium))
                 .foregroundStyle(Palette.secondaryText)
                 .multilineTextAlignment(.center)

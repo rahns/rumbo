@@ -17,16 +17,16 @@ import Testing
 
     @Test(arguments: [
         (0.0, Band.a2_1),
-        (154, .a2_1),
-        (225, .a2_2),
-        (299.9, .a2_2),
-        (300, .b1_1),
-        (450, .b1_2),
-        (600, .b2_1),
-        (1200, .b2_2),
+        (280, .a2_1),
+        (410, .a2_2),
+        (549.9, .a2_2),
+        (550, .b1_1),
+        (820, .b1_2),
+        (1090, .b2_1),
+        (2000, .b2_2),
     ])
     func placementByHours(hours: Double, expected: Band) {
-        #expect(Band.forInputHours(hours) == expected)
+        #expect(Band.forHours(hours) == expected)
     }
 
     @Test func outputGrowsAndLanguageFocusShrinks() {

@@ -34,14 +34,14 @@ struct GoalEditor: View {
     }
 
     private var goalBand: Band { Self.goalBand(for: goal) }
-    private var weeklyHours: Double { Projection.weeklyInputHours(atGoalMinutes: weeklyMinutes, band: band) }
-    private var alreadyThere: Bool { currentHours >= goalBand.inputHoursThreshold }
+    private var weeklyHours: Double { Projection.weeklyHours(atGoalMinutes: weeklyMinutes) }
+    private var alreadyThere: Bool { currentHours >= goalBand.hoursThreshold }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             levelPicker
             if alreadyThere {
-                Label("You've already got the hours for \(goal). Pick a higher goal, or keep this one and enjoy the ride.", systemImage: "checkmark.seal.fill")
+                Label("You've already got the training hours for \(goal). Pick a higher goal, or keep this one and enjoy the ride.", systemImage: "checkmark.seal.fill")
                     .font(.rounded(.subheadline, weight: .semibold))
                     .foregroundStyle(Palette.leaf)
             }
@@ -102,7 +102,7 @@ struct GoalEditor: View {
                     }
                 }
                 .animation(.spring(response: 0.3, dampingFraction: 0.8), value: weeklyMinutes)
-                Text("About \(Int((Double(weeklyMinutes) / 7).rounded())) min a day on average; busy days are fine. \(String(format: "%.1f", weeklyHours)) h of that is listening, which is what counts toward levels.")
+                Text("About \(Int((Double(weeklyMinutes) / 7).rounded())) min a day on average; busy days are fine. That's \(String(format: "%.1f", weeklyHours)) training hours a week, and every minute counts toward levels.")
                     .font(.rounded(.caption, weight: .semibold))
                     .foregroundStyle(Palette.secondaryText)
             }
@@ -157,7 +157,7 @@ struct GoalEditor: View {
     }
 
     private var outOfReach: Bool {
-        GoalPace.isOutOfReach(goalBand, by: targetDate, currentHours: currentHours, band: band, from: .now)
+        GoalPace.isOutOfReach(goalBand, by: targetDate, currentHours: currentHours, from: .now)
     }
 
     private var dateNote: String {
@@ -167,14 +167,14 @@ struct GoalEditor: View {
             return "That's sooner than even \(GoalPace.minutes.upperBound) min a week can get you there. Try a later date."
         }
         let span = months < 18 ? "\(months) months" : "about \(Int((Double(months) / 12).rounded())) years"
-        return "\(span) from now. \(goal) needs \(Int(goalBand.inputHoursThreshold)) h of listening; you have \(Int(currentHours))."
+        return "\(span) from now. \(goal) needs \(Int(goalBand.hoursThreshold)) training hours; you have \(Int(currentHours))."
     }
 
     /// The road at this pace, as on Progress.
     private var preview: some View {
         let projection = Projection()
-        let arrivals = projection.arrivalDates(inputHours: currentHours, weeklyHours: weeklyHours, from: .now)
-        let atTarget = projection.inputHours(by: targetDate, from: .now, current: currentHours, weeklyHours: weeklyHours)
+        let arrivals = projection.arrivalDates(hours: currentHours, weeklyHours: weeklyHours, from: .now)
+        let atTarget = projection.hours(by: targetDate, from: .now, current: currentHours, weeklyHours: weeklyHours)
         return VStack(alignment: .leading, spacing: 10) {
             Text("At this pace")
                 .font(.rounded(.headline, weight: .heavy))
@@ -188,7 +188,7 @@ struct GoalEditor: View {
     // MARK: Keeping the two in step
 
     private func dateFromMinutes() {
-        let date = GoalPace.arrival(of: goalBand, currentHours: currentHours, weeklyMinutes: weeklyMinutes, band: band, from: .now)
+        let date = GoalPace.arrival(of: goalBand, currentHours: currentHours, weeklyMinutes: weeklyMinutes, from: .now)
         let clamped = max(date, tomorrow)
         guard !Calendar.current.isDate(clamped, inSameDayAs: targetDate) else { return }
         syncing = true
@@ -196,7 +196,7 @@ struct GoalEditor: View {
     }
 
     private func minutesFromDate() {
-        let minutes = GoalPace.weeklyMinutes(toReach: goalBand, by: targetDate, currentHours: currentHours, band: band, from: .now)
+        let minutes = GoalPace.weeklyMinutes(toReach: goalBand, by: targetDate, currentHours: currentHours, from: .now)
         guard minutes != weeklyMinutes else { return }
         syncing = true
         weeklyMinutes = minutes
@@ -224,7 +224,7 @@ struct GoalSettingsView: View {
                     // Shown once the saved values are in, so loading them doesn't count as an edit.
                     if loaded {
                         GoalEditor(goal: $goal, weeklyMinutes: $weeklyMinutes, targetDate: $targetDate,
-                                   currentHours: model.inputHours, band: profile.band)
+                                   currentHours: model.trainingHours, band: profile.band)
                     }
                 }
                 .padding(20)
@@ -244,8 +244,8 @@ struct GoalSettingsView: View {
         goal = profile.goal
         weeklyMinutes = profile.weeklyGoalMinutes
         // Older profiles may have no date: start from where the weekly goal leads.
-        targetDate = profile.targetDate ?? GoalPace.arrival(of: GoalEditor.goalBand(for: profile.goal), currentHours: model.inputHours,
-                                                           weeklyMinutes: profile.weeklyGoalMinutes, band: profile.band, from: .now)
+        targetDate = profile.targetDate ?? GoalPace.arrival(of: GoalEditor.goalBand(for: profile.goal), currentHours: model.trainingHours,
+                                                           weeklyMinutes: profile.weeklyGoalMinutes, from: .now)
         loaded = true
     }
 

@@ -30,10 +30,10 @@ struct StatsView: View {
     }
 
     private func levelCard(_ profile: LearnerProfile) -> some View {
-        let hours = model.inputHours
+        let hours = model.trainingHours
         let band = profile.band
         let next = band.next
-        let progress = next.map { (hours - band.inputHoursThreshold) / ($0.inputHoursThreshold - band.inputHoursThreshold) } ?? 1
+        let progress = next.map { (hours - band.hoursThreshold) / ($0.hoursThreshold - band.hoursThreshold) } ?? 1
         return RaisedCard(accent: Palette.coral) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
@@ -41,12 +41,15 @@ struct StatsView: View {
                     Spacer()
                 }
                 .frame(height: 80)
-                Text("\(Int(hours)) hours of input")
+                Text("\(Int(hours)) training hours")
                     .font(.rounded(.title3, weight: .black))
                     .foregroundStyle(Palette.ink)
+                Text("Every minute of practice counts. Listening from before Rumbo counts at the plan's mix (\(Int(profile.baselineInputHours)) h → \(Int(Band.trainingHours(fromListening: profile.baselineInputHours))) h).")
+                    .font(.rounded(.caption, weight: .semibold))
+                    .foregroundStyle(Palette.secondaryText)
                 ChunkyProgressBar(value: progress, color: Palette.coral)
                 if let next {
-                    Text("\(max(0, Int((next.inputHoursThreshold - hours).rounded(.up)))) hours to \(next.label) (\(next.rawValue))")
+                    Text("\(max(0, Int((next.hoursThreshold - hours).rounded(.up)))) training hours to \(next.label) (\(next.rawValue)), which starts at \(Int(next.hoursThreshold)) h")
                         .font(.rounded(.subheadline, weight: .semibold))
                         .foregroundStyle(Palette.secondaryText)
                 }
@@ -58,31 +61,31 @@ struct StatsView: View {
         let projection = Projection()
         // Until there's a week of history, forecast at the weekly goal rather than from one or two sessions.
         let (weekly, ownPace) = model.forecastWeeklyHours
-        let arrivals = projection.arrivalDates(inputHours: model.inputHours, weeklyHours: weekly, from: .now)
+        let arrivals = projection.arrivalDates(hours: model.trainingHours, weeklyHours: weekly, from: .now)
         return RaisedCard(accent: Palette.sky) {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Where you're heading")
                     .font(.rounded(.headline, weight: .black))
                     .foregroundStyle(Palette.ink)
                 Text(ownPace
-                     ? String(format: "%.1f hours of listening a week, your recent pace (extra listening included).", weekly)
-                     : "\(String(format: "%.1f", weekly)) hours of listening a week: about \(Int(((profile.band.strandTargets[.input] ?? 0) * 100).rounded()))% of your \(profile.weeklyGoalMinutes)-minute weekly goal is listening, and only listening counts toward level hours. Your real pace takes over after a week.")
+                     ? String(format: "%.1f training hours a week, your recent pace (everything you've logged).", weekly)
+                     : "\(String(format: "%.1f", weekly)) training hours a week: your \(profile.weeklyGoalMinutes)-minute weekly goal, all of which counts toward levels. Your real pace takes over after a week.")
                     .font(.rounded(.subheadline, weight: .semibold))
                     .foregroundStyle(Palette.secondaryText)
                 if arrivals.isEmpty {
-                    Text("Log some listening and Rumbo will forecast when you reach each level.")
+                    Text("Log some practice and Rumbo will forecast when you reach each level.")
                         .font(.rounded(.subheadline, weight: .medium))
                         .foregroundStyle(Palette.secondaryText)
                 } else {
-                    let expected = profile.targetDate.map { projection.inputHours(by: $0, from: .now, current: model.inputHours, weeklyHours: weekly) }
-                    LevelTimeline(band: profile.band, hours: model.inputHours, arrivals: arrivals,
+                    let expected = profile.targetDate.map { projection.hours(by: $0, from: .now, current: model.trainingHours, weeklyHours: weekly) }
+                    LevelTimeline(band: profile.band, hours: model.trainingHours, arrivals: arrivals,
                                   goal: profile.goal, goalBand: profile.goalBand,
                                   targetDate: profile.targetDate, hoursAtTarget: expected)
                         .padding(.top, 6)
                 }
                 if let target = profile.targetDate, target > .now {
-                    let extra = projection.inputHours(by: target, from: .now, current: model.inputHours, weeklyHours: weekly, extraMinutesPerDay: 10)
-                    Label("With 10 more minutes a day, you'd have about \(Int(extra)) h by \(target.formatted(.dateTime.month(.abbreviated).year())): \(Band.forInputHours(extra).label) (\(Band.forInputHours(extra).rawValue)).", systemImage: "bolt.fill")
+                    let extra = projection.hours(by: target, from: .now, current: model.trainingHours, weeklyHours: weekly, extraMinutesPerDay: 10)
+                    Label("With 10 more minutes a day, you'd have about \(Int(extra)) h by \(target.formatted(.dateTime.month(.abbreviated).year())): \(Band.forHours(extra).label) (\(Band.forHours(extra).rawValue)).", systemImage: "bolt.fill")
                         .font(.rounded(.subheadline, weight: .semibold))
                         .foregroundStyle(Palette.secondaryText)
                 }
@@ -119,7 +122,7 @@ struct StatsView: View {
                     .font(.rounded(.headline, weight: .black))
                     .foregroundStyle(Palette.ink)
                 if sources.contains(.dreamingSpanish) {
-                    infoRow("Dreaming Spanish", "\(Int(model.inputHours)) h · videos \(profile.dsDifficultyLow)–\(profile.dsDifficultyHigh)")
+                    infoRow("Dreaming Spanish", "\(Int(model.listeningHours)) h listening · videos \(profile.dsDifficultyLow)–\(profile.dsDifficultyHigh)")
                 }
                 if sources.contains(.languageTransfer) {
                     courseRow("Language Transfer", done: profile.languageTransferLastTrack, total: Course.languageTransferTracks, unit: "tracks")

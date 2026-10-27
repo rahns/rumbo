@@ -4,24 +4,24 @@ import Testing
 
 @Suite struct PlacementTests {
     @Test func hoursDecideTheBandWhenCanDosAgree() {
-        let result = Placement.place(inputHours: 154, ownBandYes: 7, nextBandYes: 4)
+        let result = Placement.place(hours: 280, ownBandYes: 7, nextBandYes: 4)
         #expect(result.band == .a2_1)
         #expect(result.adjustment == 0)
     }
 
     @Test func strongNextBandAnswersMoveUpOne() {
-        let result = Placement.place(inputHours: 154, ownBandYes: 10, nextBandYes: 8)
+        let result = Placement.place(hours: 280, ownBandYes: 10, nextBandYes: 8)
         #expect(result.band == .a2_2)
         #expect(result.adjustment == 1)
     }
 
     @Test func weakOwnBandAnswersMoveDownOne() {
-        #expect(Placement.place(inputHours: 320, ownBandYes: 4, nextBandYes: 0).band == .a2_2)
+        #expect(Placement.place(hours: 582, ownBandYes: 4, nextBandYes: 0).band == .a2_2)
     }
 
     @Test func neverLeavesTheBandRange() {
-        #expect(Placement.place(inputHours: 50, ownBandYes: 0, nextBandYes: 0).band == .a2_1)
-        #expect(Placement.place(inputHours: 2000, ownBandYes: 10, nextBandYes: 10).band == .b2_2)
+        #expect(Placement.place(hours: 91, ownBandYes: 0, nextBandYes: 0).band == .a2_1)
+        #expect(Placement.place(hours: 3636, ownBandYes: 10, nextBandYes: 10).band == .b2_2)
     }
 }
 
@@ -30,15 +30,15 @@ import Testing
     let today = TestCalendar.day(2026, 10, 26)
 
     @Test func opensAtTheNextThreshold() {
-        #expect(!LevelGate.isOpen(band: .a2_1, inputHours: 224, lastFailedAttempt: nil, today: today, calendar: calendar))
-        #expect(LevelGate.isOpen(band: .a2_1, inputHours: 225, lastFailedAttempt: nil, today: today, calendar: calendar))
-        #expect(!LevelGate.isOpen(band: .b2_2, inputHours: 5000, lastFailedAttempt: nil, today: today, calendar: calendar))
+        #expect(!LevelGate.isOpen(band: .a2_1, hours: 409, lastFailedAttempt: nil, today: today, calendar: calendar))
+        #expect(LevelGate.isOpen(band: .a2_1, hours: 410, lastFailedAttempt: nil, today: today, calendar: calendar))
+        #expect(!LevelGate.isOpen(band: .b2_2, hours: 5000, lastFailedAttempt: nil, today: today, calendar: calendar))
     }
 
     @Test func reopensFourteenDaysAfterAFail() {
         let failed = TestCalendar.adding(days: -13, to: today)
-        #expect(!LevelGate.isOpen(band: .a2_1, inputHours: 300, lastFailedAttempt: failed, today: today, calendar: calendar))
-        #expect(LevelGate.isOpen(band: .a2_1, inputHours: 300, lastFailedAttempt: TestCalendar.adding(days: -14, to: today), today: today, calendar: calendar))
+        #expect(!LevelGate.isOpen(band: .a2_1, hours: 550, lastFailedAttempt: failed, today: today, calendar: calendar))
+        #expect(LevelGate.isOpen(band: .a2_1, hours: 550, lastFailedAttempt: TestCalendar.adding(days: -14, to: today), today: today, calendar: calendar))
     }
 
     @Test func passMarkIsSevenOfTen() {

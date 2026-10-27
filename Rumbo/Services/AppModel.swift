@@ -88,7 +88,15 @@ final class AppModel {
 
     var history: [ActivityRecord] { logs.map(\.record) }
 
-    var inputHours: Double {
+    /// Training hours toward levels (docs/02-learning-engine.md §2.1): every logged minute, plus listening
+    /// done before Rumbo converted at the plan's listening share (150 h of Dreaming Spanish ≈ 273 h).
+    var trainingHours: Double {
+        let minutes = logs.reduce(0) { $0 + $1.minutes }
+        return Band.trainingHours(fromListening: profile?.baselineInputHours ?? 0) + Double(minutes) / 60
+    }
+
+    /// Listening hours only (before Rumbo plus logged listening): for speaking-stage unlocks and the Dreaming Spanish row.
+    var listeningHours: Double {
         let minutes = logs.filter { $0.task.countsAsInput }.reduce(0) { $0 + $1.minutes }
         return (profile?.baselineInputHours ?? 0) + Double(minutes) / 60
     }
@@ -542,8 +550,12 @@ final class AppModel {
             changed = true
         }
         if profile.targetDate == nil {
-            profile.targetDate = GoalPace.arrival(of: profile.goalBand, currentHours: inputHours,
-                                                  weeklyMinutes: profile.weeklyGoalMinutes, band: profile.band, from: .now)
+            profile.targetDate = GoalPace.arrival(of: profile.goalBand, currentHours: trainingHours,
+                                                  weeklyMinutes: profile.weeklyGoalMinutes, from: .now)
+            changed = true
+        } else if let date = profile.targetDate, Self.once("goal-model-training-hours") {
+            // Levels moved to training hours: keep the chosen date and work out the weekly goal again.
+            profile.weeklyGoalMinutes = GoalPace.weeklyMinutes(toReach: profile.goalBand, by: date, currentHours: trainingHours, from: .now)
             changed = true
         }
         if changed { try? context.save() }
@@ -680,7 +692,7 @@ final class AppModel {
 
     var isGateOpen: Bool {
         guard let profile else { return false }
-        return LevelGate.isOpen(band: profile.band, inputHours: inputHours, lastFailedAttempt: profile.lastFailedGate, today: .now, calendar: calendar)
+        return LevelGate.isOpen(band: profile.band, hours: trainingHours, lastFailedAttempt: profile.lastFailedGate, today: .now, calendar: calendar)
     }
 
     func passGate() {
@@ -759,9 +771,9 @@ final class AppModel {
         guard let profile else { return (0, false) }
         let projection = Projection(calendar: calendar)
         if projection.hasEnoughHistory(history, today: .now) {
-            return (projection.weeklyInputHours(history: history, today: .now), true)
+            return (projection.weeklyHours(history: history, today: .now), true)
         }
-        return (Projection.weeklyInputHours(atGoalMinutes: profile.weeklyGoalMinutes, band: profile.band), false)
+        return (Projection.weeklyHours(atGoalMinutes: profile.weeklyGoalMinutes), false)
     }
 
     var pathMap: PathMap {
@@ -789,7 +801,7 @@ final class AppModel {
             days[day] = PathLayout.Day(minutes: existing.minutes + log.minutes, session: existing.session)
         }
 
-        var arrivals = Projection(calendar: calendar).arrivalDates(inputHours: inputHours, weeklyHours: forecastWeeklyHours.hours, from: .now)
+        var arrivals = Projection(calendar: calendar).arrivalDates(hours: trainingHours, weeklyHours: forecastWeeklyHours.hours, from: .now)
         arrivals = arrivals.filter { $0.key > profile.band }
         return PathLayout.map(start: profile.createdAt, today: .now, days: days, arrivals: arrivals, calendar: calendar)
     }
@@ -809,7 +821,7 @@ final class AppModel {
             textLogs.last.map { calendar.dateComponents([.day], from: first.date, to: $0.date).day ?? 0 }
         } ?? 0
         let evidence = SpeakingProgress.Evidence(
-            inputHours: inputHours,
+            inputHours: listeningHours,
             textExchanges: textLogs.count,
             textExchangeSpanDays: span,
             comfortableWithText: ["easy", "ok"].contains(textLogs.last?.rating ?? ""),

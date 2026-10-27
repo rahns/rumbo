@@ -204,9 +204,7 @@ struct TaskSessionView: View {
                 RaisedCard {
                     NumberStepper(title: "Minutes spent", value: $minutes, range: 1...240, step: 1)
                 }
-                explanation(kind.countsAsInput
-                            ? "Counts toward your weekly goal, streak and level hours."
-                            : "Counts toward your weekly goal and streak.")
+                explanation("Counts toward your weekly goal, streak and level hours.")
             }
             if isWriting {
                 let words = (rewrite.isEmpty ? writing : rewrite).split(whereSeparator: \.isWhitespace).count

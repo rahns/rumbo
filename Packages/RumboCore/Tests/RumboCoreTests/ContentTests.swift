@@ -77,9 +77,9 @@ import Testing
     }
 
     @Test func placementWorksWithTheFivePlusFiveSample() {
-        #expect(Placement.place(inputHours: 154, ownBandYes: 5, nextBandYes: 4, statementsPerBand: 5).band == .a2_2)
-        #expect(Placement.place(inputHours: 154, ownBandYes: 5, nextBandYes: 3, statementsPerBand: 5).band == .a2_1)
-        #expect(Placement.place(inputHours: 320, ownBandYes: 2, nextBandYes: 0, statementsPerBand: 5).band == .a2_2)
+        #expect(Placement.place(hours: 280, ownBandYes: 5, nextBandYes: 4, statementsPerBand: 5).band == .a2_2)
+        #expect(Placement.place(hours: 280, ownBandYes: 5, nextBandYes: 3, statementsPerBand: 5).band == .a2_1)
+        #expect(Placement.place(hours: 582, ownBandYes: 2, nextBandYes: 0, statementsPerBand: 5).band == .a2_2)
     }
 }
 

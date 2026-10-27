@@ -91,22 +91,22 @@ public struct Projection: Sendable {
     /// Days of history needed before the forecast uses the learner's own pace.
     public static let minimumDaysOfHistory = 7
 
-    /// Input hours per week, averaged over the last 4 weeks (bonus input included).
+    /// Training hours per week (every logged minute), averaged over the last 4 weeks.
     /// A newer learner's average covers only the days since their first log, so one short
     /// session on day one isn't read as a pace kept up for a month.
-    public func weeklyInputHours(history: [ActivityRecord], today: Date) -> Double {
+    public func weeklyHours(history: [ActivityRecord], today: Date) -> Double {
         let end = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: today)!)
         let windowStart = calendar.date(byAdding: .day, value: -7 * Self.averagingWeeks, to: end)!
         guard let firstLog = history.map(\.date).min() else { return 0 }
         let start = max(windowStart, calendar.startOfDay(for: firstLog))
         let days = max(Double(Self.minimumDaysOfHistory), Double(calendar.dateComponents([.day], from: start, to: end).day ?? 0))
         let minutes = history
-            .filter { $0.kind.countsAsInput && $0.date >= start && $0.date < end }
+            .filter { $0.date >= start && $0.date < end }
             .reduce(0) { $0 + $1.minutes }
         return Double(minutes) / 60 / days * 7
     }
 
-    /// Whether there's enough history for `weeklyInputHours` to mean something.
+    /// Whether there's enough history for `weeklyHours` to mean something.
     public func hasEnoughHistory(_ history: [ActivityRecord], today: Date) -> Bool {
         guard let firstLog = history.map(\.date).min() else { return false }
         let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: firstLog), to: calendar.startOfDay(for: today)).day ?? 0
@@ -114,23 +114,23 @@ public struct Projection: Sendable {
     }
 
     /// The pace a learner would keep by meeting their weekly goal, used until there's a week of history.
-    public static func weeklyInputHours(atGoalMinutes goal: Int, band: Band) -> Double {
-        Double(goal) * (band.strandTargets[.input] ?? 0) / 60
+    public static func weeklyHours(atGoalMinutes goal: Int) -> Double {
+        Double(goal) / 60
     }
 
     /// The date each remaining band threshold is reached at `weeklyHours`, or nil if the pace is zero.
-    public func arrivalDates(inputHours: Double, weeklyHours: Double, from today: Date) -> [Band: Date] {
+    public func arrivalDates(hours: Double, weeklyHours: Double, from today: Date) -> [Band: Date] {
         guard weeklyHours > 0 else { return [:] }
         var dates: [Band: Date] = [:]
-        for band in Band.allCases where band.inputHoursThreshold > inputHours {
-            let weeks = (band.inputHoursThreshold - inputHours) / weeklyHours
+        for band in Band.allCases where band.hoursThreshold > hours {
+            let weeks = (band.hoursThreshold - hours) / weeklyHours
             dates[band] = calendar.date(byAdding: .day, value: Int((weeks * 7).rounded(.up)), to: today)
         }
         return dates
     }
 
-    /// Input hours expected by `date` at the current pace plus `extraMinutesPerDay`.
-    public func inputHours(by date: Date, from today: Date, current: Double, weeklyHours: Double, extraMinutesPerDay: Int = 0) -> Double {
+    /// Training hours expected by `date` at the current pace plus `extraMinutesPerDay`.
+    public func hours(by date: Date, from today: Date, current: Double, weeklyHours: Double, extraMinutesPerDay: Int = 0) -> Double {
         let days = Double(calendar.dateComponents([.day], from: today, to: date).day ?? 0)
         let perDay = weeklyHours / 7 + Double(extraMinutesPerDay) / 60
         return current + max(0, days) * perDay
@@ -138,40 +138,39 @@ public struct Projection: Sendable {
 }
 
 /// Links the weekly goal and the target date (docs/02-learning-engine.md §2.9): at a weekly goal, when the
-/// goal level is reached; for a target date, the weekly goal that gets there. Only listening counts toward
-/// level hours, so the pace is the goal's listening share.
+/// goal level is reached; for a target date, the weekly goal that gets there. Every minute of the weekly
+/// goal counts toward level hours.
 public enum GoalPace {
     /// The weekly goal moves in 10-minute steps.
     public static let step = 10
     public static let minutes = 30...900
 
     /// When `goal` is reached at `weeklyMinutes`; `today` if it already has been.
-    public static func arrival(of goal: Band, currentHours: Double, weeklyMinutes: Int, band: Band,
+    public static func arrival(of goal: Band, currentHours: Double, weeklyMinutes: Int,
                                from today: Date, calendar: Calendar = .current) -> Date {
-        let remaining = goal.inputHoursThreshold - currentHours
-        let weekly = Projection.weeklyInputHours(atGoalMinutes: weeklyMinutes, band: band)
+        let remaining = goal.hoursThreshold - currentHours
+        let weekly = Projection.weeklyHours(atGoalMinutes: weeklyMinutes)
         guard remaining > 0, weekly > 0 else { return calendar.startOfDay(for: today) }
         let days = Int((remaining / weekly * 7).rounded(.up))
         return calendar.date(byAdding: .day, value: days, to: calendar.startOfDay(for: today))!
     }
 
     /// The weekly goal (rounded up to a step, within `minutes`) that reaches `goal` by `date`.
-    public static func weeklyMinutes(toReach goal: Band, by date: Date, currentHours: Double, band: Band,
+    public static func weeklyMinutes(toReach goal: Band, by date: Date, currentHours: Double,
                                      from today: Date, calendar: Calendar = .current) -> Int {
-        let remaining = goal.inputHoursThreshold - currentHours
-        let share = band.strandTargets[.input] ?? 0
-        guard remaining > 0, share > 0 else { return minutes.lowerBound }
+        let remaining = goal.hoursThreshold - currentHours
+        guard remaining > 0 else { return minutes.lowerBound }
         let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: today), to: calendar.startOfDay(for: date)).day ?? 0
         let weeks = max(Double(days) / 7, 1)
-        let needed = remaining / weeks / share * 60
+        let needed = remaining / weeks * 60
         let rounded = Int((needed / Double(step)).rounded(.up)) * step
         return min(max(rounded, minutes.lowerBound), minutes.upperBound)
     }
 
     /// Whether `date` needs more than the largest weekly goal.
-    public static func isOutOfReach(_ goal: Band, by date: Date, currentHours: Double, band: Band,
+    public static func isOutOfReach(_ goal: Band, by date: Date, currentHours: Double,
                                     from today: Date, calendar: Calendar = .current) -> Bool {
-        arrival(of: goal, currentHours: currentHours, weeklyMinutes: minutes.upperBound, band: band, from: today, calendar: calendar)
+        arrival(of: goal, currentHours: currentHours, weeklyMinutes: minutes.upperBound, from: today, calendar: calendar)
             > calendar.startOfDay(for: date)
     }
 }

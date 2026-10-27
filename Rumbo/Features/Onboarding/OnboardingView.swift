@@ -162,7 +162,7 @@ struct OnboardingView: View {
                 .font(.rounded(.subheadline, weight: .medium))
                 .foregroundStyle(Palette.secondaryText)
             GoalEditor(goal: $draft.goal, weeklyMinutes: $draft.weeklyGoalMinutes, targetDate: $draft.targetDate,
-                       currentHours: draft.inputHours, band: draft.placement.band)
+                       currentHours: draft.trainingHours, band: draft.placement.band)
         }
     }
 
@@ -289,9 +289,8 @@ struct OnboardingView: View {
     }
 
     private func placementReason(_ result: Placement.Result) -> String {
-        let hours = Int(draft.inputHours)
         let yes = draft.canDoAnswers.values.filter { $0 }.count
-        let base = "\(hours) hours of input and \(yes) of \(draft.canDoStatements.count) can-dos"
+        let base = "\(Int(draft.inputHours)) hours of listening (≈ \(Int(draft.trainingHours)) training hours, since listening is \(Int(Band.listeningShare * 100))% of Rumbo's mix) and \(yes) of \(draft.canDoStatements.count) can-dos"
         switch result.adjustment {
         case 1: return "\(base). You're ahead of your hours, so you start one level up."
         case -1: return "\(base). Rumbo starts you one level lower so the plan feels comfortable."
