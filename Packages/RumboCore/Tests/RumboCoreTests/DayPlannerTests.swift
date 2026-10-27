@@ -127,7 +127,7 @@ import Testing
         let history = simulate(authorAtStart, budgets: Self.irregularFortnight)
         func days(_ kind: TaskKind) -> Int { history.filter { $0.kind == kind }.count }
         #expect(days(.ltTrack) >= 4, "Language Transfer is the A2 grammar backbone")
-        #expect(days(.extraIntensive) >= 4, "2 Extra parts a week")
+        #expect((1...3).contains(days(.extraIntensive)), "about one Extra part a week, for variety")
         #expect(days(.writeGuided) >= 2, "1 guided writing a week")
         #expect(history.filter(\.kind.isTandemExchange).count >= 5, "about 3 Tandem exchanges a week")
         #expect(days(.dsWatch) >= 7)
@@ -156,6 +156,29 @@ import Testing
         let b1 = plan(45, LearnerSnapshot(band: .b1_1, extraEpisodesWatched: 4))
         #expect(b1.task(.extraExtensive)?.detail == .extraEpisode(5))
         #expect(b1.task(.extraIntensive) == nil)
+    }
+
+    @Test func duolingoIsNeverMoreThanFiveMinutes() {
+        for budget in DayPlanner.budgetChoices {
+            #expect((plan(budget).task(.duoLesson)?.minutes ?? 0) <= 5, "\(budget) min")
+        }
+        // Even when only Duolingo is left in the language strand.
+        var learner = authorAtStart
+        learner.languageTransferLastTrack = Course.languageTransferTracks
+        for budget in DayPlanner.budgetChoices {
+            #expect((plan(budget, learner).task(.duoLesson)?.minutes ?? 0) <= 5, "\(budget) min, LT finished")
+        }
+    }
+
+    @Test func dreamingSpanishLeadsAndExtraIsOccasional() {
+        // Short days are Dreaming Spanish, even with Extra due.
+        #expect(plan(15).task(.extraIntensive) == nil)
+        #expect(plan(15).task(.dsWatch) != nil)
+        // Over a fortnight, Dreaming Spanish clearly outnumbers Extra.
+        let history = simulate(authorAtStart, budgets: Self.irregularFortnight)
+        let ds = history.filter { $0.kind == .dsWatch }.count
+        let extra = history.filter { $0.kind == .extraIntensive }.count
+        #expect(ds >= 3 * extra && extra >= 1, "DS \(ds), Extra \(extra)")
     }
 
     @Test func extraAnchorStopsOnceThisWeeksPartsAreDone() {

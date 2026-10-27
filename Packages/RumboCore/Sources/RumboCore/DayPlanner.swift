@@ -81,7 +81,8 @@ struct AnchorTargets {
     init(band: Band) {
         switch band {
         case .a2_1, .a2_2:
-            self.init(writing: 1, extraIntensiveParts: Course.extraIntensivePartsPerEpisode, extraEpisodes: 0, tandemExchanges: 3, fluency432: 0)
+            // Dreaming Spanish is the main input; Extra is a once-a-week change of pace.
+            self.init(writing: 1, extraIntensiveParts: 1, extraEpisodes: 0, tandemExchanges: 3, fluency432: 0)
         case .b1_1, .b1_2:
             self.init(writing: 2, extraIntensiveParts: 0, extraEpisodes: 1, tandemExchanges: 3, fluency432: 1)
         case .b2_1:
@@ -154,10 +155,11 @@ private struct PlanBuilder {
         return false
     }
 
-    // Step 6
+    // Step 6: prefer a task that can fill the whole budget (so not the 5-minute Duolingo warm-up).
     mutating func planSingleTask() {
         for strand in Strand.allCases.sorted(by: { deficit($0) > deficit($1) }) {
-            if let kind = candidates(for: strand).first(where: { $0.minutes.min <= budget }) {
+            let fitting = candidates(for: strand).filter { $0.minutes.min <= budget }
+            if let kind = fitting.first(where: { $0.minutes.max >= budget }) ?? fitting.first {
                 add(kind, minutes: min(budget, kind.minutes.max))
                 return
             }
@@ -241,6 +243,8 @@ private struct PlanBuilder {
 
     private func anchorsDue(_ kind: TaskKind) -> [TaskKind] {
         guard anchorSlotFree else { return [] }
+        // Short days stay with Dreaming Spanish; Extra waits for a day with 20+ minutes.
+        if kind.source == .extraEnEspanol && budget < 20 { return [] }
         let targets = AnchorTargets(band: learner.band)
         let required: Int = switch kind {
         case .writeGuided: targets.writing

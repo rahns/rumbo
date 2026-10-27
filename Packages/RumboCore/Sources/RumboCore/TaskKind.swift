@@ -45,7 +45,8 @@ public enum TaskKind: String, CaseIterable, Codable, Sendable {
 
     public var minutes: MinuteRange {
         switch self {
-        case .duoLesson: MinuteRange(min: 4, standard: 5, max: 10)
+        // Never more than 5 minutes: a warm-up, not a main source.
+        case .duoLesson: MinuteRange(min: 5, standard: 5, max: 5)
         case .ltTrack: MinuteRange(min: 8, standard: 12, max: 25)
         case .dsWatch: MinuteRange(min: 8, standard: 20, max: 60)
         case .dsEasy: MinuteRange(min: 8, standard: 10, max: 20)

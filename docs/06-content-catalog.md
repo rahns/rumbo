@@ -10,8 +10,8 @@ Each item: `id`, `title`, `kind` (`series` / `film` / `podcast` / `youtube`), `f
 |---|---|---|---|
 | Dreaming Spanish | Hours; difficulty range | All | `ds.watch` / `ds.easy`, difficulty tuned by comprehension ratings |
 | Language Transfer – Complete Spanish | 90 tracks | Until finished (target: by end of B1.1) | One track per language-focused slot; shaky → repeat once |
-| Extra en Español | 13 episodes | A2 intensive (2 parts per episode), B1 extensive | 1 episode/week anchor |
-| Duolingo | Sections/units | A2.1–B1.2, optional B2.1 | 5-min warm-up |
+| Extra en Español | 13 episodes | A2 intensive (2 parts per episode), B1 extensive | Weekly change of pace from Dreaming Spanish (A2: 1 part/week; B1: 1 episode/week), only on days with 20+ min |
+| Duolingo | Sections/units | A2.1–B1.2, optional B2.1 | 5-min warm-up, never longer |
 | Writing | Prompt library, ~40 prompts per band | All | `write.guided`, `write.quick` |
 | Tandem | Prompt library per stage | All | Text → voice → calls |
 

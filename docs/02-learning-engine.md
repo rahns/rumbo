@@ -53,7 +53,7 @@ Times are minutes: min / default / max per day.
 
 | Task ID | Strand | Min/Def/Max | Bands | Notes |
 |---|---|---|---|---|
-| `duo.lesson` | Language | 4 / 5 / 10 | A2.1–B1.2, optional in B2.1 | Retrieval warm-up (R7, R15) |
+| `duo.lesson` | Language | 5 / 5 / 5 (never more) | A2.1–B1.2, optional in B2.1 | Retrieval warm-up (R7, R15) |
 | `lt.track` | Language | 8 / 12 / 25 | Until the course is done | Next track. Rated "shaky" → repeat it once. |
 | `ds.watch` | Input | 8 / 20 / 60 | All | At the suggested difficulty (§2.6) |
 | `ds.easy` | Fluency | 8 / 10 / 20 | All | Videos 10–15 points below your level, at normal speed (R8) |
@@ -108,10 +108,12 @@ Planned on the first day the budget allows, so they don't depend on a fixed week
 | Anchor | A2 | B1 | B2 |
 |---|---|---|---|
 | `write.guided` | 1×/week | 2×/week | 2–3×/week |
-| Extra en Español | 1 episode/week (2 intensive parts) | 1 episode/week | — |
+| Extra en Español | 1 intensive part/week, on a day with 20+ min (an episode a fortnight) | 1 episode/week, on a day with 20+ min | — |
 | Tandem exchange (any stage) | 3×/week | 3×/week | 3×/week |
 | `fluency.432` | — | 1×/week once unlocked | 1×/week |
 | `tandem.call` | — | 1×/week once calls are unlocked | 1×/week once calls are unlocked |
+
+Dreaming Spanish is the main input source; Extra is a weekly change of pace (it's a weekly anchor, but only on days with at least 20 minutes, so short days stay with Dreaming Spanish). Duolingo is only ever a 5-minute warm-up: leftover minutes never go to it, and a 10-minute day picks a task that fills the whole time.
 
 ### Example: A2.1, first day, Language Transfer track 13 next, Extra episode 2 next
 
@@ -119,14 +121,14 @@ Real planner output (no history yet, so every anchor is due; * = weekly anchor):
 
 | Budget | Plan |
 |---|---|
-| 10 min | Extra ep. 2 part 1* (10) |
-| 15 min | Duolingo 5 → Extra ep. 2 part 1* (10) |
+| 10 min | Dreaming Spanish 10 |
+| 15 min | Duolingo 5 → Dreaming Spanish 10 |
 | 20 min | Duolingo 5 → Extra ep. 2 part 1* (10) → Tandem text 5 |
-| 30 min | Duolingo 10 → Extra ep. 2 part 1* (15) → Tandem text 5 |
+| 30 min | Duolingo 5 → Extra ep. 2 part 1* (15) → Tandem text 10 |
 | 45 min | Duolingo 5 → LT track 13 (10) → Extra ep. 2 part 1* (15) → Guided writing* (15) |
 | 60 min | Duolingo 5 → LT track 13 (15) → Extra ep. 2 part 1* (15) → Dreaming Spanish 25 |
 
-Over an irregular fortnight (15/45/20/30/10/45/30, twice) at A2.1 the planner gives 45% input, 14% output, 30% language-focused and 9% fluency, with Language Transfer on 6 days, Extra on 4, guided writing twice and Tandem on 6 days. These are checked by tests at A2.1, B1.1 and B2.2 (within 5 points of every target).
+Over an irregular fortnight (15/45/20/30/10/45/30, twice) at A2.1 the planner gives 45% input, 14% output, 30% language-focused and 9% fluency, with Language Transfer on 5 days, Dreaming Spanish on 10, Extra on 2, guided writing twice and Tandem on 6 days. These are checked by tests at A2.1, B1.1 and B2.2 (within 5 points of every target).
 
 ## 2.6 Keeping input comprehensible
 
