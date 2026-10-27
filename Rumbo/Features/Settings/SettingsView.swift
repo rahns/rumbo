@@ -76,6 +76,28 @@ struct SettingsView: View {
         }
 
         Section {
+            Picker("Goal", selection: binding(get: { profile.goal }, set: { profile.goal = $0 })) {
+                Text("B1").tag("B1")
+                Text("B2").tag("B2")
+                Text("C1").tag("C1")
+            }
+            Toggle("Target date", isOn: binding(
+                get: { profile.targetDate != nil },
+                set: { on in
+                    profile.targetDate = on ? (Calendar.current.date(byAdding: .year, value: 1, to: .now) ?? .now) : nil
+                }
+            ))
+            if let date = profile.targetDate {
+                DatePicker("Reach it by", selection: binding(get: { date }, set: { profile.targetDate = $0 }),
+                           in: Date.now..., displayedComponents: .date)
+            }
+        } header: {
+            Text("Goal")
+        } footer: {
+            Text("Progress shows when you'll reach each level and where your pace gets you by this date.")
+        }
+
+        Section {
             Toggle("Travel mode", isOn: binding(get: { profile.travelMode }, set: { profile.travelMode = $0 }))
         } footer: {
             Text("Adds real-world missions and copes with no signal.")

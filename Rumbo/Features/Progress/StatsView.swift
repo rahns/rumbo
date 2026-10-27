@@ -76,13 +76,14 @@ struct StatsView: View {
                         .foregroundStyle(Palette.secondaryText)
                 } else {
                     let expected = profile.targetDate.map { projection.inputHours(by: $0, from: .now, current: model.inputHours, weeklyHours: weekly) }
-                    LevelTimeline(band: profile.band, hours: model.inputHours, arrivals: arrivals, targetDate: profile.targetDate,
-                                  atTarget: expected.map { (hours: $0, band: Band.forInputHours($0)) })
+                    LevelTimeline(band: profile.band, hours: model.inputHours, arrivals: arrivals,
+                                  goal: profile.goal, goalBand: profile.goalBand,
+                                  targetDate: profile.targetDate, hoursAtTarget: expected)
                         .padding(.top, 6)
                 }
                 if let target = profile.targetDate, target > .now {
                     let extra = projection.inputHours(by: target, from: .now, current: model.inputHours, weeklyHours: weekly, extraMinutesPerDay: 10)
-                    Label("With 10 more minutes a day: about \(Int(extra)) h by your target (\(Band.forInputHours(extra).label), \(Band.forInputHours(extra).rawValue)).", systemImage: "bolt.fill")
+                    Label("With 10 more minutes a day, you'd have about \(Int(extra)) h by \(target.formatted(.dateTime.month(.abbreviated).year())): \(Band.forInputHours(extra).label) (\(Band.forInputHours(extra).rawValue)).", systemImage: "bolt.fill")
                         .font(.rounded(.subheadline, weight: .semibold))
                         .foregroundStyle(Palette.secondaryText)
                 }

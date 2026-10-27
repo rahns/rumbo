@@ -41,6 +41,15 @@ import SwiftData
 
     init() {}
 
+    /// The level the goal ("B1", "B2", "C1") is reached at. Rumbo's path ends at B2.2, so C1 maps there.
+    var goalBand: Band {
+        switch goal {
+        case "B1": .b1_1
+        case "C1": .b2_2
+        default: .b2_1
+        }
+    }
+
     var band: Band {
         get { Band(rawValue: currentBandRaw) ?? .a2_1 }
         set { currentBandRaw = newValue.rawValue }

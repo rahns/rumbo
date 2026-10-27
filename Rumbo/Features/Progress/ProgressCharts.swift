@@ -68,9 +68,12 @@ struct LevelTimeline: View {
     let band: Band
     let hours: Double
     let arrivals: [Band: Date]
+    /// The learner's goal ("B2") and the level it's reached at.
+    let goal: String
+    let goalBand: Band
     let targetDate: Date?
-    /// Expected hours and level on the target date.
-    let atTarget: (hours: Double, band: Band)?
+    /// Expected input hours on the target date at the current pace.
+    let hoursAtTarget: Double?
 
     private enum Stop: Identifiable {
         case now
@@ -162,15 +165,28 @@ struct LevelTimeline: View {
             return Style(symbol: "location.fill", color: Palette.coral, title: "Now · \(band.label)",
                          date: "\(Int(hours)) h", subtitle: "\(band.rawValue), hours of listening so far")
         case .level(let level, let date):
-            return Style(symbol: "trophy.fill", color: afterTarget ? Palette.secondaryText : Palette.leaf,
-                         title: "\(level.label) · \(level.rawValue)",
+            let isGoal = level == goalBand
+            return Style(symbol: isGoal ? "star.fill" : "trophy.fill", color: afterTarget ? Palette.secondaryText : Palette.leaf,
+                         title: isGoal ? "\(level.label) · \(level.rawValue) · your \(goal) goal" : "\(level.label) · \(level.rawValue)",
                          date: date.formatted(.dateTime.month(.abbreviated).year()),
-                         subtitle: "\(Int(level.inputHoursThreshold)) h · \(Self.distance(to: date))")
+                         subtitle: "Reached at \(Int(level.inputHoursThreshold)) h · \(Self.distance(to: date))")
         case .target(let date):
-            let expected = atTarget.map { "About \(Int($0.hours)) h by then: \($0.band.label) (\($0.band.rawValue))" } ?? ""
-            return Style(symbol: "flag.fill", color: Palette.sun, title: "Your target",
-                         date: date.formatted(.dateTime.month(.abbreviated).year()), subtitle: expected, isTarget: true)
+            return Style(symbol: "flag.fill", color: Palette.sun, title: "Your target: \(goal)",
+                         date: date.formatted(.dateTime.month(.abbreviated).year()), subtitle: targetSubtitle, isTarget: true)
         }
+    }
+
+    /// What the target is and where the current pace gets the learner by then.
+    private var targetSubtitle: String {
+        let needed = Int(goalBand.inputHoursThreshold)
+        // C1 is past the end of Rumbo's path, so measure against B2.2.
+        let need = goal == "C1" ? "B2.2, the end of Rumbo's path, needs \(needed) h" : "\(goal) needs \(needed) h"
+        guard let hours = hoursAtTarget else { return "\(need) of listening." }
+        let expected = Band.forInputHours(hours)
+        if hours >= goalBand.inputHoursThreshold {
+            return "\(need). At your pace you'll have about \(Int(hours)) h by then, so you're on track."
+        }
+        return "\(need). At your pace you'll have about \(Int(hours)) h by then, which is \(expected.label) (\(expected.rawValue))."
     }
 
     /// "in 4 months", "in 2 years".

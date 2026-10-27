@@ -133,7 +133,7 @@ Implemented in `Rumbo/Features/Review/MistakeDeckViews.swift`; cards are `Review
 ### Progress tab
 - Hours ring toward the next band.
 - **Strand balance:** one row per strand, named Listening, Speaking & writing, Study and Fluency practice, each with what counts toward it (e.g. "Easy videos, quick writes and 4-3-2 talks"). Shows the last 7 days' minutes and share, a bar for the share, and a tick at the band's target share.
-- **Where you're heading:** a timeline from now (current level and hours) through each level's expected arrival, with the target date as a flag in date order and the expected level there; levels after the target are faded. Below it: what 10 more minutes a day would reach by the target.
+- **Where you're heading:** a timeline from now (current level and hours) through each level's expected arrival, with the target as a flag in date order ("Your target: B2 · Jul 2028", what the goal needs in hours, and the hours and level the current pace reaches by then, or "on track"); the goal's level is starred; levels after the target are faded. Below it: what 10 more minutes a day would reach by the target.
 - Streak, freezes, XP; mistake deck.
 - **Heat map:** the last 12 calendar weeks, one square per day (weeks start on the learner's chosen day), shaded by minutes, today outlined.
 - Source progress: Language Transfer track bar, Extra episodes, Duolingo section.
@@ -147,7 +147,7 @@ Implemented in `Rumbo/Features/Review/MistakeDeckViews.swift`; cards are `Review
 A card under the header toggles Travel mode, explaining what it does: a real-world mission joins the plan, and offline days only get offline-capable tasks. It applies to the next plan (re-pick today's time to use it today). Pico wears the backpacker look while it's on.
 
 ### Settings
-Share (send a friend the latest release, see what's new), sources, Travel mode, weekly goal, reminders, AI correction (engine status, optional own API key), backup (save a file / restore from a file), reset (start onboarding again).
+Share (send a friend the latest release, see what's new), goal (B1 / B2 / C1) and optional target date, sources, Travel mode, weekly goal, reminders, AI correction (engine status, optional own API key), backup (save a file / restore from a file), reset (start onboarding again).
 
 ## 3.5 Motion and haptics catalog
 
