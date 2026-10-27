@@ -13,6 +13,7 @@ struct StatsView: View {
                         levelCard(profile)
                         projectionCard(profile)
                         streakCard
+                        mistakeDeckCard
                         coursesCard(profile)
                     }
                     .padding(20)
@@ -59,8 +60,8 @@ struct StatsView: View {
                     .font(.rounded(.headline, weight: .black))
                     .foregroundStyle(Palette.ink)
                 Text(ownPace
-                     ? String(format: "%.1f hours of input a week, your recent pace", weekly)
-                     : String(format: "%.1f hours of input a week if you meet your weekly goal. Your own pace takes over after a week.", weekly))
+                     ? String(format: "%.1f hours of listening a week, your recent pace (extra listening included).", weekly)
+                     : "\(String(format: "%.1f", weekly)) hours of listening a week: about \(Int(((profile.band.strandTargets[.input] ?? 0) * 100).rounded()))% of your \(profile.weeklyGoalMinutes)-minute weekly goal is listening, and only listening counts toward level hours. Your real pace takes over after a week.")
                     .font(.rounded(.subheadline, weight: .semibold))
                     .foregroundStyle(Palette.secondaryText)
                 if arrivals.isEmpty {
@@ -87,6 +88,37 @@ struct StatsView: View {
                 }
             }
         }
+    }
+
+    private var mistakeDeckCard: some View {
+        let total = model.allCards.count
+        let due = model.dueCards.count
+        return NavigationLink {
+            MistakeDeckView()
+        } label: {
+            RaisedCard(accent: Palette.coral) {
+                HStack(spacing: 14) {
+                    Image(systemName: "rectangle.stack.fill")
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 48, height: 48)
+                        .background(Circle().fill(Palette.coral))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Mistake deck")
+                            .font(.rounded(.headline, weight: .black))
+                            .foregroundStyle(Palette.ink)
+                        Text(total == 0 ? "Your corrected mistakes will collect here." : "\(total) cards · \(due) due now")
+                            .font(.rounded(.subheadline, weight: .semibold))
+                            .foregroundStyle(Palette.secondaryText)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.headline)
+                        .foregroundStyle(Palette.secondaryText)
+                }
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     private var streakCard: some View {

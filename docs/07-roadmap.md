@@ -39,3 +39,6 @@ Written, not yet built: onboarding (7 steps), Today (budget chips, task cards, s
 
 ## M3 status
 Built in 0.1.10, then revised: one node per calendar day with an unmistakable "day complete" state, working ahead (finish today, open tomorrow early), future units with projected level-up trophies; Pico redesigned from scratch as a cartoon toucan. Originally: Path home screen (daily nodes, weekly units, winding layout, today node with zoom into Today, day summaries), level-up gate (node, banner, 10-statement check, pass/fail), Pico drawn in code with six moods, confetti, streak bounce, card flip on completion. Engine: `PathLayout` (73 tests).
+
+## M4 status
+Written, not yet built: correction service (LanguageTool + on-device model, merged and capped), guided writing flow (check → highlighted feedback → rewrite → compare), mistake deck (cloze cards from writing, Tandem/manual cards, FSRS review, deck screen on Progress), due cards feeding the planner, rewrites counting toward XP, cards and feedback in backups. Engine: `Mistakes` (merge, cloze cards) with tests (84).

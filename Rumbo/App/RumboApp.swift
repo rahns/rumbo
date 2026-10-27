@@ -10,7 +10,7 @@ struct RumboApp: App {
     @State private var model: AppModel
 
     init() {
-        let schema = Schema([LearnerProfile.self, ActivityLog.self, DayPlanRecord.self, PlannedTaskRecord.self, WritingEntry.self])
+        let schema = Schema([LearnerProfile.self, ActivityLog.self, DayPlanRecord.self, PlannedTaskRecord.self, WritingEntry.self, ReviewCard.self])
         // On device only: no sync, no backup (docs/04-data-model.md).
         let configuration = ModelConfiguration(schema: schema, cloudKitDatabase: .none)
         do {

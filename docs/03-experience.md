@@ -108,15 +108,26 @@ Intro → the next band's 10 can-do statements one at a time → ≥ 7 "¡Sí!" 
 4. Card flips to complete, Pico cheers, XP counts up, haptic success.
 
 ### Writing
-- Prompt card with target words and "use today's structure" hint.
-- Editor with a live word counter.
-- **Check** → errors are underlined in place with severity colors. Tap one for a short explanation at your level.
-- **Rewrite** step: fix with the feedback visible, then compare before/after.
-- Each fixed error becomes a mistake-deck card.
+Implemented in `Rumbo/Features/Writing/GuidedWritingView.swift` (guided writing; quick writes are a plain timed editor with no correction).
+
+1. **Write:** prompt card (with the reuse hint), editor, live word count against the band's target. "Write first, without looking things up."
+2. **Check:** "Pico is reading your Spanish…" while `CorrectionService` runs (§5.3).
+3. **Feedback:** one or two specific strengths, the draft with each error highlighted in place, a card per correction (wrong words struck through in coral → fix in green, one-line explanation at the learner's level), and "A native speaker might say…" with the model's natural rewrite. Shows which checker ran.
+4. **Rewrite:** an editor prefilled with the draft, with the corrections listed above it (R11).
+5. **Compare:** before and after.
+6. **I'm done** saves the draft, feedback and rewrite, logs the time, and turns every correction into a mistake-deck card. A rewrite earns +25 XP.
+
+If the check can't run (offline with no on-device model), the writing is still saved and logged.
 
 ### Mistake deck
-- Card review in one-tap Again / Good / Easy. Cards come from writing feedback, Tandem corrections and manual "save this phrase".
-- Front: your original sentence with a gap. Back: the correction plus an explanation.
+Implemented in `Rumbo/Features/Review/MistakeDeckViews.swift`; cards are `ReviewCard`s scheduled by FSRS (R7).
+
+- **Cards from writing:** a cloze built from the learner's own sentence. The front shows the sentence with the error blanked plus "(you wrote: voy)"; the back shows the correct words and the corrected sentence, with the explanation.
+- **Cards from Tandem:** after a Tandem task, "Save a correction from your partner" adds a card (what you said → the correct version, optional why). Also available with + in the deck.
+- **Review:** one card at a time, "Show answer", then Again / Good / Easy. Again brings the card back in 10 minutes; Good/Easy schedule it by FSRS.
+- Due cards feed the planner (`review.mistakes`: a warm-up from 5 due cards and 20 minutes; otherwise planned when language study is behind). The card shows "N cards due".
+- **Progress → Mistake deck** lists every card with when it's next due, reviews what's due, adds and deletes cards.
+- Undoing a writing task removes its cards.
 
 ### Progress tab
 - Hours ring toward the next band.

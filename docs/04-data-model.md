@@ -19,9 +19,10 @@ Defined in `Rumbo/Models/Models.swift`. Enums are stored as raw strings/ints, wi
 | `LearnerProfile` | One per install: name, goal, target date, band, gates passed, last failed gate, speaking stage, enabled sources, weekly goal, habit cue and reminder, travel mode, and the learner's place in each source: baseline input hours, Dreaming Spanish difficulty range, Language Transfer track (+ repeat flag), Extra episode and part, Duolingo section/unit. |
 | `ActivityLog` | One logged block: date, task, minutes, comprehension rating (input), track rating or Tandem feeling, bonus flag, and the Dreaming Spanish range it was watched at (for difficulty tuning). |
 | `DayPlanRecord` + `PlannedTaskRecord` | A day's plan, saved when the budget is picked so it stays stable as courses move forward during the day. `day` is the calendar day the plan is *for*: a plan made early (working ahead) is stored under the later day. Each task keeps its order, minutes, anchor flag, encoded detail (`lt:13`, `extra:2:1`, `ds:40:48`), the prompt fixed at planning time, and status (planned / active / done / skipped). Once done, it also keeps what's needed to undo it: the log and writing entry IDs, the course progress before, and the previous Duolingo position. |
-| `WritingEntry` | Text written in a writing task, with its prompt. Correction is added in M4. |
+| `WritingEntry` | Text written in a writing task, with its prompt, the correction (encoded `CorrectionService.Result`) and the learner's rewrite. |
+| `ReviewCard` | A mistake-deck card: front, back, explanation, origin (writing / tandem / manual), the writing entry it came from, and its FSRS state (due, stability, difficulty, reps, lapses, state, last review). |
 
-Coming later: `ReviewCard` (FSRS state for the mistake deck, M4). Gate attempts are stored on the profile (`gatesPassed`, `lastFailedGate`) rather than as their own model.
+Gate attempts are stored on the profile (`gatesPassed`, `lastFailedGate`) rather than as their own model.
 
 The budget can be changed until the first task is started; after that the day's plan is fixed.
 
@@ -32,7 +33,7 @@ The budget can be changed until the first task is started; after that the day's 
 Rumbo keeps everything on the phone. There is no sync and no automatic backup: CloudKit needs an entitlement the author's signing profile doesn't grant, and Rumbo can't keep access to a file in iCloud Drive across launches on that setup (M0).
 
 **Manual backup** (Settings → Backup), implemented in `Rumbo/Services/Backup.swift`:
-- **Save backup** writes `Rumbo Backup YYYY-MM-DD.json` wherever the learner chooses, through the system save dialog. It holds the profile, every activity log and every writing entry. Today's plan isn't included; it's rebuilt from the history.
+- **Save backup** writes `Rumbo Backup YYYY-MM-DD.json` wherever the learner chooses, through the system save dialog. It holds the profile, every activity log, every writing entry (with feedback and rewrite) and every mistake-deck card with its schedule. Today's plan isn't included; it's rebuilt from the history.
 - **Restore from a backup** picks a file, imports a copy, decodes it fully, asks for confirmation, then replaces everything. Also offered on the first onboarding screen, for a new phone or reinstall.
 - The file has a `version` number; a backup from a newer Rumbo is refused with a message rather than half-read.
 

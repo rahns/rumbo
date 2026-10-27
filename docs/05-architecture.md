@@ -73,7 +73,7 @@ struct CorrectionResult: Codable {
 3. **Fallbacks:** if no Apple model is available (older iPhone, Apple Intelligence off), LanguageTool's results are shown alone with its built-in messages. Offline with no Apple model: the writing is saved and checked automatically when back online.
 4. **Optional:** a user's own Gemini (or other) key, plugged in through the Foundation Models `LanguageModel` provider protocol. Off by default.
 
-The prompt asks for **at most 8 errors, most important first**, so feedback stays useful rather than overwhelming. Explanations are in English at A2–B1 and switch to Spanish from B2.1.
+The prompt asks for **at most 8 errors, most important first**, plus one or two specific strengths, so feedback stays useful and encouraging. Explanations are in English at A2–B1 and in simple Spanish from B2.1. The model's and LanguageTool's corrections are merged in RumboCore (`Mistakes.merge`): no-ops dropped, overlapping finds kept once (the model's wording wins), capped at 8. Implemented in `Rumbo/Services/Correction.swift`.
 
 ## 5.4 Deep links into sources
 

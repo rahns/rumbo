@@ -104,7 +104,7 @@ final class AppModel {
             extraEpisodesWatched: profile.extraEpisodesWatched,
             extraPartsDoneInEpisode: profile.extraPartsDoneInEpisode,
             keepDuolingoInB2: profile.keepDuolingoInB2,
-            dueReviewCards: 0,
+            dueReviewCards: dueCards.count,
             travelMode: profile.travelMode,
             isOnline: isOnline,
             dsDifficulty: profile.dsDifficulty
@@ -121,7 +121,7 @@ final class AppModel {
             predicate: #Predicate { $0.statusRaw == "done" }
         ))) ?? 0
         _ = revision
-        return XP.total(minutes: logs.reduce(0) { $0 + $1.minutes }, completedCards: completedCards, rewrites: 0, gatesPassed: profile?.gatesPassed ?? 0)
+        return XP.total(minutes: logs.reduce(0) { $0 + $1.minutes }, completedCards: completedCards, rewrites: rewriteCount, gatesPassed: profile?.gatesPassed ?? 0)
     }
 
     var minutesToday: Int {
@@ -160,6 +160,7 @@ final class AppModel {
         try? context.delete(model: DayPlanRecord.self)
         try? context.delete(model: ActivityLog.self)
         try? context.delete(model: WritingEntry.self)
+        try? context.delete(model: ReviewCard.self)
         try? context.delete(model: LearnerProfile.self)
     }
 
@@ -174,7 +175,11 @@ final class AppModel {
             appVersion: DiagnosticsModel.appVersion,
             profile: BackupFile.ProfileData(profile),
             logs: logs.map(BackupFile.LogData.init),
-            writing: writing.map { BackupFile.WritingData(date: $0.date, task: $0.taskRaw, prompt: $0.prompt, text: $0.text) }
+            writing: writing.map {
+                BackupFile.WritingData(date: $0.date, task: $0.taskRaw, prompt: $0.prompt, text: $0.text,
+                                       rewrite: $0.rewrite, feedback: $0.feedbackJSON, id: $0.id)
+            },
+            cards: allCards.map(BackupFile.CardData.init)
         )
         return BackupDocument(data: try BackupFile.encoder().encode(file))
     }
@@ -197,7 +202,14 @@ final class AppModel {
             context.insert(log.makeLog())
         }
         for entry in file.writing {
-            context.insert(WritingEntry(date: entry.date, task: TaskKind(rawValue: entry.task) ?? .writeGuided, prompt: entry.prompt, text: entry.text))
+            let restored = WritingEntry(date: entry.date, task: TaskKind(rawValue: entry.task) ?? .writeGuided, prompt: entry.prompt, text: entry.text)
+            restored.rewrite = entry.rewrite ?? ""
+            restored.feedbackJSON = entry.feedback
+            if let id = entry.id { restored.id = id }
+            context.insert(restored)
+        }
+        for card in file.cards ?? [] {
+            context.insert(card.makeCard())
         }
         save()
         refreshReminders()
@@ -277,6 +289,8 @@ final class AppModel {
         var trackRating: SourceProgress.TrackRating?
         var tandemFeeling: String?
         var writing: String?
+        var feedback: CorrectionService.Result?
+        var rewrite: String?
         var duolingoPosition: (section: Int, unit: Int)?
     }
 
@@ -295,8 +309,17 @@ final class AppModel {
 
         if let text = completion.writing?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty {
             let entry = WritingEntry(date: .now, task: task.task, prompt: task.prompt, text: text)
+            entry.feedbackJSON = completion.feedback.flatMap { try? JSONEncoder().encode($0) }
+            entry.rewrite = completion.rewrite?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             context.insert(entry)
             task.writingID = entry.id
+            // Every corrected error becomes a mistake-deck card (R7, R11).
+            for correction in completion.feedback?.corrections ?? [] {
+                let content = Mistakes.card(from: text, correction: correction)
+                let card = ReviewCard(front: content.front, back: content.back, explanation: content.explanation, origin: "writing")
+                card.writingID = entry.id
+                context.insert(card)
+            }
         }
 
         task.progressBefore = try? JSONEncoder().encode(profile.sourceProgress)
@@ -329,9 +352,13 @@ final class AppModel {
             if let id = task.logID, let log = logs.first(where: { $0.id == id }) {
                 context.delete(log)
             }
-            if let id = task.writingID,
-               let entry = try? context.fetch(FetchDescriptor<WritingEntry>(predicate: #Predicate { $0.id == id })).first {
-                context.delete(entry)
+            if let id = task.writingID {
+                if let entry = try? context.fetch(FetchDescriptor<WritingEntry>(predicate: #Predicate { $0.id == id })).first {
+                    context.delete(entry)
+                }
+                for card in (try? context.fetch(FetchDescriptor<ReviewCard>(predicate: #Predicate { $0.writingID == id }))) ?? [] {
+                    context.delete(card)
+                }
             }
             if let data = task.progressBefore, let before = try? JSONDecoder().decode(SourceProgress.self, from: data) {
                 var progress = profile.sourceProgress
@@ -383,7 +410,47 @@ final class AppModel {
         if task.task == .duoLesson, let profile {
             return "Section \(profile.duolingoSection) · Unit \(profile.duolingoUnit)"
         }
+        if task.task == .reviewMistakes {
+            let due = dueCards.count
+            return due == 1 ? "1 card due" : "\(due) cards due"
+        }
         return TaskCopy.detail(task.detail)
+    }
+
+    // MARK: - Mistake deck
+
+    var allCards: [ReviewCard] {
+        _ = revision
+        return (try? context.fetch(FetchDescriptor<ReviewCard>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)]))) ?? []
+    }
+
+    /// Cards due now, most overdue first.
+    var dueCards: [ReviewCard] {
+        _ = revision
+        let now = Date.now
+        return (try? context.fetch(FetchDescriptor<ReviewCard>(predicate: #Predicate { $0.due <= now }, sortBy: [SortDescriptor(\.due)]))) ?? []
+    }
+
+    func review(_ card: ReviewCard, rating: FSRS.Rating) {
+        card.schedule = FSRS().review(card.schedule, rating: rating, now: .now)
+        save()
+    }
+
+    func addCard(wrong: String, right: String, note: String, origin: String) {
+        let wrong = wrong.trimmingCharacters(in: .whitespacesAndNewlines)
+        let right = right.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !wrong.isEmpty, !right.isEmpty else { return }
+        context.insert(ReviewCard(front: "Fix it: \(wrong)", back: right, explanation: note.trimmingCharacters(in: .whitespacesAndNewlines), origin: origin))
+        save()
+    }
+
+    func deleteCard(_ card: ReviewCard) {
+        context.delete(card)
+        save()
+    }
+
+    private var rewriteCount: Int {
+        ((try? context.fetch(FetchDescriptor<WritingEntry>())) ?? []).filter { !$0.rewrite.isEmpty }.count
     }
 
     // MARK: - Level-up gates

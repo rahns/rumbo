@@ -14,6 +14,8 @@ struct BackupFile: Codable {
     var profile: ProfileData
     var logs: [LogData]
     var writing: [WritingData]
+    /// Added after version 1 shipped; optional so older backups still restore.
+    var cards: [CardData]?
 
     struct ProfileData: Codable {
         var createdAt: Date
@@ -60,6 +62,26 @@ struct BackupFile: Codable {
         var task: String
         var prompt: String
         var text: String
+        // Added after version 1 shipped.
+        var rewrite: String?
+        var feedback: Data?
+        var id: UUID?
+    }
+
+    struct CardData: Codable {
+        var createdAt: Date
+        var front: String
+        var back: String
+        var explanation: String
+        var origin: String
+        var writingID: UUID?
+        var due: Date
+        var stability: Double
+        var difficulty: Double
+        var reps: Int
+        var lapses: Int
+        var state: Int
+        var lastReview: Date?
     }
 
     static func encoder() -> JSONEncoder {
@@ -134,6 +156,28 @@ extension BackupFile.ProfileData {
         profile.gatesPassed = gatesPassed ?? 0
         profile.lastFailedGate = lastFailedGate
         return profile
+    }
+}
+
+extension BackupFile.CardData {
+    init(_ card: ReviewCard) {
+        self.init(createdAt: card.createdAt, front: card.front, back: card.back, explanation: card.explanation, origin: card.origin,
+                  writingID: card.writingID, due: card.due, stability: card.stability, difficulty: card.difficulty,
+                  reps: card.reps, lapses: card.lapses, state: card.stateRaw, lastReview: card.lastReview)
+    }
+
+    func makeCard() -> ReviewCard {
+        let card = ReviewCard(front: front, back: back, explanation: explanation, origin: origin)
+        card.createdAt = createdAt
+        card.writingID = writingID
+        card.due = due
+        card.stability = stability
+        card.difficulty = difficulty
+        card.reps = reps
+        card.lapses = lapses
+        card.stateRaw = state
+        card.lastReview = lastReview
+        return card
     }
 }
 

@@ -16,6 +16,9 @@ struct TaskSessionView: View {
     @State private var trackRating: SourceProgress.TrackRating?
     @State private var tandemFeeling: String?
     @State private var writing = ""
+    @State private var rewrite = ""
+    @State private var feedback: CorrectionService.Result?
+    @State private var addingCorrection = false
     @State private var duolingoSection = 1
     @State private var duolingoUnit = 1
 
@@ -111,8 +114,13 @@ struct TaskSessionView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(RoundedRectangle(cornerRadius: 14).fill(Palette.cream))
             }
-            if isWriting {
+            if kind == .writeGuided {
+                GuidedWritingView(draft: $writing, rewrite: $rewrite, feedback: $feedback,
+                                  band: model.profile?.band ?? .a2_1, prompt: task.prompt)
+            } else if kind == .writeQuick {
                 writingEditor
+            } else if kind == .reviewMistakes {
+                ReviewDeckView()
             }
             if DeepLinks.url(for: kind, detail: task.detail) != nil {
                 Button {
@@ -188,6 +196,16 @@ struct TaskSessionView: View {
                 question("How did it feel?") {
                     ChoiceRow(options: [("easy", "😎", "Easy"), ("ok", "🙂", "OK"), ("hard", "😬", "Hard")], selection: $tandemFeeling)
                 }
+                Button {
+                    addingCorrection = true
+                } label: {
+                    Label("Save a correction from your partner", systemImage: "plus.bubble.fill")
+                }
+                .buttonStyle(ChunkySecondaryButtonStyle())
+                .sheet(isPresented: $addingCorrection) {
+                    AddCardSheet(origin: "tandem")
+                        .presentationDetents([.medium, .large])
+                }
             }
         }
     }
@@ -241,6 +259,8 @@ struct TaskSessionView: View {
             trackRating: trackRating,
             tandemFeeling: tandemFeeling,
             writing: isWriting ? writing : nil,
+            feedback: kind == .writeGuided ? feedback : nil,
+            rewrite: kind == .writeGuided ? rewrite : nil,
             duolingoPosition: kind == .duoLesson ? (section: duolingoSection, unit: duolingoUnit) : nil
         ))
         UINotificationFeedbackGenerator().notificationOccurred(.success)

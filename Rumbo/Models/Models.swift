@@ -180,19 +180,72 @@ enum TaskStatus: String {
     case skipped
 }
 
-/// Writing saved from `write.guided` / `write.quick`. Correction arrives in M4.
+/// Writing saved from `write.guided` / `write.quick`, with its correction and the learner's rewrite.
 @Model final class WritingEntry {
     var id: UUID = UUID()
     var date: Date = Date.now
     var taskRaw: String = TaskKind.writeGuided.rawValue
     var prompt: String = ""
     var text: String = ""
+    /// Encoded `CorrectionService.Result`.
+    var feedbackJSON: Data?
+    var rewrite: String = ""
 
     init(date: Date, task: TaskKind, prompt: String, text: String) {
         self.date = date
         self.taskRaw = task.rawValue
         self.prompt = prompt
         self.text = text
+    }
+}
+
+/// A mistake-deck card, scheduled with FSRS. See docs/03-experience.md §3.4 "Mistake deck".
+@Model final class ReviewCard {
+    var id: UUID = UUID()
+    var createdAt: Date = Date.now
+    var front: String = ""
+    var back: String = ""
+    var explanation: String = ""
+    /// "writing", "tandem" or "manual".
+    var origin: String = "manual"
+    /// The writing entry it came from, so undoing that writing task removes its cards.
+    var writingID: UUID?
+
+    var due: Date = Date.now
+    var stability: Double = 0
+    var difficulty: Double = 0
+    var reps: Int = 0
+    var lapses: Int = 0
+    var stateRaw: Int = 0
+    var lastReview: Date?
+
+    init(front: String, back: String, explanation: String, origin: String) {
+        self.front = front
+        self.back = back
+        self.explanation = explanation
+        self.origin = origin
+    }
+
+    var schedule: FSRS.Card {
+        get {
+            var card = FSRS.Card(due: due)
+            card.stability = stability
+            card.difficulty = difficulty
+            card.reps = reps
+            card.lapses = lapses
+            card.state = FSRS.State(rawValue: stateRaw) ?? .new
+            card.lastReview = lastReview
+            return card
+        }
+        set {
+            due = newValue.due
+            stability = newValue.stability
+            difficulty = newValue.difficulty
+            reps = newValue.reps
+            lapses = newValue.lapses
+            stateRaw = newValue.state.rawValue
+            lastReview = newValue.lastReview
+        }
     }
 }
 

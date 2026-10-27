@@ -123,7 +123,7 @@ final class DiagnosticsModel {
 
     private func checkLanguageTool() async -> CheckStatus {
         do {
-            let matches = try await LanguageToolProbe.check("Ella son muy alto y yo tengo veinte año.")
+            let matches = try await LanguageTool.check("Ella son muy alto y yo tengo veinte año.")
             let first = matches.first?.message ?? "none"
             return .pass("\(matches.count) errors found. First: \(first)")
         } catch {
@@ -163,31 +163,15 @@ final class DiagnosticsModel {
 
     private static let sampleText = "Ayer yo voy a la playa con mis amigo y nosotros comimos mucho pescados."
 
-    /// The planned M4 pipeline in miniature: LanguageTool finds errors, the on-device model explains them
-    /// with structured output, and corrections that don't change anything are dropped.
+    /// Runs the real writing-correction pipeline (CorrectionService) on a sample with known errors.
     func testWritingCorrection() async {
         modelSample = "Thinking…"
-        let hints = (try? await LanguageToolProbe.check(Self.sampleText)) ?? []
-        var prompt = "Learner's text:\n\(Self.sampleText)"
-        if !hints.isEmpty {
-            prompt += "\n\nA grammar checker flagged:\n" + hints.map { "- «\($0.flaggedText(in: Self.sampleText))»: \($0.message)" }.joined(separator: "\n")
-        }
         do {
-            let session = LanguageModelSession(instructions: """
-                You are a friendly Spanish tutor for an A2 learner. Find every real error in the learner's text. \
-                Check that each verb tense matches the time expressions (for example "ayer" needs the preterite), \
-                and check gender and number agreement. Use the grammar checker's hints when given. \
-                Never list something that is already correct.
-                """)
-            let feedback = try await session.respond(to: prompt, generating: WritingFeedback.self).content
-            let real = feedback.errors.filter {
-                $0.original.trimmingCharacters(in: .whitespaces).lowercased() != $0.corrected.trimmingCharacters(in: .whitespaces).lowercased()
-            }
-            var lines = real.map { "• \($0.original) → \($0.corrected): \($0.explanation)" }
-            let dropped = feedback.errors.count - real.count
-            if dropped > 0 { lines.append("(dropped \(dropped) non-changes)") }
-            lines.append("Rewrite: \(feedback.naturalRewrite)")
-            lines.append("LanguageTool hints used: \(hints.count)")
+            let result = try await CorrectionService.correct(Self.sampleText, band: .a2_1, prompt: "Write about yesterday.")
+            var lines = result.corrections.map { "• \($0.original) → \($0.corrected): \($0.explanation) [\($0.source)]" }
+            if !result.naturalRewrite.isEmpty { lines.append("Rewrite: \(result.naturalRewrite)") }
+            lines += result.strengths.map { "✓ \($0)" }
+            lines.append("Engine: \(result.engine)")
             modelSample = lines.joined(separator: "\n")
         } catch {
             modelSample = "Error: \(error.localizedDescription)"
@@ -214,58 +198,5 @@ final class DiagnosticsModel {
             lines.append("\nWriting correction sample:\n\(modelSample)")
         }
         return lines.joined(separator: "\n")
-    }
-}
-
-@Generable
-struct WritingFeedback {
-    @Guide(description: "Each real error in the learner's text, most important first. Skip anything already correct.")
-    var errors: [WritingError]
-    @Guide(description: "The whole text rewritten the way a native speaker would say it.")
-    var naturalRewrite: String
-}
-
-@Generable
-struct WritingError {
-    @Guide(description: "The exact wrong words from the learner's text.")
-    var original: String
-    @Guide(description: "The corrected words. Must be different from original.")
-    var corrected: String
-    @Guide(description: "One short sentence in English explaining the rule.")
-    var explanation: String
-}
-
-enum LanguageToolProbe {
-    struct Match: Decodable {
-        let message: String
-        let offset: Int
-        let length: Int
-
-        func flaggedText(in text: String) -> String {
-            let characters = Array(text)
-            guard offset >= 0, offset + length <= characters.count else { return "" }
-            return String(characters[offset..<offset + length])
-        }
-    }
-
-    private struct Response: Decodable {
-        let matches: [Match]
-    }
-
-    static func check(_ text: String) async throws -> [Match] {
-        var request = URLRequest(url: URL(string: "https://api.languagetool.org/v2/check")!)
-        request.httpMethod = "POST"
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        var form = URLComponents()
-        form.queryItems = [
-            URLQueryItem(name: "language", value: "es"),
-            URLQueryItem(name: "text", value: text),
-        ]
-        request.httpBody = form.percentEncodedQuery?.data(using: .utf8)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
-            throw URLError(.badServerResponse)
-        }
-        return try JSONDecoder().decode(Response.self, from: data).matches
     }
 }
