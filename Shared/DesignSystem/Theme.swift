@@ -17,6 +17,9 @@ enum Palette {
     static let card = dynamic(light: 0xFFFFFF, dark: 0x1E2A4A)
     static let cardEdge = dynamic(light: 0xE3E6F0, dark: 0x0F1526)
     static let secondaryText = dynamic(light: 0x5D6C7B, dark: 0xA8B1C9)
+    /// Dark text for bright backgrounds that stay bright in dark mode (sun, white speech bubbles).
+    /// `ink` turns light in dark mode, so it can't be used there.
+    static let inkOnBright = Color(uiColor: UIColor(hex: 0x1E2A4A))
 
     private static func dynamic(light: UInt32, dark: UInt32) -> Color {
         Color(uiColor: UIColor { traits in

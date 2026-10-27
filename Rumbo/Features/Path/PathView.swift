@@ -276,7 +276,7 @@ struct UnitBanner: View {
                 Image(systemName: "lock.fill").font(.title3)
             }
         }
-        .foregroundStyle(gold ? Palette.ink : .white)
+        .foregroundStyle(gold ? Palette.inkOnBright : .white)
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(color))
         .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(color.edge()).offset(y: 4))

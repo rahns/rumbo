@@ -80,7 +80,7 @@ struct GateView: View {
                 .multilineTextAlignment(.center)
             Spacer()
             Button("Let's check") { stage = .questions }
-                .buttonStyle(ChunkyButtonStyle(color: Palette.sun, foreground: Palette.ink))
+                .buttonStyle(ChunkyButtonStyle(color: Palette.sun, foreground: Palette.inkOnBright))
         }
     }
 

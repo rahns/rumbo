@@ -112,7 +112,7 @@ struct ContentCard: View {
                     Button(action: toggle) {
                         Label(isWatching ? "Watching" : "Watch this", systemImage: isWatching ? "checkmark.circle.fill" : "plus.circle")
                     }
-                    .buttonStyle(ChunkyButtonStyle(color: isWatching ? Palette.leaf : color, foreground: item.kind == .film && !isWatching ? Palette.ink : .white))
+                    .buttonStyle(ChunkyButtonStyle(color: isWatching ? Palette.leaf : color, foreground: item.kind == .film && !isWatching ? Palette.inkOnBright : .white))
                     if let url = item.url.flatMap(URL.init(string:)) {
                         Button { open(url) } label: {
                             Label("Open", systemImage: "arrow.up.forward.app.fill")

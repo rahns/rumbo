@@ -61,7 +61,8 @@ struct PicoView: View {
             if let squawk {
                 Text(squawk)
                     .font(.rounded(.caption, weight: .black))
-                    .foregroundStyle(Palette.ink)
+                    // A white speech bubble in both modes, so the text stays dark.
+                    .foregroundStyle(Palette.inkOnBright)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Capsule().fill(.white))

@@ -136,7 +136,7 @@ struct TodayView: View {
         if model.isGateOpen, let next = model.profile?.band.next {
             BannerCard(title: "Level-up check ready", message: "You've reached the hours for \(next.label). Ten quick questions and you could move up.", color: Palette.sun) {
                 Button("Check now") { showingGate = true }
-                    .buttonStyle(ChunkyButtonStyle(color: Palette.sun, foreground: Palette.ink, fullWidth: false))
+                    .buttonStyle(ChunkyButtonStyle(color: Palette.sun, foreground: Palette.inkOnBright, fullWidth: false))
             }
         }
         if let banner = model.banner {
