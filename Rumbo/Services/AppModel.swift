@@ -494,6 +494,12 @@ final class AppModel {
         refreshReminders()
     }
 
+    /// Minutes logged when the task was done (may differ from the plan).
+    func loggedMinutes(for task: PlannedTaskRecord) -> Int? {
+        guard let id = task.logID else { return nil }
+        return logs.first { $0.id == id }?.minutes
+    }
+
     /// Card subtitle: the planner's detail, or the learner's Duolingo position for the warm-up.
     func detailText(for task: PlannedTaskRecord) -> String? {
         if task.task == .duoLesson, let profile {
@@ -716,7 +722,8 @@ final class AppModel {
         let plan = session(for: today)
         var tasks = (plan?.sortedTasks ?? []).filter { $0.status != .skipped }.map {
             WidgetSnapshot.TaskLine(title: TaskCopy.title(for: $0.task), symbol: TaskCopy.symbol(for: $0.task),
-                                    minutes: $0.minutesPlanned, done: $0.status == .done, colorHex: $0.task.strand.hex)
+                                    minutes: $0.status == .done ? loggedMinutes(for: $0) ?? $0.minutesPlanned : $0.minutesPlanned,
+                                    done: $0.status == .done, colorHex: $0.task.strand.hex)
         }
         // No plan yet: preview the one the gold-starred budget would give, so the widget shows what's on track.
         var suggested: Int?

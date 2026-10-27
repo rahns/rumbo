@@ -250,7 +250,7 @@ struct TodayView: View {
                     .foregroundStyle(Palette.secondaryText)
             }
             ForEach(tasks) { task in
-                TaskCardView(task: task, detail: model.detailText(for: task)) {
+                TaskCardView(task: task, detail: model.detailText(for: task), loggedMinutes: model.loggedMinutes(for: task)) {
                     if task.status == .active { model.resumeSession(task) } else { model.start(task) }
                     openTask = task
                 } onSkip: {
@@ -357,6 +357,8 @@ struct BannerCard<Actions: View>: View {
 struct TaskCardView: View {
     let task: PlannedTaskRecord
     let detail: String?
+    /// Minutes actually logged for a done task; shown next to the struck-out plan when they differ.
+    var loggedMinutes: Int?
     let onStart: () -> Void
     let onSkip: () -> Void
     let onUndo: () -> Void
@@ -407,10 +409,24 @@ struct TaskCardView: View {
                     .accessibilityElement(children: .combine)
                     .accessibilityValue(task.status == .done ? "Done" : task.status == .skipped ? "Skipped" : task.status == .active ? "In progress" : "")
                     Spacer()
-                    Text(TaskCopy.minutesLabel(task.minutesPlanned))
+                    if task.status == .done, let logged = loggedMinutes, logged != task.minutesPlanned {
+                        // Planned time struck out, then what was actually logged.
+                        HStack(spacing: 4) {
+                            Text(TaskCopy.minutesLabel(task.minutesPlanned))
+                                .strikethrough()
+                                .foregroundStyle(Palette.secondaryText.opacity(0.7))
+                            Text(TaskCopy.minutesLabel(logged))
+                                .foregroundStyle(Palette.ink)
+                        }
                         .font(.rounded(.subheadline, weight: .heavy))
-                        .foregroundStyle(finished ? Palette.secondaryText : color)
-                        .accessibilityLabel("\(task.minutesPlanned) minutes")
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("\(logged) minutes logged, \(task.minutesPlanned) planned")
+                    } else {
+                        Text(TaskCopy.minutesLabel(task.minutesPlanned))
+                            .font(.rounded(.subheadline, weight: .heavy))
+                            .foregroundStyle(finished ? Palette.secondaryText : color)
+                            .accessibilityLabel("\(task.minutesPlanned) minutes")
+                    }
                 }
                 if !task.prompt.isEmpty && !finished {
                     Text(task.prompt)
