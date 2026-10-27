@@ -185,7 +185,13 @@ private struct FocusSource: ViewModifier {
 
     func body(content: Content) -> some View {
         if active {
-            content.matchedTransitionSource(id: "focus", in: zoom)
+            // The zoom back from Today redraws only the source's bounds, and the pulsing ring
+            // (and the sparkles on a finished day) reach past the node. Pad the source so they fit,
+            // then take the padding back off so the layout doesn't move.
+            content
+                .padding(24)
+                .matchedTransitionSource(id: "focus", in: zoom)
+                .padding(-24)
         } else {
             content
         }
