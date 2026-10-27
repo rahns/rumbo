@@ -12,6 +12,8 @@ struct PathView: View {
     @State private var showingGate = false
     /// Bumped to play the ice-shatter on the streak flame (a freeze saved the streak).
     @State private var freezeShatters = 0
+    /// The day summary's height; reset to half every time one opens.
+    @State private var summaryDetent: PresentationDetent = .medium
     /// The unit whose banner is flipping to "¡Unidad completa!".
     @State private var celebratingUnit: Int?
 
@@ -67,7 +69,10 @@ struct PathView: View {
             }
             .sheet(item: $selectedDate) { selected in
                 DaySummarySheet(date: selected.date)
-                    .presentationDetents([.medium])
+                    // Always opens half-height; it can be pulled up when a day has lots in it.
+                    .presentationDetents([.medium, .large], selection: $summaryDetent)
+                    .presentationDragIndicator(.visible)
+                    .presentationBackground(Palette.background)
             }
             .fullScreenCover(isPresented: $showingGate) {
                 GateView()
@@ -212,6 +217,7 @@ struct PathView: View {
             model.selectedPlanDay = node.date
             showingToday = true
         } else {
+            summaryDetent = .medium
             selectedDate = SelectedDay(date: node.date)
         }
     }
@@ -557,10 +563,11 @@ struct DaySummarySheet: View {
                 row(symbol: log.isBonus ? "ear.fill" : TaskCopy.symbol(for: log.task), color: log.task.strand.color,
                     title: log.isBonus ? "Extra listening" : TaskCopy.title(for: log.task), minutes: log.minutes)
             }
-            Spacer()
         }
         .padding(24)
-        .background(Palette.background.ignoresSafeArea())
+        .padding(.top, 8)
+        // Fill the whole sheet, so its background reaches the edges.
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private func row(symbol: String, color: Color, title: String, minutes: Int) -> some View {
