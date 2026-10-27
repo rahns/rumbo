@@ -107,7 +107,7 @@ Implemented in `RumboCore/DayPlanner.swift`.
 5. **Limits.** At most 4 cards per day (to keep cognitive load low) **[design]**, and at most **one weekly anchor per day (two from 45 min)**, so a fresh week spreads its anchors out instead of crowding out progression **[design]**.
 6. **Order.** Warm-up → language-focused → input → output → fluency (R4, R7 **[design]**). The output card's prompt reuses that day's Language Transfer track or Extra episode (R4).
 7. **Tiny days.** If `B = 10`: the 3-minute Duolingo lesson (when the band uses it), then one task for the other 7 minutes: the strand with the largest deficit, using its first task that fits, preferring one that fills the time. Once calls are unlocked, the week's call comes before writing in the output queue, so it isn't squeezed out by shorter tasks.
-8. **Keep going.** Once every planned card is done or skipped (with at least one done), Today offers every other eligible task not already in the plan, at its standard length and with its progression detail (next track, next Extra part). They're ordered by strand deficit over the last 7 days *including today*, so the most-behind strand comes first. An extra is added to the day as its own card when started; it counts like any other practice (minutes, strand balance, streak, XP, course progress) but never changes whether the day is complete. (`DayPlanner.extraTasks`)
+8. **Keep going.** Once every planned card is done or skipped (with at least one done), Today offers every other eligible task not already in the plan, at its standard length and with its progression detail (next track, next Extra part). They're ordered by strand deficit over the last 7 days *including today*, so the most-behind strand comes first. An extra is added to the day as its own card when started; it counts like any other practice (minutes, strand balance, streak, training hours, course progress) but never changes whether the day is complete. (`DayPlanner.extraTasks`)
 
 ### Weekly anchors
 Planned on the first day the budget allows, so they don't depend on a fixed weekday (which wouldn't survive backpacking).
@@ -155,14 +155,14 @@ Over the last 5 ratings at the current difficulty: 3 or more "Easy" → suggest 
 - **Missions.** `mission.travel` becomes the preferred output task.
 - **Bonus input.** One-tap logging for Spanish heard outside the app (a bus podcast, a tour in Spanish, a long conversation). It counts toward input hours and strand balance.
 
-## 2.8 Streaks, XP and goals
+## 2.8 Streaks, hours and goals
 
 | Mechanic | Rule |
 |---|---|
 | Weekly goal | Main metric, set on the goal page in onboarding and Settings (default 150 min/week, 10-minute steps from 30 to 900), linked to the target date (§2.9). Shown as a ring. |
 | Streak | A day counts if ≥ 10 minutes are logged (R12) |
 | Streak freeze | Earn 1 for each week you meet the weekly goal; hold at most 3; used automatically |
-| XP | 1 per minute logged, +10 per completed card, +25 for a writing rewrite, +50 for passing a gate |
+| Training hours | The running total shown in the header (clock badge) instead of XP: every minute logged, plus listening from before Rumbo ÷ 0.55. It's the same number levels are measured in, so it always means something. |
 
 ## 2.9 Projection
 

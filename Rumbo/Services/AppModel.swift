@@ -36,12 +36,12 @@ final class AppModel {
     private(set) var confettiBursts = 0
 
     // One-off moments (docs/03-experience.md §3.5); views animate when these change.
-    struct XPGain: Equatable {
+    struct TimeGain: Equatable {
         let id: Int
-        let amount: Int
+        let minutes: Int
     }
-    /// The XP just earned, for the "+15 XP" fly-up.
-    private(set) var xpGain: XPGain?
+    /// The minutes just logged, for the "+22 min" fly-up into the training-hours badge.
+    private(set) var timeGain: TimeGain?
     /// Bumped the moment this week's minutes pass the weekly goal (at most once a week).
     private(set) var goalReachedBursts = 0
     struct StreakMilestone: Equatable {
@@ -152,14 +152,6 @@ final class AppModel {
     var streak: StreakCalculator.Status {
         StreakCalculator(weeklyGoalMinutes: profile?.weeklyGoalMinutes ?? 150, calendar: calendar)
             .status(history: history, today: .now)
-    }
-
-    var xp: Int {
-        let completedCards = (try? context.fetchCount(FetchDescriptor<PlannedTaskRecord>(
-            predicate: #Predicate { $0.statusRaw == "done" }
-        ))) ?? 0
-        _ = revision
-        return XP.total(minutes: logs.reduce(0) { $0 + $1.minutes }, completedCards: completedCards, rewrites: rewriteCount, gatesPassed: profile?.gatesPassed ?? 0)
     }
 
     /// Which budget keeps the learner on track for this week's goal.
@@ -456,8 +448,7 @@ final class AppModel {
         updateSpeakingStage()
         refreshReminders()
         celebrations += 1
-        let rewrote = !(completion.rewrite?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
-        celebrateProgress(since: before, xp: completion.minutes * XP.perMinute + XP.perCompletedCard + (rewrote ? XP.perRewrite : 0))
+        celebrateProgress(since: before, minutes: completion.minutes)
         // Confetti when this task finishes the plan (extras come after, so they don't set it off again).
         if !task.isExtra, todayPlan?.isComplete == true {
             confettiBursts += 1
@@ -543,7 +534,7 @@ final class AppModel {
         context.insert(log)
         save()
         refreshReminders()
-        celebrateProgress(since: before, xp: minutes * XP.perMinute)
+        celebrateProgress(since: before, minutes: minutes)
     }
 
     /// Profiles from older versions (or older backups): a 5-point Dreaming range, and a target date that
@@ -569,9 +560,9 @@ final class AppModel {
 
     // MARK: - Moments
 
-    /// After logging: the XP fly-up, and the weekly-goal and streak-milestone moments when they're crossed.
-    private func celebrateProgress(since before: StreakCalculator.Status, xp: Int) {
-        xpGain = XPGain(id: (xpGain?.id ?? 0) + 1, amount: xp)
+    /// After logging: the minutes fly-up, and the weekly-goal and streak-milestone moments when they're crossed.
+    private func celebrateProgress(since before: StreakCalculator.Status, minutes: Int) {
+        timeGain = TimeGain(id: (timeGain?.id ?? 0) + 1, minutes: minutes)
         let after = streak
         let goal = profile?.weeklyGoalMinutes ?? 150
         let week = calendar.dateInterval(of: .weekOfYear, for: .now)?.start ?? calendar.startOfDay(for: .now)
@@ -688,10 +679,6 @@ final class AppModel {
     func deleteCard(_ card: ReviewCard) {
         context.delete(card)
         save()
-    }
-
-    private var rewriteCount: Int {
-        ((try? context.fetch(FetchDescriptor<WritingEntry>())) ?? []).filter { !$0.rewrite.isEmpty }.count
     }
 
     // MARK: - Level-up gates

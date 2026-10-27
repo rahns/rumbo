@@ -152,3 +152,17 @@ struct ChunkyProgressBar: View {
         .accessibilityValue("\(Int((min(max(value, 0), 1) * 100).rounded())) percent")
     }
 }
+
+extension View {
+    /// Lists and forms on Rumbo's own background (navy in dark mode) with card-coloured rows,
+    /// instead of the system's grouped grey and black.
+    func rumboListBackground() -> some View {
+        scrollContentBackground(.hidden)
+            .background(Palette.background.ignoresSafeArea())
+    }
+
+    /// Row colour for list and form sections, to sit on `rumboListBackground()`.
+    func rumboRows() -> some View {
+        listRowBackground(Palette.card)
+    }
+}

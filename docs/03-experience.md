@@ -17,7 +17,7 @@ Rumbo takes a light nod from the two apps it sits between, without copying eithe
 |---|---|---|---|
 | `coral` | `#F25C4A` | Brand primary, Input strand, primary buttons | Dreaming's coral (`#FA594B`), shifted slightly warmer |
 | `ink` | `#1E2A4A` | Text, dark surfaces, dark-mode background base | Dreaming's navy (`#1F2847`) |
-| `sun` | `#FFBE1A` | XP, streak flame, celebrations | Both apps' yellows (Dreaming `#FFB805`) |
+| `sun` | `#FFBE1A` | Streak flame, celebrations | Both apps' yellows (Dreaming `#FFB805`) |
 | `leaf` | `#5BC236` | Success, completed nodes, Language-focused strand | Duolingo's green |
 | `sky` | `#2FA6EE` | Output strand, links | Duolingo's blue |
 | `lilac` | `#DEE4FF` | Soft card backgrounds, unselected chips (light mode) | Dreaming's pale periwinkle |
@@ -91,7 +91,7 @@ Implemented in `Rumbo/Features/Path/PathView.swift`, laid out by `PathLayout` in
 - **One node per calendar day** since onboarding, labelled with its weekday and date; 7 nodes per unit ("Unidad N", with its dates). Day complete (its plan finished, or ≥ 10 minutes logged with no plan) = green tick; partly done = yellow; missed = grey moon; upcoming = locked and faded.
 - **Today** is the big node with Pico beside it. Unfinished: coral star, pulsing, with a "START"/"CONTINUE" bubble; tapping zooms into Today.
 - **Finished today is unmistakable:** the node turns into a big green tick inside a gold ring with sparkles, the bubble says "¡HECHO!", Pico cheers, and the header shows a green "Day done" badge.
-- **Keep going:** once every task in today's plan is done or skipped (at least one done), a **Keep going** section appears under the plan on Today. It lists every other task you can do that isn't in today's plan, each with its length, detail (next track, next Extra part) and strand, most-behind strand first, with a Start button. A started extra becomes a card like any other (timer, logging, undo by tapping the grey tick, which puts it back in the list). Extras count toward minutes, streak, XP and course progress, but don't change whether the day is complete. Future days on the path stay locked: there is no working ahead. (A day finished early in an older version still shows as done and opens in Today.) Widgets list done extras ("Extra: …") and show "¡Hecho! +2 extra".
+- **Keep going:** once every task in today's plan is done or skipped (at least one done), a **Keep going** section appears under the plan on Today. It lists every other task you can do that isn't in today's plan, each with its length, detail (next track, next Extra part) and strand, most-behind strand first, with a Start button. A started extra becomes a card like any other (timer, logging, undo by tapping the grey tick, which puts it back in the list). Extras count toward minutes, streak, training hours and course progress, but don't change whether the day is complete. Future days on the path stay locked: there is no working ahead. (A day finished early in an older version still shows as done and opens in Today.) Widgets list done extras ("Extra: …") and show "¡Hecho! +2 extra".
 - **The future:** locked units continue at least 4 units after today's, and as far as the last projected level-up (up to about two years). Trophy markers sit on the day each level-up is expected ("Viajero · A2.2, around February 2027"), at the forecast pace: the learner's own after a week of history, the weekly goal before that.
 - **Gate node:** when the hours for the next band are reached (and no failed check in the last 14 days), a golden trophy node appears right after today. Today also shows a "Level-up check ready" banner.
 - Tapping a past (or early-finished) node shows that day's plan and any other practice.
@@ -100,7 +100,7 @@ Implemented in `Rumbo/Features/Path/PathView.swift`, laid out by `PathLayout` in
 
 ### Level-up check
 Intro → the next band's 10 can-do statements one at a time → ≥ 7 "¡Sí!" passes: confetti, proud Pico, new band badge, and the plan's strand mix changes from the next day. Otherwise "Not yet, and that's fine", and the check returns in 14 days.
-- Header: streak flame, weekly goal ring, XP.
+- Header: streak flame, training hours (clock badge), and "Day done" when today is finished. Chips keep their natural width.
 - Tap today's node → its card **expands into the Today screen** (`matchedGeometryEffect` / zoom navigation transition).
 
 ### Today
@@ -117,7 +117,7 @@ Intro → the next band's 10 can-do statements one at a time → ≥ 7 "¡Sí!" 
 1. Tap **Start** → timer starts, Live Activity appears in the Dynamic Island, the source opens via deep link.
 2. Come back to Rumbo → "Done?" sheet with the timer's minutes pre-filled and adjustable.
 3. Quick rating, asked only where the answer changes something, each with small print saying what it does: comprehension after Dreaming Spanish (tunes the difficulty range), "solid / shaky" after Language Transfer (shaky repeats the track once), Easy / OK / Hard after a Tandem text message (Easy or OK on the latest one is needed to unlock voice notes), and the Duolingo position after the warm-up. Easy Dreaming, Extra, voice notes and calls ask nothing beyond minutes.
-4. Card flips to complete, Pico cheers, XP counts up, haptic success.
+4. Card flips to complete, Pico cheers, "+22 min" flies into the training-hours badge, haptic success.
 
 ### Writing
 Implemented in `Rumbo/Features/Writing/GuidedWritingView.swift` (guided writing; quick writes are a plain timed editor with no correction).
@@ -127,7 +127,7 @@ Implemented in `Rumbo/Features/Writing/GuidedWritingView.swift` (guided writing;
 3. **Feedback:** one or two specific strengths, the draft with each error highlighted in place, a card per correction (wrong words struck through in coral → fix in green, one-line explanation at the learner's level), and "A native speaker might say…" with the model's natural rewrite. Shows which checker ran.
 4. **Rewrite:** an editor prefilled with the draft, with the corrections listed above it (R11).
 5. **Compare:** before and after.
-6. **I'm done** asks first ("Finish without checking?" before a check, "Finish writing?" after), then opens the log form, which says the writing is saved with the task and has a **Back** button to return to it. **Save** stores the draft, feedback and rewrite, logs the time, and turns every correction into a mistake-deck card. A rewrite earns +25 XP.
+6. **I'm done** asks first ("Finish without checking?" before a check, "Finish writing?" after), then opens the log form, which says the writing is saved with the task and has a **Back** button to return to it. **Save** stores the draft, feedback and rewrite, logs the time, and turns every correction into a mistake-deck card.
 
 Writing is never lost: the draft, rewrite and feedback are kept on the task as they're typed (closing the task screen keeps them, and coming back picks up at the same stage), and undoing a logged writing task turns its text back into the draft. While the keyboard is up, the bottom bar shows only "Hide keyboard", so "I'm done" can't be tapped by accident.
 
@@ -147,7 +147,7 @@ Implemented in `Rumbo/Features/Review/MistakeDeckViews.swift`; cards are `Review
 - Hours ring toward the next band.
 - **Strand balance:** one row per strand, named Listening, Speaking & writing, Study and Fluency practice, each with what counts toward it (e.g. "Easy videos, quick writes and 4-3-2 talks"). Shows the last 7 days' minutes and share, a bar for the share, and a tick at the band's target share.
 - **Where you're heading:** a timeline from now (current level and hours) through each level's expected arrival, with the target as a flag in date order ("Your target: B2 · Jul 2028", what the goal needs in hours, and the hours and level the current pace reaches by then, or "on track"); the goal's level is starred; levels after the target are faded. Below it: what 10 more minutes a day would reach by the target.
-- Streak, freezes, XP.
+- Streak, freezes, training hours.
 - **Heat map:** the last 12 calendar weeks, one square per day (weeks start on the learner's chosen day), shaded by minutes, today outlined.
 - Source progress: Language Transfer track bar, Extra episodes, Duolingo section.
 
@@ -157,7 +157,7 @@ Implemented in `Rumbo/Features/Review/MistakeDeckViews.swift`; cards are `Review
 - Pull to refresh fetches a newer catalog (see [06](06-content-catalog.md)).
 
 ### Travel mode on Today
-A card under the header toggles Travel mode, explaining what it does: a real-world mission joins the plan, and offline days only get offline-capable tasks. It applies to the next plan (re-pick today's time to use it today). Pico wears the backpacker look while it's on.
+A card at the very bottom of Today (below "Log extra listening", since it isn't needed most days) toggles Travel mode, explaining what it does: a real-world mission joins the plan, and offline days only get offline-capable tasks. It applies to the next plan (re-pick today's time to use it today). Pico wears the backpacker look while it's on.
 
 ### Settings
 Share (send a friend the latest release, see what's new), Goal (opens the goal page: level, weekly goal and target date, linked), sources, Travel mode, progress fixes (the Dreaming Spanish range slides by 1 and is always 5 wide), week start, reminders, AI correction (engine status, optional own API key), backup (save a file / restore from a file), reset (start onboarding again).
@@ -169,9 +169,9 @@ Share (send a friend the latest release, see what's new), Goal (opens the goal p
 | App open | Path scrolls to today with a soft spring; Pico flies in | — |
 | Budget chip change | Cards reflow (`.spring(response: 0.35, dampingFraction: 0.8)`) | `.selection` |
 | Any chunky button | Face drops 4 pt onto its bottom edge, springs back | `.impact(weight: .light)` |
-| Card complete | Card flips, checkmark draws itself, XP number rolls (`.contentTransition(.numericText())`) | `.success` |
+| Card complete | Card flips, checkmark draws itself, hours number rolls (`.contentTransition(.numericText())`) | `.success` |
 | Streak +1 | Flame grows and flickers (`PhaseAnimator`) | `.impact(weight: .light)` |
-| Task logged | "+15 XP" rises from below into the XP badge, which bounces (`XPFlyUp`) | Soft tap as it lands |
+| Task logged | "+22 min" rises from below into the training-hours badge, whose clock bounces (`TimeFlyUp`) | Soft tap as it lands |
 | Weekly minutes go up | A light sweep runs along the "This week" bar | A light tap for each 25% of the weekly goal just passed |
 | Weekly goal met | Fireworks (particle `Canvas`) behind a "¡Meta cumplida!" card with Pico cheering; over any tab, once a week | `.success`, then a tap per burst |
 | Streak milestone (7, 30, 100, 365 days) | A big flame swells and beats twice with the day count; Pico's message as a banner on Today; once per milestone | Heartbeat (heavy–medium, twice) |

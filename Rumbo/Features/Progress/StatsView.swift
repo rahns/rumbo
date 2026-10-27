@@ -99,7 +99,7 @@ struct StatsView: View {
             HStack(spacing: 20) {
                 stat("\(status.streak)", "day streak", "flame.fill", Palette.sun)
                 stat("\(status.freezes)", "freezes", "snowflake", Palette.sky)
-                stat("\(model.xp)", "XP", "star.fill", Palette.leaf)
+                stat("\(Int(model.trainingHours))", "training hours", "clock.fill", Palette.leaf)
             }
             .frame(maxWidth: .infinity)
         }

@@ -94,6 +94,7 @@ struct MistakeDeckView: View {
         let cards = model.allCards
         let dueCount = model.dueCards.count
         List {
+            Group {
             Section {
                 NavigationLink {
                     ScrollView { ReviewDeckView().padding(20) }
@@ -132,7 +133,10 @@ struct MistakeDeckView: View {
                     for index in offsets { model.deleteCard(cards[index]) }
                 }
             }
+            }
+            .rumboRows()
         }
+        .rumboListBackground()
         .navigationTitle("Mistake deck")
         .toolbar {
             Button("Add", systemImage: "plus") { adding = true }
@@ -156,6 +160,7 @@ struct AddCardSheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                Group {
                 Section("What you said or wrote") {
                     TextField("Yo soy cansado", text: $wrong, axis: .vertical)
                 }
@@ -165,7 +170,10 @@ struct AddCardSheet: View {
                 Section("Why (optional)") {
                     TextField("Estar for temporary states", text: $note, axis: .vertical)
                 }
+                }
+                .rumboRows()
             }
+            .rumboListBackground()
             .navigationTitle("Add a correction")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

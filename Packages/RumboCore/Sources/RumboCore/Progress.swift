@@ -1,6 +1,6 @@
 import Foundation
 
-/// Streaks, freezes and XP. See docs/02-learning-engine.md §2.8.
+/// Streaks and freezes. See docs/02-learning-engine.md §2.8.
 public struct StreakCalculator: Sendable {
     public static let minutesForStreakDay = 10
     public static let maxFreezes = 3
@@ -67,16 +67,6 @@ public struct StreakCalculator: Sendable {
     }
 }
 
-public enum XP {
-    public static let perMinute = 1
-    public static let perCompletedCard = 10
-    public static let perRewrite = 25
-    public static let perGatePassed = 50
-
-    public static func total(minutes: Int, completedCards: Int, rewrites: Int, gatesPassed: Int) -> Int {
-        minutes * perMinute + completedCards * perCompletedCard + rewrites * perRewrite + gatesPassed * perGatePassed
-    }
-}
 
 /// Projects when the learner reaches each band. See docs/02-learning-engine.md §2.9.
 public struct Projection: Sendable {

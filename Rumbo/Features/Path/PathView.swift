@@ -89,6 +89,7 @@ struct PathView: View {
                     .padding(.vertical, 6)
                     .padding(.horizontal, 12)
                     .background(Capsule().fill(Palette.coral))
+                    .fixedSize()
             }
             if todayDone {
                 Label("Day done", systemImage: "checkmark.circle.fill")
@@ -97,13 +98,16 @@ struct PathView: View {
                     .padding(.vertical, 6)
                     .padding(.horizontal, 10)
                     .background(Capsule().fill(Palette.leaf))
+                    // Chips keep their natural size; the spacer gives way instead.
+                    .fixedSize()
                     .transition(.scale.combined(with: .opacity))
             }
-            Spacer()
+            Spacer(minLength: 4)
             StatPill(symbol: "flame.fill", value: "\(model.streak.streak)", color: Palette.sun, bounce: model.streak.streak,
                      accessibilityText: "\(model.streak.streak) day streak")
                 .overlay { IceShatter(trigger: freezeShatters) }
-            StatPill(symbol: "star.fill", value: "\(model.xp)", color: Palette.sky, accessibilityText: "\(model.xp) XP")
+            StatPill(symbol: "clock.fill", value: "\(Int(model.trainingHours)) h", color: Palette.sky,
+                     accessibilityText: "\(Int(model.trainingHours)) training hours")
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 10)

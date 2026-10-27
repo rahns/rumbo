@@ -84,9 +84,6 @@ import Testing
         #expect(GoalPace.weeklyMinutes(toReach: .b1_1, by: farAway, currentHours: 600, from: monday) == GoalPace.minutes.lowerBound)
     }
 
-    @Test func xpAddsUp() {
-        #expect(XP.total(minutes: 30, completedCards: 3, rewrites: 1, gatesPassed: 1) == 30 + 30 + 25 + 50)
-    }
 }
 
 @Suite struct ProjectionTests {

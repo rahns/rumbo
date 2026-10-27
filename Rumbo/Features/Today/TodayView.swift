@@ -6,8 +6,8 @@ struct TodayView: View {
     @State private var openTask: PlannedTaskRecord?
     @State private var showingBonus = false
     @State private var showingGate = false
-    /// Bumped when the "+XP" fly-up reaches the XP badge, so the star bounces.
-    @State private var xpLanded = 0
+    /// Bumped when the "+min" fly-up reaches the hours badge, so the clock bounces.
+    @State private var timeLanded = 0
 
     /// Pushed from today's node on the path, so it lives inside the path's NavigationStack.
     var body: some View {
@@ -16,7 +16,6 @@ struct TodayView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     header
                     banners
-                    travelToggle
                     if let plan = model.todayPlan {
                         planSection(plan)
                     } else {
@@ -29,6 +28,9 @@ struct TodayView: View {
                         Label("Log extra listening", systemImage: "plus.circle.fill")
                     }
                     .buttonStyle(ChunkySecondaryButtonStyle())
+                    // At the bottom: most days it isn't needed.
+                    travelToggle
+                        .padding(.top, 8)
                 }
                 .padding(20)
             }
@@ -77,9 +79,11 @@ struct TodayView: View {
                 Spacer()
                 StatPill(symbol: "flame.fill", value: "\(streak.streak)", color: Palette.sun, bounce: streak.streak,
                          accessibilityText: "\(streak.streak) day streak")
-                StatPill(symbol: "star.fill", value: "\(model.xp)", color: Palette.sky, bounce: xpLanded, accessibilityText: "\(model.xp) XP")
+                StatPill(symbol: "clock.fill", value: "\(Int(model.trainingHours)) h", color: Palette.sky, bounce: timeLanded,
+                         accessibilityText: "\(Int(model.trainingHours)) training hours")
+                    .contentTransition(.numericText())
                     .overlay(alignment: .top) {
-                        XPFlyUp(gain: model.xpGain) { xpLanded += 1 }
+                        TimeFlyUp(gain: model.timeGain) { timeLanded += 1 }
                             .fixedSize()
                     }
             }
@@ -286,7 +290,7 @@ struct TodayView: View {
                 Label("Keep going", systemImage: "plus.circle.fill")
                     .font(.rounded(.title3, weight: .black))
                     .foregroundStyle(Palette.ink)
-                Text("Today's plan is done. Want more? The ones at the top help where your week is lightest. Extra time counts toward your weekly goal, streak and XP.")
+                Text("Today's plan is done. Want more? The ones at the top help where your week is lightest. Extra time counts toward your weekly goal, streak and training hours.")
                     .font(.rounded(.subheadline, weight: .medium))
                     .foregroundStyle(Palette.secondaryText)
             }
@@ -407,9 +411,11 @@ struct StatPill: View {
                 .contentTransition(.numericText())
         }
         .font(.rounded(.subheadline, weight: .heavy))
+        .lineLimit(1)
         .padding(.vertical, 6)
         .padding(.horizontal, 10)
         .background(Capsule().fill(Palette.card))
+        .fixedSize()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText ?? value)
     }

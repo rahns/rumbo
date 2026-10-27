@@ -26,7 +26,7 @@ Gate attempts are stored on the profile (`gatesPassed`, `lastFailedGate`) rather
 
 The budget can be changed until the first task is started; after that the day's plan is fixed.
 
-**Derived, never stored:** training hours (`baselineInputHours` ÷ 0.55 + every `ActivityLog` minute), listening hours (`baselineInputHours` + listening minutes, for speaking stages), XP, streak, strand balance, projection. Computing them keeps a single source of truth.
+**Derived, never stored:** training hours (`baselineInputHours` ÷ 0.55 + every `ActivityLog` minute), listening hours (`baselineInputHours` + listening minutes, for speaking stages), streak, strand balance, projection. Computing them keeps a single source of truth.
 
 ## 4.3 No sync; manual backup
 
@@ -39,4 +39,4 @@ Rumbo keeps everything on the phone. There is no sync and no automatic backup: C
 
 If the app is lost without a backup, the learner onboards again. That's cheap by design:
 - The numbers that matter live in the sources themselves: Dreaming Spanish hours, the Language Transfer track, the Duolingo unit and Extra episodes. Onboarding asks for exactly these.
-- What's lost is Rumbo's own history: streak, XP, writing entries and the mistake deck.
+- What's lost is Rumbo's own history: streak, writing entries and the mistake deck.

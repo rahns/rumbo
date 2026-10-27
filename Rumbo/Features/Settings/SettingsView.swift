@@ -14,14 +14,16 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 if let profile = model.profile {
-                    sections(profile)
+                    Group { sections(profile) }
+                        .rumboRows()
                 }
             }
+            .rumboListBackground()
             .navigationTitle("Settings")
             .confirmationDialog("Start over?", isPresented: $confirmingReset, titleVisibility: .visible) {
                 Button("Delete everything and start again", role: .destructive) { model.reset() }
             } message: {
-                Text("Your streak, XP and history will be deleted. You'll go through onboarding again.")
+                Text("Your streak, hours and history will be deleted. You'll go through onboarding again.")
             }
             .fileExporter(isPresented: $exporting, document: backupDocument, contentType: .json, defaultFilename: BackupDocument.defaultFilename()) { result in
                 switch result {

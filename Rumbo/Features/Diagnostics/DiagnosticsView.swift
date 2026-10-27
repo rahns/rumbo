@@ -8,6 +8,7 @@ struct DiagnosticsView: View {
 
     var body: some View {
         List {
+            Group {
             Section {
                 ForEach(CheckID.allCases) { id in
                     let status = model.status(id)
@@ -63,7 +64,10 @@ struct DiagnosticsView: View {
             } footer: {
                 Text("Paste the report back into your Claude session.")
             }
+            }
+            .rumboRows()
         }
+        .rumboListBackground()
         .navigationTitle("Diagnostics")
         .toolbar {
             Button("Run", systemImage: "arrow.clockwise") {

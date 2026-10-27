@@ -3,20 +3,20 @@ import SwiftUI
 // One-off celebration moments (docs/03-experience.md §3.5). Each plays when its trigger changes,
 // after a short delay so a closing task screen doesn't hide it. Reduce Motion swaps motion for fades.
 
-/// "+15 XP" floating up into the XP badge.
-struct XPFlyUp: View {
-    let gain: AppModel.XPGain?
+/// "+22 min" floating up into the training-hours badge.
+struct TimeFlyUp: View {
+    let gain: AppModel.TimeGain?
     /// Called as the number reaches the badge, so the badge can bounce.
     var onLand: () -> Void = {}
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var shown: AppModel.XPGain?
+    @State private var shown: AppModel.TimeGain?
     @State private var risen = false
 
     var body: some View {
         ZStack {
             if let shown {
-                Text("+\(shown.amount) XP")
+                Text("+\(shown.minutes) min")
                     .font(.rounded(.headline, weight: .black))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 10)
@@ -31,7 +31,7 @@ struct XPFlyUp: View {
         .allowsHitTesting(false)
         .accessibilityHidden(true)
         .onChange(of: gain) { _, gain in
-            guard let gain, gain.amount > 0 else { return }
+            guard let gain, gain.minutes > 0 else { return }
             Task {
                 try? await Task.sleep(for: .milliseconds(600))
                 risen = false
