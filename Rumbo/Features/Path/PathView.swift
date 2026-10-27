@@ -7,13 +7,14 @@ import SwiftUI
 struct PathView: View {
     @Environment(AppModel.self) private var model
     @Namespace private var zoom
-    @State private var selectedDate: SelectedDay?
+    /// The past day whose summary is showing. The sheet stays up and updates in place when another
+    /// day is tapped, instead of closing and reopening (which could make it open full screen).
+    @State private var summaryDate: Date?
+    @State private var showingSummary = false
     @State private var showingToday = false
     @State private var showingGate = false
     /// Bumped to play the ice-shatter on the streak flame (a freeze saved the streak).
     @State private var freezeShatters = 0
-    /// The day summary's height; reset to half every time one opens.
-    @State private var summaryDetent: PresentationDetent = .medium
     /// The unit whose banner is flipping to "¡Unidad completa!".
     @State private var celebratingUnit: Int?
 
@@ -67,12 +68,16 @@ struct PathView: View {
                 TodayView()
                     .navigationTransition(.zoom(sourceID: "focus", in: zoom))
             }
-            .sheet(item: $selectedDate) { selected in
-                DaySummarySheet(date: selected.date)
-                    // Always opens half-height; it can be pulled up when a day has lots in it.
-                    .presentationDetents([.medium, .large], selection: $summaryDetent)
-                    .presentationDragIndicator(.visible)
-                    .presentationBackground(Palette.background)
+            .sheet(isPresented: $showingSummary) {
+                if let summaryDate {
+                    DaySummarySheet(date: summaryDate)
+                        // Half height only, and the path stays tappable behind it: tapping another day
+                        // swaps the summary in place.
+                        .presentationDetents([.medium])
+                        .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+                        .presentationDragIndicator(.visible)
+                        .presentationBackground(Palette.background)
+                }
             }
             .fullScreenCover(isPresented: $showingGate) {
                 GateView()
@@ -209,6 +214,9 @@ struct PathView: View {
     }
 
     private func open(_ node: PathNode) {
+        if node.isToday || node.date > .now {
+            showingSummary = false
+        }
         if node.isToday {
             model.showToday()
             showingToday = true
@@ -217,8 +225,8 @@ struct PathView: View {
             model.selectedPlanDay = node.date
             showingToday = true
         } else {
-            summaryDetent = .medium
-            selectedDate = SelectedDay(date: node.date)
+            withAnimation(.snappy) { summaryDate = node.date }
+            showingSummary = true
         }
     }
 
@@ -260,10 +268,6 @@ private struct FocusSource: ViewModifier {
     }
 }
 
-private struct SelectedDay: Identifiable {
-    let date: Date
-    var id: Date { date }
-}
 
 // MARK: - Pieces
 

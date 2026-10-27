@@ -484,7 +484,7 @@ struct TaskCardView: View {
                             if task.isAnchor {
                                 // Tap for a tiny "Weekly task" tooltip.
                                 Button {
-                                    showingWeeklyTip = true
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { showingWeeklyTip.toggle() }
                                 } label: {
                                     Image(systemName: "star.circle.fill")
                                         .foregroundStyle(Palette.sun)
@@ -492,14 +492,19 @@ struct TaskCardView: View {
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("Weekly task")
-                                .popover(isPresented: $showingWeeklyTip, arrowEdge: .bottom) {
-                                    Text("Weekly task")
-                                        .font(.rounded(.caption, weight: .heavy))
-                                        .foregroundStyle(Palette.ink)
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 6)
-                                        .presentationCompactAdaptation(.popover)
+                                .overlay(alignment: .top) {
+                                    if showingWeeklyTip {
+                                        TipBubble(text: "Weekly task")
+                                            .offset(y: -38)
+                                            .transition(.scale(scale: 0.5, anchor: .bottom).combined(with: .opacity))
+                                            .task {
+                                                try? await Task.sleep(for: .seconds(1.8))
+                                                withAnimation(.easeOut(duration: 0.2)) { showingWeeklyTip = false }
+                                            }
+                                    }
                                 }
+                                .sensoryFeedback(.selection, trigger: showingWeeklyTip)
+                                .zIndex(1)
                             }
                         }
                         .foregroundStyle(Palette.ink)
