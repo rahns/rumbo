@@ -92,6 +92,40 @@ import Testing
         #expect(Set(week).count == 7)
     }
 
+    @Test func librariesAreBigAndHaveNoDuplicates() {
+        for level in [Prompts.Level.a2, .b1, .b2] {
+            let writing = Prompts.writingPrompts[level]!
+            #expect(writing.count >= 100, "guided writing: \(writing.count)")
+            #expect(Set(writing).count == writing.count)
+            let tandem = Prompts.tandemPrompts[level]!
+            #expect(tandem.count >= 60, "tandem: \(tandem.count)")
+            #expect(Set(tandem).count == tandem.count)
+        }
+        #expect(Prompts.quickWriteTopics.count >= 100 && Set(Prompts.quickWriteTopics).count == Prompts.quickWriteTopics.count)
+        #expect(Prompts.fluencyStories.count >= 60 && Set(Prompts.fluencyStories).count == Prompts.fluencyStories.count)
+        #expect(Prompts.travelMissions.count >= 75 && Set(Prompts.travelMissions).count == Prompts.travelMissions.count)
+        // No prompt is a prefix of another, so "already used" can't match the wrong one.
+        let all = Prompts.writingPrompts.values.flatMap { $0 }
+        for prompt in all {
+            #expect(all.filter { $0.hasPrefix(prompt) }.count == 1, "\(prompt)")
+        }
+    }
+
+    @Test func usedPromptsDontComeBackUntilAllAreUsed() {
+        let calendar = TestCalendar.utc
+        var used: [String] = []
+        // A whole year of daily writing at A2: every prompt once before any repeats.
+        for offset in 0..<Prompts.writingA2.count {
+            let prompt = Prompts.writing(for: .a2_1, on: TestCalendar.adding(days: offset, to: TestCalendar.day(2026, 10, 26)), used: used, calendar: calendar)
+            #expect(!used.contains(prompt))
+            // Stored prompts can carry a reuse hint after them.
+            used.append(prompt + " Try to use something from Language Transfer track 13.")
+        }
+        #expect(Set(used).count == Prompts.writingA2.count)
+        // Once all are used, it starts again rather than failing.
+        _ = Prompts.writing(for: .a2_1, on: TestCalendar.day(2027, 6, 1), used: used, calendar: calendar)
+    }
+
     @Test func wordTargetsGrowWithLevel() {
         #expect(Prompts.wordTarget(for: .a2_1) == 50...100)
         #expect(Prompts.wordTarget(for: .b1_2) == 120...180)

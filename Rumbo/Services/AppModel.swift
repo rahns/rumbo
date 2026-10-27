@@ -292,14 +292,20 @@ final class AppModel {
         save()
     }
 
+    /// Every prompt given in a saved plan (done, skipped or not), so new plans pick fresh ones.
+    private var usedPrompts: [String] {
+        sessions.flatMap(\.sortedTasks).map(\.prompt).filter { !$0.isEmpty }
+    }
+
     private func prompt(for kind: TaskKind, band: Band, focus: TaskDetail?, on date: Date) -> String {
         var text: String
         switch kind {
-        case .writeGuided: text = Prompts.writing(for: band, on: date, calendar: calendar)
-        case .tandemText, .tandemVoice, .tandemCall: text = Prompts.tandem(for: band, on: date, calendar: calendar)
-        case .writeQuick: text = Prompts.quickWrite(on: date, calendar: calendar)
-        case .fluency432: text = Prompts.fluencyStory(on: date, calendar: calendar)
-        case .missionTravel: text = Prompts.travelMission(on: date, calendar: calendar)
+        // Prompts already given in earlier plans are skipped until the list is used up.
+        case .writeGuided: text = Prompts.writing(for: band, on: date, used: usedPrompts, calendar: calendar)
+        case .tandemText, .tandemVoice, .tandemCall: text = Prompts.tandem(for: band, on: date, used: usedPrompts, calendar: calendar)
+        case .writeQuick: text = Prompts.quickWrite(on: date, used: usedPrompts, calendar: calendar)
+        case .fluency432: text = Prompts.fluencyStory(on: date, used: usedPrompts, calendar: calendar)
+        case .missionTravel: text = Prompts.travelMission(on: date, used: usedPrompts, calendar: calendar)
         default: return ""
         }
         // Output reuses today's structure (R4).
