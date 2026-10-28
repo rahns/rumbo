@@ -57,7 +57,7 @@ enum GeminiClient {
     }
 
     /// Tries each model in turn: each has its own free quota and load, so the lighter one covers when the first is
-    /// used up, busy or too slow. If they're all just busy and there's time left, waits 2 seconds and goes round once more.
+    /// used up, busy or too slow. A model that failed rests for 30 minutes (tried last), so checks don't keep waiting on it. If they're all just busy and there's time left, waits 2 seconds and goes round once more.
     private static func send(input: String, instructions: String, key: String) async throws -> (text: String, model: String) {
         let started = Date.now
         // When every model fails, report the most useful reason: out of free requests, then busy, then slow, then unavailable.
@@ -71,7 +71,7 @@ enum GeminiClient {
                 guard lastError == .busy, Date.now.timeIntervalSince(started) < 15 else { break }
                 try await Task.sleep(for: .seconds(2))
             }
-            for (index, model) in Gemini.models.enumerated() {
+            for (index, model) in Gemini.order(resting: resting).enumerated() {
                 var request = URLRequest(url: Gemini.endpoint)
                 request.httpMethod = "POST"
                 // Short enough that the lighter model still gets its turn while Pico is "reading".
@@ -84,6 +84,7 @@ enum GeminiClient {
                     (data, response) = try await URLSession.shared.data(for: request)
                 } catch let error as URLError where error.code == .timedOut || error.code == .networkConnectionLost {
                     note(.timedOut)
+                    rest(model)
                     continue
                 }
                 let status = (response as? HTTPURLResponse)?.statusCode ?? 0
@@ -92,12 +93,28 @@ enum GeminiClient {
                     return (try Gemini.outputText(from: data), model)
                 case let failure? where [.rateLimited, .busy, .modelUnavailable].contains(failure):
                     note(failure)
+                    rest(model)
                 case let failure?:
                     throw failure
                 }
             }
         }
         throw lastError
+    }
+
+    // MARK: Resting busy models
+
+    private static let restingKey = "gemini.restingUntil"
+
+    /// Models resting after a failure, and until when (kept across launches).
+    private static var resting: [String: Date] {
+        (UserDefaults.standard.dictionary(forKey: restingKey) as? [String: Date]) ?? [:]
+    }
+
+    private static func rest(_ model: String) {
+        var resting = resting
+        resting[model] = Date.now.addingTimeInterval(Gemini.restAfterFailure)
+        UserDefaults.standard.set(resting, forKey: restingKey)
     }
 
     /// The small warning shown above feedback from the basic checker.

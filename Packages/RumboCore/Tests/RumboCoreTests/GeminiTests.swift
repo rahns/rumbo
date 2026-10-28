@@ -37,6 +37,15 @@ import Testing
         #expect(throws: Gemini.Failure.self) { try Gemini.feedback(from: "Sorry, I can't help.") }
     }
 
+    @Test func restingModelsAreTriedLast() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        #expect(Gemini.order(resting: [:], now: now) == Gemini.models)
+        let resting = [Gemini.models[0]: now.addingTimeInterval(Gemini.restAfterFailure)]
+        #expect(Gemini.order(resting: resting, now: now) == [Gemini.models[1], Gemini.models[0]])
+        #expect(Gemini.order(resting: resting, now: now.addingTimeInterval(Gemini.restAfterFailure + 1)) == Gemini.models,
+                "after its rest, the main model goes first again")
+    }
+
     @Test func classifiesErrors() {
         let body = Data(#"{"error":{"code":"quota_exceeded","message":"You have exceeded your daily quota."}}"#.utf8)
         #expect(Gemini.failure(status: 200, body: Data()) == nil)

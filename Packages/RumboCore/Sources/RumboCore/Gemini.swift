@@ -10,6 +10,15 @@ public enum Gemini {
     /// is used up or busy.
     public static let models = ["gemini-3.8-flash", "gemini-3.5-flash-lite"]
 
+    /// How long a model that was busy, too slow or out of free requests is tried last, so checks don't wait on it.
+    public static let restAfterFailure: TimeInterval = 30 * 60
+
+    /// The models in the order to try now: ones resting after a recent failure go last (still tried if the rest fail).
+    public static func order(resting: [String: Date], now: Date = .now) -> [String] {
+        let ready = models.filter { (resting[$0] ?? .distantPast) <= now }
+        return ready + models.filter { !ready.contains($0) }
+    }
+
     /// What the model returns: the same shape as the on-device checker's `WritingFeedback`.
     public struct Feedback: Codable, Equatable, Sendable {
         public struct Error: Codable, Equatable, Sendable {
