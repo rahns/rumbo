@@ -214,7 +214,7 @@ Implemented in `RumboWidgets/`. Widgets read a `WidgetSnapshot` the app writes a
 
 Implemented in `Reminders` (`Rumbo/Services/Platform.swift`), rescheduled after every change to the reminder settings or today's practice, and whenever the app comes back to the foreground.
 
-- **Daily reminder** at the learner's chosen time, phrased around their habit cue ("After breakfast: time for Spanish with Pico. Even 10 minutes counts."). Repeats every day.
+- **Daily reminder** at the learner's chosen time ("Pico has today's plan ready. Even 10 minutes counts."). Repeats every day.
 - **Evening nudge** at 8 pm on days with fewer than 10 minutes logged ("Pico's still awake 🌙"). Scheduled for the coming week and removed for today as soon as today reaches 10 minutes. Not sent if the daily reminder is itself set for 8 pm or later.
 - Notifications also appear while Rumbo is open (a notification-centre delegate allows banners in the foreground).
 - Settings → Habit → **Send a test notification** sends one after 5 seconds, or explains how to turn notifications on if they're off.
