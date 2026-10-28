@@ -12,6 +12,7 @@ import SwiftData
     var currentBandRaw: String = Band.a2_1.rawValue
     var speakingStageRaw: Int = SpeakingStage.text.rawValue
     var weeklyGoalMinutes: Int = 150
+    /// No longer asked for (the reminder time is the study time); kept so stores and backups stay compatible.
     var habitCue: String = ""
     var reminderEnabled: Bool = false
     var reminderHour: Int = 8

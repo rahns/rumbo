@@ -78,30 +78,6 @@ enum Reminders {
     static let nudgeHour = 20
     static let nudgeDaysAhead = 7
 
-    /// Each study-time cue's usual reminder time, and the hours it can sensibly cover.
-    static func defaultTime(for cue: String) -> (hour: Int, minute: Int)? {
-        switch cue {
-        case "After breakfast": (8, 30)
-        case "On my commute": (8, 0)
-        case "At lunch": (12, 30)
-        case "After work": (18, 0)
-        case "Before bed": (21, 30)
-        default: nil
-        }
-    }
-
-    /// Whether a reminder at `hour` matches the cue, so its text can mention it ("Before bed: …").
-    static func cue(_ cue: String, fits hour: Int) -> Bool {
-        switch cue {
-        case "After breakfast": (5...11).contains(hour)
-        case "On my commute": (5...10).contains(hour) || (16...19).contains(hour)
-        case "At lunch": (11...14).contains(hour)
-        case "After work": (16...21).contains(hour)
-        case "Before bed": hour >= 20 || hour <= 1
-        default: true
-        }
-    }
-
     static func requestPermission() async -> Bool {
         (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])) ?? false
     }
@@ -115,11 +91,7 @@ enum Reminders {
 
         let daily = UNMutableNotificationContent()
         daily.title = "¿Rumbo a dónde?"
-        let cue = profile.habitCue.trimmingCharacters(in: .whitespaces)
-        // Only mention the cue when the reminder time matches it (no "Before bed" at 8:30 am).
-        daily.body = cue.isEmpty || !Self.cue(cue, fits: profile.reminderHour)
-            ? "Pico has today's plan ready. Even 10 minutes counts."
-            : "\(cue): time for Spanish with Pico. Even 10 minutes counts."
+        daily.body = "Pico has today's plan ready. Even 10 minutes counts."
         daily.sound = .default
         let time = DateComponents(hour: profile.reminderHour, minute: profile.reminderMinute)
         center.add(UNNotificationRequest(identifier: dailyID, content: daily, trigger: UNCalendarNotificationTrigger(dateMatching: time, repeats: true)))

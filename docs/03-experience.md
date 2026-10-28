@@ -72,7 +72,7 @@ The first screen also offers "Restore from a backup". Without a backup, onboardi
 5. Can-do check: 10 statements, one at a time, "¡Sí!" / "Todavía no". 5 come from the band the hours point to and 5 from the next band, interleaved. Placement uses the same thresholds as §2.1 scaled to 5 (≥ 4/5 of the next band → up, < 3/5 of your own → down).
 6. Placement reveal: band badge with the reasoning in one line ("154 hours of listening (≈ 280 training hours) and 7 of 10 can-dos").
 7. Goal: the same goal editor as Settings → Goal (below). It comes after placement so the date can be worked out from the learner's hours; the date starts where the default 150 min a week leads.
-8. Habit: study-time chips ("After breakfast", "On my commute", …, "Before bed"), daily reminder toggle and time (asks for notification permission; picking a study time moves the reminder to match, e.g. Before bed → 21:30), and which day the week starts on. The reminder mentions the study time only when its time fits it.
+8. Reminder: daily reminder toggle and time (asks for notification permission), and which day the week starts on. The reminder time is the learner's study time; there's no separate "study time" setting.
 
 ### Goal (onboarding step and Settings → Goal)
 Implemented in `Rumbo/Features/Goal/GoalEditor.swift`, with `GoalPace` in RumboCore (§2.9).
@@ -160,7 +160,7 @@ Implemented in `Rumbo/Features/Review/MistakeDeckViews.swift`; cards are `Review
 A card at the very bottom of Today (below "Log extra listening", since it isn't needed most days) toggles Travel mode, explaining what it does: a real-world mission joins the plan, and offline days only get offline-capable tasks. It applies to the next plan (re-pick today's time to use it today). Pico wears the backpacker look while it's on.
 
 ### Settings
-Share (send a friend the latest release, see what's new), Goal (opens the goal page: level, weekly goal and target date, linked), sources, Travel mode, progress fixes (the Dreaming Spanish range slides by 1 and is always 5 wide; Extra en Español moves one part at a time, "3 episodes + part 1"), study time (moves the reminder with it), week start, reminders, AI correction (engine status, optional own API key), backup (save a file / restore from a file), reset (start onboarding again).
+Share (send a friend the latest release, see what's new), Goal (opens the goal page: level, weekly goal and target date, linked), sources, Travel mode, progress fixes (the Dreaming Spanish range slides by 1 and is always 5 wide; Extra en Español moves one part at a time and shows the last part seen, "seen Ep 3 Part 2"), week start, reminders, AI correction (engine status, optional own API key), backup (save a file / restore from a file), reset (start onboarding again).
 
 ## 3.5 Motion and haptics catalog
 

@@ -25,13 +25,11 @@ final class OnboardingDraft {
     /// Answers to the can-do statements, keyed by statement.
     var canDoAnswers: [String: Bool] = [:]
 
-    var habitCue = "After breakfast"
     var reminderEnabled = true
     var reminderTime = Calendar.current.date(from: DateComponents(hour: 8, minute: 30)) ?? .now
     var weeklyGoalMinutes = 150
     var weekStartsOnSunday = false
 
-    static let habitCues = ["After breakfast", "On my commute", "At lunch", "After work", "Before bed"]
 
     /// Listening hours before Rumbo (Dreaming Spanish's counter, or an estimate).
     var inputHours: Double {
@@ -82,7 +80,6 @@ final class OnboardingDraft {
         profile.extraEpisodesWatched = extraEpisodesWatched
         profile.duolingoSection = duolingoSection
         profile.duolingoUnit = duolingoUnit
-        profile.habitCue = habitCue
         profile.reminderEnabled = reminderEnabled
         profile.reminderHour = calendar.component(.hour, from: reminderTime)
         profile.reminderMinute = calendar.component(.minute, from: reminderTime)

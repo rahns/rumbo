@@ -542,14 +542,6 @@ final class AppModel {
     func bringProfileUpToDate() {
         guard let profile else { return }
         var changed = false
-        // Onboarding used to leave the reminder at 8:30 whatever study time was picked, so "Before bed"
-        // learners were reminded in the morning. Once, move a reminder that doesn't match its cue to the cue's time.
-        if !Reminders.cue(profile.habitCue, fits: profile.reminderHour), let time = Reminders.defaultTime(for: profile.habitCue),
-           Self.once("reminder-matches-cue") {
-            profile.reminderHour = time.hour
-            profile.reminderMinute = time.minute
-            changed = true
-        }
         if profile.dsDifficultyHigh - profile.dsDifficultyLow != LearnerProfile.dreamingRangeWidth {
             profile.dsDifficultyHigh = profile.dsDifficultyLow + LearnerProfile.dreamingRangeWidth
             changed = true

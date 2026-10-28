@@ -18,7 +18,7 @@ Every scheduling rule in Rumbo traces back to one of the findings below. Where a
 | R10 | Shadowing improves listening and pronunciation, especially for lower-intermediate learners. | Hamada (2016) | A2–B1 intensive viewing includes a 2–3 minute shadowing step. |
 | R11 | Written corrective feedback improves accuracy, especially when followed by revision. | Bitchener (2008); Kang & Han (2015) | Writing tasks: write → get AI feedback → **rewrite** → errors go into the mistake deck. |
 | R12 | Habits take ~66 days on average to form, and a single missed day doesn't derail them. | Lally et al. (2010) | The weekly goal is the main metric. Streaks are lenient: earned freezes, a 10-minute day still counts. |
-| R13 | Planning *when and where* ("if X, then I'll do Y") raises follow-through. | Gollwitzer (1999) | Onboarding asks you to pick a cue ("after breakfast", "on the bus"). Reminders use that cue. |
+| R13 | Planning *when and where* ("if X, then I'll do Y") raises follow-through. | Gollwitzer (1999) | Onboarding asks for a daily reminder time, so practice happens at a set time every day. (A separate study-cue question was dropped: the reminder time does the job.) |
 | R14 | Spanish is a Category I language: ~600–750 class hours to professional working proficiency for English speakers. | US Foreign Service Institute | Used for the long-term projection, alongside Dreaming Spanish's published hours roadmap (company guidance, not peer-reviewed). |
 | R15 | Beginner Duolingo courses produce reading/listening outcomes comparable to several university semesters, but give little speaking practice. | Jiang et al. (2021) | Duolingo's share shrinks as the output strands grow, and drops out by B2. |
 

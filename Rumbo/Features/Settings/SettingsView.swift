@@ -147,20 +147,6 @@ struct SettingsView: View {
         }
 
         Section("Habit") {
-            Picker("Study time", selection: binding(
-                get: { profile.habitCue },
-                set: { cue in
-                    profile.habitCue = cue
-                    // Moving the study time moves the reminder with it.
-                    if let time = Reminders.defaultTime(for: cue) {
-                        profile.reminderHour = time.hour
-                        profile.reminderMinute = time.minute
-                    }
-                    model.refreshReminders()
-                }
-            )) {
-                ForEach(OnboardingDraft.habitCues, id: \.self) { Text($0).tag($0) }
-            }
             Picker("Week starts on", selection: Binding(
                 get: { profile.weekStartsOnSunday },
                 set: { model.setWeekStartsOnSunday($0) }
@@ -237,11 +223,13 @@ struct SettingsView: View {
         }
     }
 
-    /// "Extra en Español: 3 episodes" or "Extra en Español: 3 episodes + part 1".
+    /// The last part seen: "Extra en Español: seen Ep 3 Part 2" (or "not started").
     private func extraProgressLabel(_ profile: LearnerProfile) -> String {
-        let episodes = profile.extraEpisodesWatched
-        let base = "Extra en Español: \(episodes) episode\(episodes == 1 ? "" : "s")"
-        return profile.extraPartsDoneInEpisode > 0 ? "\(base) + part \(profile.extraPartsDoneInEpisode)" : base
+        let parts = profile.extraEpisodesWatched * Course.extraIntensivePartsPerEpisode + profile.extraPartsDoneInEpisode
+        guard parts > 0 else { return "Extra en Español: not started" }
+        let episode = (parts - 1) / Course.extraIntensivePartsPerEpisode + 1
+        let part = (parts - 1) % Course.extraIntensivePartsPerEpisode + 1
+        return "Extra en Español: seen Ep \(episode) Part \(part)"
     }
 
     /// A binding that saves through the app model, so every change persists and refreshes views.

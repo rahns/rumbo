@@ -300,17 +300,10 @@ struct OnboardingView: View {
 
     private var habit: some View {
         VStack(alignment: .leading, spacing: 18) {
-            StepTitle("When will you usually study?")
-            Text("Tying Spanish to something you already do makes it stick.")
+            StepTitle("When should Pico remind you?")
+            Text("Pick the time you usually have for Spanish. A regular time makes the habit stick.")
                 .font(.rounded(.subheadline, weight: .medium))
                 .foregroundStyle(Palette.secondaryText)
-            FlowChips(items: OnboardingDraft.habitCues, selection: $draft.habitCue)
-                // The reminder follows the study time; it can still be changed below.
-                .onChange(of: draft.habitCue) { _, cue in
-                    if let time = Reminders.defaultTime(for: cue) {
-                        draft.reminderTime = Calendar.current.date(from: DateComponents(hour: time.hour, minute: time.minute)) ?? draft.reminderTime
-                    }
-                }
             Toggle(isOn: $draft.reminderEnabled.animation()) {
                 Text("Daily reminder").font(.rounded(.body, weight: .semibold))
             }
