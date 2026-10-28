@@ -9,7 +9,7 @@ Each item: `id`, `title`, `kind` (`series` / `film` / `podcast` / `youtube`), `f
 | Source | Units | Used in bands | How it's scheduled |
 |---|---|---|---|
 | Dreaming Spanish | Hours; difficulty range | All | `ds.watch` / `ds.easy`, difficulty tuned by comprehension ratings |
-| Language Transfer – Complete Spanish | 90 tracks | Until finished (target: by end of B1.1) | One track per language-focused slot; shaky → repeat once |
+| Language Transfer – Complete Spanish | 90 tracks | Until finished (target: by end of B1.1) | One track per language-focused slot, planned at the track's real length; after each, the learner confirms which track they're up to |
 | Extra en Español | 13 episodes | A2 intensive (2 parts per episode), B1 extensive | Weekly change of pace from Dreaming Spanish (A2: 1 part/week; B1: 1 episode/week), only on days with 20+ min |
 | Duolingo | Sections/units | A2.1–B1.2, optional B2.1 | 5-min warm-up, never longer |
 | Writing | Prompt library (`RumboCore/PromptLibrary+*.swift`): 100 guided-writing prompts per level (A2, B1, B2), 100 quick-write topics, 63 4/3/2 stories, 75 travel missions | All | `write.guided`, `write.quick`; a prompt isn't repeated until its whole list has been used |

@@ -21,6 +21,7 @@ struct TaskSessionView: View {
     @State private var rewrite = ""
     @State private var feedback: CorrectionService.Result?
     @State private var addingCorrection = false
+    @State private var ltNextTrack = 1
     @State private var duolingoSection = 1
     @State private var duolingoUnit = 1
     @State private var keyboardVisible = false
@@ -230,12 +231,20 @@ struct TaskSessionView: View {
                 }
             }
             if kind == .ltTrack {
-                question("How did that track feel?",
-                         explanation: "\"Shaky\" plans this track again next time (once); \"Solid\" moves on to the next one.") {
-                    ChoiceRow(options: [
-                        (SourceProgress.TrackRating.solid, "💪", "Solid"),
-                        (.shaky, "🤔", "Shaky, repeat it"),
-                    ], selection: $trackRating)
+                question("Which track are you up to now?",
+                         explanation: "Rumbo plans this track next. Did more than one? Move it on. Want to repeat one? Set it back.") {
+                    RaisedCard {
+                        HStack {
+                            Text(ltNextTrack > Course.languageTransferTracks ? "Course finished 🎉" : "Track \(ltNextTrack)")
+                                .font(.rounded(.title3, weight: .heavy))
+                                .foregroundStyle(Palette.ink)
+                                .contentTransition(.numericText())
+                            Spacer()
+                            Stepper("", value: $ltNextTrack, in: 1...(Course.languageTransferTracks + 1))
+                                .labelsHidden()
+                        }
+                        .animation(.snappy, value: ltNextTrack)
+                    }
                 }
             }
             if kind == .duoLesson {
@@ -351,7 +360,6 @@ struct TaskSessionView: View {
 
     private var canSave: Bool {
         switch kind {
-        case .ltTrack: trackRating != nil
         case .dsWatch: comprehension != nil
         default: true
         }
@@ -365,6 +373,12 @@ struct TaskSessionView: View {
         if elapsed < 1 { minutes = task.minutesPlanned }
         duolingoSection = model.profile?.duolingoSection ?? 1
         duolingoUnit = model.profile?.duolingoUnit ?? 1
+        // The track just done, plus one: finishing 13 suggests 14.
+        if case .languageTransferTrack(let track) = task.detail {
+            ltNextTrack = min(track + 1, Course.languageTransferTracks + 1)
+        } else {
+            ltNextTrack = (model.profile?.languageTransferLastTrack ?? 0) + 1
+        }
         withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { logging = true }
     }
 
@@ -377,7 +391,8 @@ struct TaskSessionView: View {
             writing: isWriting ? writing : nil,
             feedback: kind == .writeGuided ? feedback : nil,
             rewrite: kind == .writeGuided ? rewrite : nil,
-            duolingoPosition: kind == .duoLesson ? (section: duolingoSection, unit: duolingoUnit) : nil
+            duolingoPosition: kind == .duoLesson ? (section: duolingoSection, unit: duolingoUnit) : nil,
+            languageTransferNextTrack: kind == .ltTrack ? ltNextTrack : nil
         ))
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()

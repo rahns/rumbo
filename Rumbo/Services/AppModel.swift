@@ -397,6 +397,8 @@ final class AppModel {
         var feedback: CorrectionService.Result?
         var rewrite: String?
         var duolingoPosition: (section: Int, unit: Int)?
+        /// After a Language Transfer task: the track the learner is up to now (91 = course finished).
+        var languageTransferNextTrack: Int? = nil
     }
 
     func complete(_ task: PlannedTaskRecord, with completion: Completion) {
@@ -434,6 +436,11 @@ final class AppModel {
         task.progressBefore = try? JSONEncoder().encode(profile.sourceProgress)
         var progress = profile.sourceProgress
         progress.record(task.task, trackRating: completion.trackRating)
+        if let next = completion.languageTransferNextTrack {
+            // The learner says where they are, which beats the automatic +1 (and replaces "shaky, repeat it").
+            progress.languageTransferLastTrack = min(max(next - 1, 0), Course.languageTransferTracks)
+            progress.languageTransferRepeatPending = false
+        }
         profile.sourceProgress = progress
 
         if let position = completion.duolingoPosition {
