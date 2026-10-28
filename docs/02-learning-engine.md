@@ -60,7 +60,7 @@ Times are minutes: min / default / max per day.
 | Task ID | Strand | Min/Def/Max | Bands | Notes |
 |---|---|---|---|---|
 | `duo.lesson` | Language | 5 / 5 / 5 (never more) | A2.1–B1.2, optional in B2.1 | Retrieval warm-up (R7, R15) |
-| `lt.track` | Language | 8 / 12 / 25 | Until the course is done | Next track. Rated "shaky" → repeat it once. |
+| `lt.track` | Language | track's real length, 5–16 (rounded up from the audio) | Until the course is done | Next track. Rated "shaky" → repeat it once. |
 | `ds.watch` | Input | 8 / 20 / 60 | All | At the suggested difficulty (§2.6) |
 | `ds.easy` | Fluency | 8 / 10 / 20 | All | Videos 10–15 points below your level, at normal speed (R8) |
 | `extra.intensive` | Input | 10 / 12 / 15 | A2.1–A2.2 | One part = half an episode. Step 1: watch with Spanish subtitles (R9). Step 2: rewatch one scene and shadow it for 2–3 min (R10). Counted as input: it's mostly captioned viewing, and counting it as language study crowded out Language Transfer in simulations. |

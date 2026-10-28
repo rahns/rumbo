@@ -47,7 +47,8 @@ public enum TaskKind: String, CaseIterable, Codable, Sendable {
         switch self {
         // One lesson (about 3 minutes) every day; never more than 5: a warm-up, not a main source.
         case .duoLesson: MinuteRange(min: 3, standard: 3, max: 5)
-        case .ltTrack: MinuteRange(min: 8, standard: 12, max: 25)
+        // Planned at the track's real length (Course.languageTransferMinutes): 5 to 16 minutes.
+        case .ltTrack: MinuteRange(min: 5, standard: 10, max: 16)
         case .dsWatch: MinuteRange(min: 7, standard: 20, max: 60)
         case .dsEasy: MinuteRange(min: 7, standard: 10, max: 20)
         case .extraIntensive: MinuteRange(min: 10, standard: 12, max: 15)

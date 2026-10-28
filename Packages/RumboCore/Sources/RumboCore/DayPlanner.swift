@@ -77,7 +77,7 @@ public struct DayPlanner: Sendable {
                 if left != right { return left > right }
                 return order[lhs]! < order[rhs]!
             }
-            .map { PlannedTask(kind: $0, minutes: $0.minutes.standard, detail: builder.detail(for: $0), isAnchor: false) }
+            .map { PlannedTask(kind: $0, minutes: builder.fixedMinutes(for: $0) ?? $0.minutes.standard, detail: builder.detail(for: $0), isAnchor: false) }
     }
 
     /// Records from the 6 days before `today` (today itself is what's being planned).
@@ -173,6 +173,11 @@ private struct PlanBuilder {
     private mutating func addCard(in strand: Strand) -> Bool {
         let wanted = Int((deficit(strand) / 5).rounded()) * 5
         for kind in candidates(for: strand) where !tasks.contains(where: { $0.kind == kind }) {
+            if let fixed = fixedMinutes(for: kind) {
+                guard fixed <= remaining else { continue }
+                add(kind, minutes: fixed)
+                return true
+            }
             let range = kind.minutes
             let minutes = min(min(max(wanted, range.min), range.max), remaining)
             guard minutes >= range.min else { continue }
@@ -182,13 +187,21 @@ private struct PlanBuilder {
         return false
     }
 
+    /// Tasks with a set length: a Language Transfer track takes as long as the track is.
+    func fixedMinutes(for kind: TaskKind) -> Int? {
+        guard kind == .ltTrack, case .languageTransferTrack(let track) = detail(for: kind) else { return nil }
+        return Course.languageTransferMinutes(track: track)
+    }
+
     // Step 7: one task for what's left of a 10-minute day, preferring one that fills it.
     mutating func planSingleTask() {
         let left = remaining
         for strand in Strand.allCases.sorted(by: { deficit($0) > deficit($1) }) {
-            let fitting = candidates(for: strand).filter { kind in kind.minutes.min <= left && !tasks.contains { $0.kind == kind } }
-            if let kind = fitting.first(where: { $0.minutes.max >= left }) ?? fitting.first {
-                add(kind, minutes: min(left, kind.minutes.max))
+            let fitting = candidates(for: strand).filter { kind in
+                (fixedMinutes(for: kind) ?? kind.minutes.min) <= left && !tasks.contains { $0.kind == kind }
+            }
+            if let kind = fitting.first(where: { (fixedMinutes(for: $0) ?? $0.minutes.max) >= left }) ?? fitting.first {
+                add(kind, minutes: fixedMinutes(for: kind) ?? min(left, kind.minutes.max))
                 return
             }
         }
@@ -201,7 +214,7 @@ private struct PlanBuilder {
             if (left == .input) != (right == .input) { return left == .input }
             return deficit(left) > deficit(right)
         }
-        for index in order where remaining > 0 {
+        for index in order where remaining > 0 && fixedMinutes(for: tasks[index].kind) == nil {
             let headroom = tasks[index].kind.minutes.max - tasks[index].minutes
             tasks[index].minutes += min(headroom, remaining)
         }

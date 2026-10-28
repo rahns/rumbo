@@ -119,10 +119,14 @@ struct SettingsView: View {
                 get: { profile.duolingoUnit },
                 set: { profile.duolingoUnit = $0 }
             ), in: 1...300)
-            Stepper("Extra en Español: \(profile.extraEpisodesWatched) episodes", value: binding(
-                get: { profile.extraEpisodesWatched },
-                set: { profile.extraEpisodesWatched = $0; profile.extraPartsDoneInEpisode = 0 }
-            ), in: 0...Course.extraEpisodes)
+            // One step = one part (each episode is two parts), so a half-watched episode can be set.
+            Stepper(extraProgressLabel(profile), value: binding(
+                get: { profile.extraEpisodesWatched * Course.extraIntensivePartsPerEpisode + profile.extraPartsDoneInEpisode },
+                set: { parts in
+                    profile.extraEpisodesWatched = parts / Course.extraIntensivePartsPerEpisode
+                    profile.extraPartsDoneInEpisode = parts % Course.extraIntensivePartsPerEpisode
+                }
+            ), in: 0...(Course.extraEpisodes * Course.extraIntensivePartsPerEpisode))
             if profile.band >= .b2_1 && profile.band < .b2_2 {
                 Toggle("Keep a Duolingo warm-up", isOn: binding(get: { profile.keepDuolingoInB2 }, set: { profile.keepDuolingoInB2 = $0 }))
             }
@@ -143,6 +147,20 @@ struct SettingsView: View {
         }
 
         Section("Habit") {
+            Picker("Study time", selection: binding(
+                get: { profile.habitCue },
+                set: { cue in
+                    profile.habitCue = cue
+                    // Moving the study time moves the reminder with it.
+                    if let time = Reminders.defaultTime(for: cue) {
+                        profile.reminderHour = time.hour
+                        profile.reminderMinute = time.minute
+                    }
+                    model.refreshReminders()
+                }
+            )) {
+                ForEach(OnboardingDraft.habitCues, id: \.self) { Text($0).tag($0) }
+            }
             Picker("Week starts on", selection: Binding(
                 get: { profile.weekStartsOnSunday },
                 set: { model.setWeekStartsOnSunday($0) }
@@ -217,6 +235,13 @@ struct SettingsView: View {
         } footer: {
             Text("Rumbo \(DiagnosticsModel.appVersion)")
         }
+    }
+
+    /// "Extra en Español: 3 episodes" or "Extra en Español: 3 episodes + part 1".
+    private func extraProgressLabel(_ profile: LearnerProfile) -> String {
+        let episodes = profile.extraEpisodesWatched
+        let base = "Extra en Español: \(episodes) episode\(episodes == 1 ? "" : "s")"
+        return profile.extraPartsDoneInEpisode > 0 ? "\(base) + part \(profile.extraPartsDoneInEpisode)" : base
     }
 
     /// A binding that saves through the app model, so every change persists and refreshes views.

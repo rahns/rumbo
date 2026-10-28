@@ -16,6 +16,26 @@ public enum Course {
     public static let extraEpisodes = 13
     /// At A2, one Extra episode is split into this many intensive parts.
     public static let extraIntensivePartsPerEpisode = 2
+
+    /// Length of each Complete Spanish track in seconds, track 1 first (Language Transfer's SoundCloud
+    /// uploads, as archived at archive.org/details/55_20260801; spot-checked against SoundCloud).
+    public static let languageTransferTrackSeconds = [
+        334, 479, 375, 509, 565, 425, 615, 453, 548, 748,
+        652, 834, 578, 910, 540, 458, 803, 411, 422, 562,
+        733, 791, 419, 345, 727, 524, 645, 682, 527, 451,
+        420, 580, 524, 547, 342, 663, 800, 565, 635, 760,
+        787, 424, 545, 607, 772, 650, 575, 660, 650, 563,
+        740, 870, 499, 583, 939, 824, 690, 549, 643, 506,
+        479, 713, 298, 804, 906, 298, 703, 490, 570, 658,
+        760, 781, 484, 548, 560, 491, 415, 564, 430, 430,
+        716, 404, 491, 472, 292, 539, 618, 578, 498, 413,
+    ]
+
+    /// Minutes to plan for a Language Transfer track: its real length, rounded up.
+    public static func languageTransferMinutes(track: Int) -> Int {
+        let index = min(max(track, 1), languageTransferTracks) - 1
+        return Int((Double(languageTransferTrackSeconds[index]) / 60).rounded(.up))
+    }
 }
 
 /// Everything the planner needs to know about the learner today.

@@ -141,6 +141,22 @@ import Testing
 
     // MARK: Progression details
 
+    @Test func languageTransferTakesTheTracksRealLength() {
+        #expect(Course.languageTransferTrackSeconds.count == Course.languageTransferTracks)
+        // Track 13 is 9:38, so 10 minutes; track 14 is 15:10, so 16.
+        #expect(Course.languageTransferMinutes(track: 13) == 10)
+        #expect(Course.languageTransferMinutes(track: 14) == 16)
+        for budget in [30, 45, 60] {
+            if let task = plan(budget).task(.ltTrack) {
+                #expect(task.minutes == 10, "\(budget) min: track 13 planned for \(task.minutes)")
+            }
+        }
+        var learner = authorAtStart
+        learner.languageTransferLastTrack = 13
+        let extras = planner.extraTasks(learner: learner, history: [], today: today, excluding: [])
+        #expect(extras.first { $0.kind == .ltTrack }?.minutes == 16)
+    }
+
     @Test func languageTransferPlansTheNextTrackOrRepeatsAShakyOne() {
         let fresh = plan(45).task(.ltTrack)
         #expect(fresh?.detail == .languageTransferTrack(13))
