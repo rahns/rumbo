@@ -12,6 +12,13 @@ public enum Gemini {
     /// Shown under feedback: "Checked by Gemini Flash-Lite".
     public static let displayName = "Gemini Flash-Lite"
 
+    /// How much the model reasons before answering. More catches subtler errors but takes longer.
+    public enum ThinkingLevel: String, CaseIterable, Sendable {
+        case low, medium, high
+
+        public static let standard = ThinkingLevel.medium
+    }
+
     /// What the model returns: the same shape as the on-device checker's `WritingFeedback`.
     public struct Feedback: Codable, Equatable, Sendable {
         public struct Error: Codable, Equatable, Sendable {
@@ -46,7 +53,8 @@ public enum Gemini {
 
     /// The JSON body for one check. `store: false` keeps the text off Google's interaction history.
     /// Streamed requests also ask for thought summaries, so events keep arriving while the model thinks.
-    public static func requestBody(model: String, instructions: String, input: String, stream: Bool = false) -> Data {
+    public static func requestBody(model: String, instructions: String, input: String, stream: Bool = false,
+                                   thinking: ThinkingLevel = .standard) -> Data {
         let errorSchema: [String: Any] = [
             "type": "object",
             "properties": [
@@ -68,7 +76,7 @@ public enum Gemini {
             ],
             "required": ["errors", "naturalRewrite", "strengths"],
         ]
-        var generation: [String: Any] = ["thinking_level": "medium"]
+        var generation: [String: Any] = ["thinking_level": thinking.rawValue]
         if stream { generation["thinking_summaries"] = "auto" }
         var body: [String: Any] = [
             "model": model,
@@ -76,7 +84,7 @@ public enum Gemini {
             "system_instruction": instructions,
             "store": false,
             "response_format": ["type": "text", "mime_type": "application/json", "schema": schema],
-            // Medium reasoning catches more tense, agreement and naturalness errors; the learner would rather wait a bit.
+            // Medium by default: catches more tense, agreement and naturalness errors; the learner can change it.
             "generation_config": generation,
         ]
         if stream { body["stream"] = true }

@@ -22,6 +22,12 @@ enum GeminiKey {
     }
 
     static func remove() { KeychainShare.delete(forKey: account) }
+
+    /// How hard Gemini thinks (Settings → Writing feedback). Kept on this phone, like the key.
+    static var thinkingLevel: Gemini.ThinkingLevel {
+        get { UserDefaults.standard.string(forKey: "gemini.thinkingLevel").flatMap(Gemini.ThinkingLevel.init(rawValue:)) ?? .standard }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: "gemini.thinkingLevel") }
+    }
 }
 
 /// Sends writing to Gemini (request and reply handling are in RumboCore's `Gemini`).
@@ -83,7 +89,7 @@ enum GeminiClient {
     private static func attempt(model: String, input: String, instructions: String, key: String, stream: Bool) async throws -> String {
         let name = Gemini.displayName
         let method = stream ? "streaming" : "one piece"
-        GeminiTrace.log("\(name) · \(method): sent")
+        GeminiTrace.log("\(name) · \(method) · \(GeminiKey.thinkingLevel.rawValue) thinking: sent")
         let started = Date.now
         do {
             let text = stream
@@ -104,7 +110,8 @@ enum GeminiClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(key, forHTTPHeaderField: "x-goog-api-key")
         if stream { request.setValue("text/event-stream", forHTTPHeaderField: "Accept") }
-        request.httpBody = Gemini.requestBody(model: model, instructions: instructions, input: input, stream: stream)
+        request.httpBody = Gemini.requestBody(model: model, instructions: instructions, input: input, stream: stream,
+                                              thinking: GeminiKey.thinkingLevel)
         return request
     }
 

@@ -16,6 +16,9 @@ import Testing
         let lite = try #require(try JSONSerialization.jsonObject(with: Gemini.requestBody(model: "gemini-3.5-flash-lite", instructions: "", input: "")) as? [String: Any])
         #expect((lite["generation_config"] as? [String: Any])?["thinking_level"] as? String == "medium")
         #expect(Gemini.model == "gemini-3.5-flash-lite", "Flash-Lite only")
+        let high = try #require(try JSONSerialization.jsonObject(with: Gemini.requestBody(model: "m", instructions: "", input: "", thinking: .high)) as? [String: Any])
+        #expect((high["generation_config"] as? [String: Any])?["thinking_level"] as? String == "high")
+        #expect(Gemini.ThinkingLevel.standard == .medium)
     }
 
     @Test func readsTheModelOutputStep() throws {

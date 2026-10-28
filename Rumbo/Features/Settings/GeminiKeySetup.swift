@@ -104,10 +104,19 @@ struct GeminiKeySetup: View {
 
 /// Settings → Writing feedback.
 struct GeminiSettingsView: View {
+    private var thinkingNote: String {
+        switch thinking {
+        case .low: "Quickest. Catches the basics; may miss subtler tense or naturalness errors."
+        case .medium: "Recommended. A careful check in a few seconds."
+        case .high: "Most thorough, for longer or harder texts. Checks take longer and may use more of the free allowance."
+        }
+    }
+
     /// Told whether a key is saved, so the Settings row can update.
     var onChange: (Bool) -> Void = { _ in }
 
     @State private var key = GeminiKey.current ?? ""
+    @State private var thinking = GeminiKey.thinkingLevel
 
     var body: some View {
         ScrollView {
@@ -116,6 +125,21 @@ struct GeminiSettingsView: View {
                     .font(.rounded(.subheadline, weight: .medium))
                     .foregroundStyle(Palette.secondaryText)
                 GeminiKeySetup(key: $key)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Thinking")
+                        .font(.rounded(.headline, weight: .black))
+                        .foregroundStyle(Palette.ink)
+                    Picker("Thinking", selection: $thinking) {
+                        Text("Low").tag(Gemini.ThinkingLevel.low)
+                        Text("Medium").tag(Gemini.ThinkingLevel.medium)
+                        Text("High").tag(Gemini.ThinkingLevel.high)
+                    }
+                    .pickerStyle(.segmented)
+                    Label(thinkingNote, systemImage: "info.circle")
+                        .font(.rounded(.caption, weight: .semibold))
+                        .foregroundStyle(Palette.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 if GeminiKey.current != nil {
                     Button("Remove key", role: .destructive) {
                         GeminiKey.remove()
@@ -130,6 +154,7 @@ struct GeminiSettingsView: View {
         .navigationTitle("Writing feedback")
         .navigationBarTitleDisplayMode(.inline)
         // Saved as it's typed or pasted; an empty field removes the key.
+        .onChange(of: thinking) { _, new in GeminiKey.thinkingLevel = new }
         .onChange(of: key) { _, new in
             GeminiKey.save(new)
             onChange(GeminiKey.current != nil)
