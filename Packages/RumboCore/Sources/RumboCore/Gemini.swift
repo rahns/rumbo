@@ -27,7 +27,7 @@ public enum Gemini {
         }
     }
 
-    public enum Failure: Swift.Error, Equatable, Sendable {
+    public enum Failure: Swift.Error, Hashable, Sendable {
         /// 429: the free per-minute or daily limit is used up.
         case rateLimited
         /// 401/403, or a 400 that names the key: the key is wrong, expired or not allowed.
@@ -36,6 +36,8 @@ public enum Gemini {
         case modelUnavailable
         /// 500/503/504: Google is overloaded ("high demand") or had a hiccup. The key is fine; try the next model.
         case busy
+        /// No answer in time, usually because Google is overloaded. Treated like busy.
+        case timedOut
         /// Anything else, with the server's message when there is one.
         case other(String)
     }
@@ -130,6 +132,7 @@ extension Gemini.Failure: LocalizedError {
         case .invalidKey: "Key not accepted"
         case .modelUnavailable: "Model not available"
         case .busy: "Gemini is busy"
+        case .timedOut: "Gemini didn't answer in time"
         case .other(let message): message
         }
     }
