@@ -72,7 +72,8 @@ The first screen also offers "Restore from a backup". Without a backup, onboardi
 5. Can-do check: 10 statements, one at a time, "¡Sí!" / "Todavía no". 5 come from the band the hours point to and 5 from the next band, interleaved. Placement uses the same thresholds as §2.1 scaled to 5 (≥ 4/5 of the next band → up, < 3/5 of your own → down).
 6. Placement reveal: band badge with the reasoning in one line ("154 hours of listening (≈ 280 training hours) and 7 of 10 can-dos").
 7. Goal: the same goal editor as Settings → Goal (below). It comes after placement so the date can be worked out from the learner's hours; the date starts where the default 150 min a week leads.
-8. Reminder: daily reminder toggle and time (asks for notification permission), and which day the week starts on. The reminder time is the learner's study time; there's no separate "study time" setting.
+8. Better writing feedback (skippable, "Skip for now"): how to get a free Gemini API key, a field with Paste and Test (§5.3).
+9. Reminder: daily reminder toggle and time (asks for notification permission), and which day the week starts on. The reminder time is the learner's study time; there's no separate "study time" setting.
 
 ### Goal (onboarding step and Settings → Goal)
 Implemented in `Rumbo/Features/Goal/GoalEditor.swift`, with `GoalPace` in RumboCore (§2.9).
@@ -125,14 +126,14 @@ Implemented in `Rumbo/Features/Writing/GuidedWritingView.swift` (guided writing;
 
 1. **Write:** prompt card (with the reuse hint), editor, live word count against the band's target. "Write first, without looking things up."
 2. **Check:** "Pico is reading your Spanish…" while `CorrectionService` runs (§5.3).
-3. **Feedback:** one or two specific strengths, the draft with each error highlighted in place, a card per correction (wrong words struck through in coral → fix in green, one-line explanation at the learner's level), and "A native speaker might say…" with the model's natural rewrite. Shows which checker ran.
+3. **Feedback:** one or two specific strengths, the draft with each error highlighted in place, a card per correction (wrong words struck through in coral → fix in green, one-line explanation at the learner's level), and "A native speaker might say…" with the model's natural rewrite. Shows which checker ran ("Gemini", "Gemini (lighter model)" or the basic checker). When Gemini is set up but couldn't answer, a small warning above the feedback says why the basic checker was used.
 4. **Rewrite:** an editor prefilled with the draft, with the corrections listed above it (R11).
 5. **Compare:** before and after.
 6. **I'm done** asks first ("Finish without checking?" before a check, "Finish writing?" after), then opens the log form, which says the writing is saved with the task and has a **Back** button to return to it. **Save** stores the draft, feedback and rewrite, logs the time, and turns every correction into a mistake-deck card.
 
 Writing is never lost: the draft, rewrite and feedback are kept on the task as they're typed (closing the task screen keeps them, and coming back picks up at the same stage), and undoing a logged writing task turns its text back into the draft. While the keyboard is up, the bottom bar shows only "Hide keyboard", so "I'm done" can't be tapped by accident.
 
-If the check can't run (offline with no on-device model), the writing is still saved and logged.
+If no checker can run (offline with no on-device model), the writing is still saved and logged.
 
 ### Mistake deck
 Implemented in `Rumbo/Features/Review/MistakeDeckViews.swift`; cards are `ReviewCard`s scheduled by FSRS (R7).
@@ -162,7 +163,7 @@ Implemented in `Rumbo/Features/Review/MistakeDeckViews.swift`; cards are `Review
 A card at the very bottom of Today (below "Log extra listening", since it isn't needed most days) toggles Travel mode, explaining what it does: a real-world mission joins the plan, and offline days only get offline-capable tasks. It applies to the next plan (re-pick today's time to use it today). Pico wears the backpacker look while it's on.
 
 ### Settings
-Share (send a friend the latest release, see what's new), Goal (opens the goal page: level, weekly goal and target date, linked), sources, Travel mode, progress fixes (the Dreaming Spanish range slides by 1 and is always 5 wide; Language Transfer shows the last track finished, "finished Track 13"; Duolingo shows where you are, "doing section 4", "doing unit 42"; Extra en Español moves one part at a time and shows the last part seen, "seen Ep 3 Part 2"), week start, reminders, AI correction (engine status, optional own API key), backup (save a file / restore from a file), reset (start onboarding again).
+Share (send a friend the latest release, see what's new), Goal (opens the goal page: level, weekly goal and target date, linked), sources, Travel mode, progress fixes (the Dreaming Spanish range slides by 1 and is always 5 wide; Language Transfer shows the last track finished, "finished Track 13"; Duolingo shows where you are, "doing section 4", "doing unit 42"; Extra en Español moves one part at a time and shows the last part seen, "seen Ep 3 Part 2"), Writing feedback (the Gemini API key: "Connected" or "Not set up"; opens the same setup as onboarding, plus Remove key), week start, reminders, backup (save a file / restore from a file), reset (start onboarding again).
 
 ## 3.5 Motion and haptics catalog
 

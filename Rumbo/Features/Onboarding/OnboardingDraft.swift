@@ -29,6 +29,8 @@ final class OnboardingDraft {
     var reminderTime = Calendar.current.date(from: DateComponents(hour: 8, minute: 30)) ?? .now
     var weeklyGoalMinutes = 150
     var weekStartsOnSunday = false
+    /// Saved to the Keychain when onboarding finishes, not to the profile.
+    var geminiKey = ""
 
 
     /// Listening hours before Rumbo (Dreaming Spanish's counter, or an estimate).

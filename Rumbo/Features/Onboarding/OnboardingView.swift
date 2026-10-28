@@ -14,7 +14,7 @@ struct OnboardingView: View {
 
     enum Step: Int, CaseIterable {
         // The goal comes after placement, so the weekly goal and target date can be worked out from your hours.
-        case welcome, name, sources, progress, canDo, placement, goal, habit
+        case welcome, name, sources, progress, canDo, placement, goal, feedback, habit
     }
 
     var body: some View {
@@ -80,7 +80,8 @@ struct OnboardingView: View {
     @ViewBuilder
     private var footer: some View {
         if step != .canDo {
-            Button(step == .habit ? "Let's go" : step == .welcome ? "Start" : "Continue") {
+            Button(step == .habit ? "Let's go" : step == .welcome ? "Start"
+                   : step == .feedback && draft.geminiKey.trimmingCharacters(in: .whitespaces).isEmpty ? "Skip for now" : "Continue") {
                 advance()
             }
             .buttonStyle(ChunkyButtonStyle(color: step == .habit ? Palette.leaf : Palette.coral))
@@ -91,6 +92,7 @@ struct OnboardingView: View {
 
     private func advance() {
         if step == .habit {
+            if !draft.geminiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { GeminiKey.save(draft.geminiKey) }
             onFinish(draft)
             return
         }
@@ -118,6 +120,7 @@ struct OnboardingView: View {
         case .progress: progress
         case .canDo: canDo
         case .placement: placement
+        case .feedback: feedback
         case .habit: habit
         }
     }
@@ -295,6 +298,16 @@ struct OnboardingView: View {
         case 1: return "\(base). You're ahead of your hours, so you start one level up."
         case -1: return "\(base). Rumbo starts you one level lower so the plan feels comfortable."
         default: return "\(base)."
+        }
+    }
+
+    private var feedback: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            StepTitle("Better writing feedback")
+            Text("Pico can check your writing with Google's Gemini, for free, using your own API key. It catches more than the basic checker and explains each mistake. You can also do this later in Settings.")
+                .font(.rounded(.subheadline, weight: .medium))
+                .foregroundStyle(Palette.secondaryText)
+            GeminiKeySetup(key: $draft.geminiKey)
         }
     }
 

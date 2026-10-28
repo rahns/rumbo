@@ -35,6 +35,7 @@ enum CheckID: String, CaseIterable, Identifiable {
     case keychainShare = "Keychain sharing (widgets fallback)"
     case liveActivities = "Live Activities"
     case notifications = "Notifications"
+    case gemini = "Gemini API key"
     case onDeviceModel = "Apple on-device model"
     case languageTool = "LanguageTool"
     case urlSchemes = "Source apps installed"
@@ -65,6 +66,7 @@ final class DiagnosticsModel {
         WidgetCenter.shared.reloadAllTimelines()
         results[.liveActivities] = checkLiveActivities()
         results[.notifications] = await checkNotifications()
+        results[.gemini] = await checkGemini()
         results[.onDeviceModel] = checkOnDeviceModel()
         results[.languageTool] = await checkLanguageTool()
         results[.urlSchemes] = checkURLSchemes()
@@ -112,10 +114,18 @@ final class DiagnosticsModel {
         }
     }
 
+    private func checkGemini() async -> CheckStatus {
+        guard let key = GeminiKey.current else {
+            return .warn("Not set up. Writing is checked by the basic checker. Add a key in Settings → Writing feedback.")
+        }
+        if let problem = await GeminiClient.test(key: key) { return .fail(problem) }
+        return .pass("Key works. Use \"Test writing correction\" for a sample.")
+    }
+
     private func checkOnDeviceModel() -> CheckStatus {
         switch SystemLanguageModel.default.availability {
         case .available:
-            return .pass("Available. Use \"Test writing correction\" for a sample.")
+            return .pass("Available (used when Gemini isn't set up or can't answer).")
         case .unavailable(let reason):
             return .fail("Unavailable: \(String(describing: reason))")
         }
@@ -172,6 +182,7 @@ final class DiagnosticsModel {
             if !result.naturalRewrite.isEmpty { lines.append("Rewrite: \(result.naturalRewrite)") }
             lines += result.strengths.map { "✓ \($0)" }
             lines.append("Engine: \(result.engine)")
+            if let notice = result.notice { lines.append("⚠️ \(notice)") }
             modelSample = lines.joined(separator: "\n")
         } catch {
             modelSample = "Error: \(error.localizedDescription)"

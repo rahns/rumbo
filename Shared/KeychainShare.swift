@@ -56,6 +56,15 @@ enum KeychainShare {
         return (result as? Data, status)
     }
 
+    static func delete(forKey key: String) {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key,
+        ]
+        SecItemDelete(query as CFDictionary)
+    }
+
     static func describe(_ status: OSStatus) -> String {
         let message = SecCopyErrorMessageString(status, nil) as String? ?? "unknown"
         return "\(status) (\(message))"

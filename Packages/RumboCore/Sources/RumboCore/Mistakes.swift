@@ -5,7 +5,7 @@ public struct Correction: Equatable, Codable, Sendable {
     public var original: String
     public var corrected: String
     public var explanation: String
-    /// "model" or "languagetool".
+    /// "gemini", "model" (on-device) or "languagetool".
     public var source: String
 
     public init(original: String, corrected: String, explanation: String, source: String) {

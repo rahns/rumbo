@@ -2,23 +2,28 @@ import Foundation
 import FoundationModels
 import RumboCore
 
-/// Free writing correction (docs/05-architecture.md §5.3): LanguageTool finds errors when online, the
-/// on-device Apple model explains them at the learner's level and writes a natural version, and the
-/// two are merged with no-ops dropped. Apple's cloud model isn't used: it crashes sideloaded builds.
+/// Writing correction (docs/05-architecture.md §5.3). With the learner's free Gemini key, Gemini checks the
+/// writing. Without one, or when Gemini can't answer (free limit used up, bad key, offline), the basic checker
+/// runs instead: LanguageTool finds errors when online and the on-device Apple model explains them; the result
+/// then carries a `notice` saying why. Apple's cloud model isn't used: it crashes sideloaded builds.
 enum CorrectionService {
     struct Result: Codable, Equatable {
         var corrections: [Correction]
         var naturalRewrite: String
         var strengths: [String]
-        /// Which checkers ran, e.g. "LanguageTool + on-device model".
+        /// Which checker ran, e.g. "Gemini" or "LanguageTool + on-device model".
         var engine: String
+        /// Shown above the feedback when Gemini was set up but the basic checker had to stand in.
+        var notice: String? = nil
     }
 
     enum Failure: LocalizedError {
-        case nothingAvailable
+        case nothingAvailable(notice: String?)
 
         var errorDescription: String? {
-            "Can't check right now: you're offline and the on-device model isn't available. Your writing is still saved."
+            let base = "Can't check right now: you're offline and the on-device model isn't available. Your writing is still saved."
+            if case .nothingAvailable(let notice?) = self { return "\(notice) \(base)" }
+            return base
         }
     }
 
@@ -28,11 +33,26 @@ enum CorrectionService {
     }
 
     static func correct(_ text: String, band: Band, prompt: String) async throws -> Result {
+        var notice: String?
+        if let key = GeminiKey.current {
+            do {
+                return try await GeminiClient.correct(text, band: band, prompt: prompt, key: key)
+            } catch {
+                notice = GeminiClient.notice(for: error)
+            }
+        }
+        var result = try await basicCheck(text, band: band, prompt: prompt, notice: notice)
+        result.notice = notice
+        return result
+    }
+
+    /// The older checker: LanguageTool plus the on-device model, merged.
+    private static func basicCheck(_ text: String, band: Band, prompt: String, notice: String?) async throws -> Result {
         let matches = try? await LanguageTool.check(text)
         let toolCorrections = (matches ?? []).compactMap { $0.correction(in: text) }
 
         guard modelAvailable else {
-            guard let matches else { throw Failure.nothingAvailable }
+            guard let matches else { throw Failure.nothingAvailable(notice: notice) }
             return Result(corrections: Mistakes.merge(model: [], languageTool: toolCorrections), naturalRewrite: "", strengths: [],
                           engine: matches.isEmpty ? "LanguageTool (found nothing)" : "LanguageTool")
         }
@@ -55,13 +75,13 @@ enum CorrectionService {
     }
 
     /// Explanations in English up to B1, in simple Spanish from B2.
-    private static func instructions(for band: Band) -> String {
+    static func instructions(for band: Band) -> String {
         let language = band >= .b2_1 ? "in simple Spanish" : "in English"
         return """
             You are a warm, encouraging Spanish tutor for a \(band.rawValue) learner (CEFR). Find the real errors in the learner's text, \
             most important first, at most \(Mistakes.maximumErrors). Check that verb tenses match time expressions (for example "ayer" \
-            needs the preterite), gender and number agreement, ser/estar, por/para, and prepositions. Use the grammar checker's hints \
-            when given. Never list something that is already correct. Copy the wrong words exactly as the learner wrote them. \
+            needs the preterite), gender and number agreement, ser/estar, por/para, prepositions, and phrasing a native speaker \
+            wouldn't use. Use the grammar checker's hints when given. Never list something that is already correct. Copy the wrong words exactly as the learner wrote them. \
             Explain each error in one short sentence \(language), at the learner's level. Also give one or two specific things they did well.
             """
     }

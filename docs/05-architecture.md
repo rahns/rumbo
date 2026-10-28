@@ -6,7 +6,7 @@
 |---|---|
 | Language/UI | Swift 6, SwiftUI, iOS 27 minimum |
 | Persistence | SwiftData, on device only (see [04-data-model.md](04-data-model.md)) |
-| AI | Foundation Models framework (Apple cloud model when online, on-device otherwise) + LanguageTool public API |
+| AI | Gemini API with the learner's own free key; fallback: LanguageTool public API + Foundation Models on-device |
 | Widgets / Live Activity | WidgetKit, ActivityKit, App Intents |
 | Project generation | [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`project.yml`). No `.xcodeproj` in git, so the project can be edited from any machine. |
 | CI | GitHub Actions, `runs-on: xcode-27` (Apple Silicon, macOS 27, Xcode 27) |
@@ -51,32 +51,21 @@ The content catalog degrades gracefully: with no network (or a failed fetch) the
 
 ## 5.3 AI writing correction (free, no billing)
 
-All engines conform to one protocol and return the same structured result:
+**Main checker: Gemini, with the learner's own free API key.** The on-device Apple model was too weak (it missed tense errors and "corrected" words into themselves), so Gemini replaced it. Each learner pastes their own key, so nothing is billed and nobody shares a quota.
 
-```swift
-protocol CorrectionEngine {
-    var id: String { get }
-    func isAvailable() async -> Bool
-    func correct(_ text: String, band: Band, prompt: WritingPrompt) async throws -> CorrectionResult
-}
+- **Key:** pasted in onboarding (the "Better writing feedback" step, skippable) or Settings → Writing feedback, with step-by-step instructions to create one free at Google AI Studio (`https://aistudio.google.com/apikey`, no billing needed), a Paste button and a Test button. Stored in the Keychain on this phone only, never in backups. An empty field removes it.
+- **Request:** the Interactions API (`POST https://generativelanguage.googleapis.com/v1beta/interactions`, header `x-goog-api-key`) with `store: false`, a JSON schema (`response_format`) for errors, natural rewrite and strengths, and the lowest thinking level (`low` for Flash, `minimal` for Flash-Lite) so checks are quick. The answer is the text of the `model_output` step.
+- **Models:** `gemini-3.8-flash` first; if it's rate-limited (429) or unavailable (404), `gemini-3.5-flash-lite`, which has its own free quota. Both are on the free tier (Oct 2026). Free limits are per Google project and reset at midnight Pacific.
+- **Fallback with a warning:** with no key, the basic checker runs. If Gemini can't answer (both models out of free requests, key refused, offline, any other error), the basic checker runs and the feedback shows a small warning above it saying why, e.g. "You've used Gemini's free limit for now, so the basic checker did this one. It's less accurate."
+- **Privacy:** the setup screen says that on the free tier Google may use what's sent to improve its products.
+- Request building, reply parsing and error classification are in RumboCore (`Gemini`, tested); sending is `Rumbo/Services/GeminiClient.swift`.
 
-struct CorrectionResult: Codable {
-    var errors: [CorrectionError]   // range, original, suggestion, category, explanation
-    var naturalRewrite: String      // how a native speaker might say it
-    var strengths: [String]         // 1–2 things done well
-    var estimatedBand: String?
-}
-```
+**Basic checker (fallback):**
+1. **LanguageTool** (`https://api.languagetool.org/v2/check`, `language=es`) when online. Free, no key, rate-limited (~20 requests/min).
+2. **On-device Apple model** gets the text plus LanguageTool's matches and returns structured feedback (`@Generable`). Corrections where the "fix" equals the original are dropped. Apple's Private Cloud Compute model is not used: it crashes sideloaded builds (M0).
+3. With no Apple model, LanguageTool's results are shown alone. Offline with no Apple model: the writing is saved but not checked.
 
-**Pipeline:**
-1. **LanguageTool** (`https://api.languagetool.org/v2/check`, `language=es`) when online. Free, no key, rate-limited (~20 requests/min). Finds spelling, agreement and grammar errors reliably.
-2. **Apple model** gets the text plus LanguageTool's matches and returns a `CorrectionResult` via guided generation (`@Generable`). It explains errors at the learner's band, adds errors LanguageTool can't see (wrong tense choice, unnatural phrasing), and writes the natural rewrite.
-   - **On-device model** (all Apple Intelligence devices, works offline). Asked for structured output (`@Generable`), given LanguageTool's matches as hints, and told to check tense against time expressions and agreement. Corrections where the "fix" equals the original are dropped (M0 showed it producing *voy → voy*).
-   - **Private Cloud Compute model: not used.** It reports itself available in a sideloaded build, but sending it a request crashes the app because it needs Apple's managed entitlement (M0 finding). If Rumbo is ever distributed through the App Store, it becomes the preferred online engine.
-3. **Fallbacks:** if no Apple model is available (older iPhone, Apple Intelligence off), LanguageTool's results are shown alone with its built-in messages. Offline with no Apple model: the writing is saved and checked automatically when back online.
-4. **Optional:** a user's own Gemini (or other) key, plugged in through the Foundation Models `LanguageModel` provider protocol. Off by default.
-
-The prompt asks for **at most 8 errors, most important first**, plus one or two specific strengths, so feedback stays useful and encouraging. Explanations are in English at A2–B1 and in simple Spanish from B2.1. The model's and LanguageTool's corrections are merged in RumboCore (`Mistakes.merge`): no-ops dropped, overlapping finds kept once (the model's wording wins), capped at 8. Implemented in `Rumbo/Services/Correction.swift`.
+The prompt asks for **at most 8 errors, most important first**, plus one or two specific strengths, so feedback stays useful and encouraging. Explanations are in English at A2–B1 and in simple Spanish from B2.1. Both checkers use the same instructions. Corrections go through `Mistakes.merge` in RumboCore: no-ops dropped, overlapping finds kept once (the model's wording wins over LanguageTool's), capped at 8. Implemented in `Rumbo/Services/Correction.swift`.
 
 ## 5.4 Deep links into sources
 
@@ -119,7 +108,7 @@ The IPA is unsigned; the user signs it with their own certificate and provisioni
 | Entitlement | Used for | If missing |
 |---|---|---|
 | App Groups (`group.com.rahns.rumbo`) | Widgets read today's plan | Shared Keychain group `TEAMID.com.rahns.rumbo.shared` (development profiles usually grant `TEAMID.*`). If that fails too: an "Open Rumbo" placeholder. |
-| None needed | Live Activity, notifications, Foundation Models on-device, LanguageTool, Pico, everything else | — |
+| None needed | Live Activity, notifications, Gemini, Foundation Models on-device, LanguageTool, Pico, everything else | — |
 
 Every CI build is versioned `0.1.<run number>` with build number `<run number>`, so each IPA installs over the previous one.
 

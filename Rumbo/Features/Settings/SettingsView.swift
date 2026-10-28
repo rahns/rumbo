@@ -9,6 +9,7 @@ struct SettingsView: View {
     @State private var importing = false
     @State private var pendingRestore: Data?
     @State private var message: String?
+    @State private var geminiConnected = GeminiKey.current != nil
 
     var body: some View {
         NavigationStack {
@@ -93,6 +94,18 @@ struct SettingsView: View {
             Text("Goal")
         } footer: {
             Text("Your level goal, weekly minutes and target date. Change the weekly goal and the date follows, or the other way round.")
+        }
+
+        Section {
+            NavigationLink {
+                GeminiSettingsView { geminiConnected = $0 }
+            } label: {
+                LabeledContent("Gemini API key", value: geminiConnected ? "Connected" : "Not set up")
+            }
+        } header: {
+            Text("Writing feedback")
+        } footer: {
+            Text("Pico checks your writing with Gemini using your own free key. Without one, a basic checker is used.")
         }
 
         Section {

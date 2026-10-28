@@ -75,6 +75,15 @@ struct GuidedWritingView: View {
     @ViewBuilder
     private var feedbackView: some View {
         if let feedback {
+            if let notice = feedback.notice {
+                Label(notice, systemImage: "exclamationmark.triangle.fill")
+                    .font(.rounded(.caption, weight: .semibold))
+                    .foregroundStyle(Palette.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Palette.sun.opacity(0.25)))
+            }
             if !feedback.strengths.isEmpty {
                 RaisedCard(accent: Palette.leaf) {
                     VStack(alignment: .leading, spacing: 6) {
