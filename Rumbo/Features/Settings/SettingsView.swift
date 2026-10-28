@@ -49,6 +49,7 @@ struct SettingsView: View {
                     pendingRestore = nil
                     do {
                         try model.restore(from: data)
+                        geminiConnected = GeminiKey.current != nil
                         message = "Backup restored."
                     } catch {
                         message = error.localizedDescription

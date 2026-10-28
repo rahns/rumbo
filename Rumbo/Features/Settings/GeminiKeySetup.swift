@@ -66,7 +66,7 @@ struct GeminiKeySetup: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 note("gift.fill", "Free: Google gives a daily allowance, plenty for a few writing checks a day. If you run out, Rumbo uses its basic checker and shows a small warning.")
-                note("lock.fill", "Your key stays on this phone. It isn't in backups, so paste it again on a new phone.")
+                note("lock.fill", "Your key is kept in the phone's Keychain and saved in your backups, so restoring brings it back. Keep backup files private.")
                 note("eye.fill", "On the free tier Google may use what you send to improve its products, so don't write anything private.")
             }
         }

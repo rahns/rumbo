@@ -16,6 +16,13 @@ struct BackupFile: Codable {
     var writing: [WritingData]
     /// Added after version 1 shipped; optional so older backups still restore.
     var cards: [CardData]?
+    /// The Gemini key and thinking level (Keychain and UserDefaults on the phone). Optional: older backups have none.
+    var gemini: GeminiData?
+
+    struct GeminiData: Codable {
+        var apiKey: String?
+        var thinkingLevel: String?
+    }
 
     struct ProfileData: Codable {
         var createdAt: Date

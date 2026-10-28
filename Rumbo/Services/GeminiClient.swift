@@ -1,7 +1,7 @@
 import Foundation
 import RumboCore
 
-/// The learner's Gemini API key, kept in the Keychain on this phone only (never in backups).
+/// The learner's Gemini API key, kept in the Keychain, and the thinking level. Both are saved in backups.
 enum GeminiKey {
     private static let account = "gemini.apiKey"
 
@@ -23,7 +23,7 @@ enum GeminiKey {
 
     static func remove() { KeychainShare.delete(forKey: account) }
 
-    /// How hard Gemini thinks (Settings → Writing feedback). Kept on this phone, like the key.
+    /// How hard Gemini thinks (Settings → Writing feedback).
     static var thinkingLevel: Gemini.ThinkingLevel {
         get { UserDefaults.standard.string(forKey: "gemini.thinkingLevel").flatMap(Gemini.ThinkingLevel.init(rawValue:)) ?? .standard }
         set { UserDefaults.standard.set(newValue.rawValue, forKey: "gemini.thinkingLevel") }

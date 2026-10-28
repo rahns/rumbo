@@ -219,7 +219,8 @@ final class AppModel {
                 BackupFile.WritingData(date: $0.date, task: $0.taskRaw, prompt: $0.prompt, text: $0.text,
                                        rewrite: $0.rewrite, feedback: $0.feedbackJSON, id: $0.id)
             },
-            cards: allCards.map(BackupFile.CardData.init)
+            cards: allCards.map(BackupFile.CardData.init),
+            gemini: BackupFile.GeminiData(apiKey: GeminiKey.current, thinkingLevel: GeminiKey.thinkingLevel.rawValue)
         )
         return BackupDocument(data: try BackupFile.encoder().encode(file))
     }
@@ -236,6 +237,9 @@ final class AppModel {
         }
         LiveActivities.endAll()
         deleteAll()
+        // A backup without Gemini settings (older, or saved before a key was added) leaves the phone's as they are.
+        if let key = file.gemini?.apiKey, !key.isEmpty { GeminiKey.save(key) }
+        if let level = file.gemini?.thinkingLevel.flatMap(Gemini.ThinkingLevel.init(rawValue:)) { GeminiKey.thinkingLevel = level }
         let profile = file.profile.makeProfile()
         context.insert(profile)
         weekStartsOnSunday = profile.weekStartsOnSunday
