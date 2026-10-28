@@ -66,6 +66,9 @@ struct GuidedWritingView: View {
             Text("Pico is reading your Spanish…")
                 .font(.rounded(.headline, weight: .heavy))
                 .foregroundStyle(Palette.ink)
+            Text("A careful check can take up to a minute.")
+                .font(.rounded(.caption, weight: .semibold))
+                .foregroundStyle(Palette.secondaryText)
             ProgressView()
         }
         .frame(maxWidth: .infinity)

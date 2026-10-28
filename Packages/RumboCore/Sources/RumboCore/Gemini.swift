@@ -85,9 +85,8 @@ public enum Gemini {
             "system_instruction": instructions,
             "store": false,
             "response_format": ["type": "text", "mime_type": "application/json", "schema": schema],
-            // A little reasoning helps with tense and agreement; "low" is the lowest level both models accept above
-            // Flash-Lite's "minimal" and keeps checks quick.
-            "generation_config": ["thinking_level": "low"],
+            // Medium reasoning catches more tense, agreement and naturalness errors; the learner would rather wait a bit.
+            "generation_config": ["thinking_level": "medium"],
         ]
         return (try? JSONSerialization.data(withJSONObject: body, options: [.sortedKeys])) ?? Data()
     }

@@ -125,7 +125,7 @@ Intro → the next band's 10 can-do statements one at a time → ≥ 7 "¡Sí!" 
 Implemented in `Rumbo/Features/Writing/GuidedWritingView.swift` (guided writing; quick writes are a plain timed editor with no correction).
 
 1. **Write:** prompt card (with the reuse hint), editor, live word count against the band's target. "Write first, without looking things up."
-2. **Check:** "Pico is reading your Spanish…" while `CorrectionService` runs (§5.3).
+2. **Check:** "Pico is reading your Spanish…" ("A careful check can take up to a minute.") while `CorrectionService` runs (§5.3).
 3. **Feedback:** one or two specific strengths, the draft with each error highlighted in place, a card per correction (wrong words struck through in coral → fix in green, one-line explanation at the learner's level), and "A native speaker might say…" with the model's natural rewrite. Shows which checker ran ("Gemini Flash-Lite", "Gemini Flash" or the basic checker). When Gemini is set up but couldn't answer, a small warning above the feedback says why the basic checker was used.
 4. **Rewrite:** an editor prefilled with the draft, with the corrections listed above it (R11).
 5. **Compare:** before and after.

@@ -68,14 +68,14 @@ enum GeminiClient {
         }
         for round in 0..<2 {
             if round > 0 {
-                guard lastError == .busy, Date.now.timeIntervalSince(started) < 15 else { break }
+                guard lastError == .busy, Date.now.timeIntervalSince(started) < 30 else { break }
                 try await Task.sleep(for: .seconds(2))
             }
             for (index, model) in Gemini.order(resting: resting).enumerated() {
                 var request = URLRequest(url: Gemini.endpoint)
                 request.httpMethod = "POST"
-                // Short enough that the other model still gets its turn while Pico is "reading".
-                request.timeoutInterval = index == 0 ? 25 : 20
+                // Medium thinking can take a while, but short enough that the other model still gets its turn.
+                request.timeoutInterval = index == 0 ? 50 : 40
                 request.setValue("application/json", forHTTPHeaderField: "Content-Type")
                 request.setValue(key, forHTTPHeaderField: "x-goog-api-key")
                 request.httpBody = Gemini.requestBody(model: model, instructions: instructions, input: input)
