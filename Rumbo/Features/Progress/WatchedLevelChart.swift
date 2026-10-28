@@ -2,7 +2,7 @@ import Charts
 import RumboCore
 import SwiftUI
 
-/// The Dreaming Spanish level watched over time: a minute-weighted average per day (14d, 1m) or week (3m, 6m, 1y).
+/// The Dreaming Spanish level watched over time: a minute-weighted average per day (up to 1m), week (up to 1y) or month (longer, all time only).
 struct WatchedLevelChart: View {
     let sessions: [WatchedLevel.Session]
     let calendar: Calendar
@@ -12,6 +12,7 @@ struct WatchedLevelChart: View {
     private var period: WatchedLevel.Period { WatchedLevel.Period(rawValue: periodRaw) ?? .month }
 
     var body: some View {
+        let window = WatchedLevel.window(sessions, period: period, today: .now, calendar: calendar)
         let points = WatchedLevel.series(sessions, period: period, today: .now, calendar: calendar)
         VStack(alignment: .leading, spacing: 12) {
             Text("Level you watch")
@@ -23,7 +24,7 @@ struct WatchedLevelChart: View {
                 }
             }
             .pickerStyle(.segmented)
-            Text(summary(points))
+            Text(summary(points, window: window))
                 .font(.rounded(.subheadline, weight: .semibold))
                 .foregroundStyle(Palette.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
@@ -39,13 +40,13 @@ struct WatchedLevelChart: View {
                             .padding()
                     }
             } else {
-                chart(points)
+                chart(points, window: window)
             }
         }
         .animation(.snappy, value: periodRaw)
     }
 
-    private func chart(_ points: [WatchedLevel.Point]) -> some View {
+    private func chart(_ points: [WatchedLevel.Point], window: WatchedLevel.Window) -> some View {
         let levels = points.map(\.level)
         let low = max(0, (levels.min() ?? 0) - 3)
         let high = min(100, (levels.max() ?? 100) + 3)
@@ -63,13 +64,13 @@ struct WatchedLevelChart: View {
                 .symbolSize(points.count > 40 ? 0 : 36)
         }
         .chartYScale(domain: low...high)
-        .chartXScale(domain: startDate...calendar.startOfDay(for: .now))
+        .chartXScale(domain: window.start...calendar.startOfDay(for: .now))
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 4)) { _ in
                 AxisGridLine()
-                AxisValueLabel(format: period.bucketDays == 1
+                AxisValueLabel(format: window.bucketDays == 1
                                ? .dateTime.day().month(.abbreviated)
-                               : .dateTime.month(.abbreviated))
+                               : window.days > 366 ? .dateTime.month(.abbreviated).year(.twoDigits) : .dateTime.month(.abbreviated))
             }
         }
         .chartYAxis {
@@ -79,12 +80,8 @@ struct WatchedLevelChart: View {
         .accessibilityLabel("Level watched over \(period.rawValue)")
     }
 
-    private var startDate: Date {
-        calendar.date(byAdding: .day, value: -period.days + 1, to: calendar.startOfDay(for: .now)) ?? .now
-    }
-
-    private func summary(_ points: [WatchedLevel.Point]) -> String {
-        let unit = period.bucketDays == 1 ? "day" : "week"
+    private func summary(_ points: [WatchedLevel.Point], window: WatchedLevel.Window) -> String {
+        let unit = window.bucketDays == 1 ? "day" : window.bucketDays == 7 ? "week" : "month"
         guard let first = points.first, let last = points.last else {
             return "The average difficulty you watch, each \(unit). Watching a little harder over time means your listening is growing."
         }
@@ -92,6 +89,7 @@ struct WatchedLevelChart: View {
         guard points.count > 1 else { return "Level \(end) so far. Keep logging and the line shows how it changes." }
         let change = end - start
         let trend = change > 0 ? "up \(change)" : change < 0 ? "down \(-change)" : "steady"
-        return "Level \(start) → \(end), \(trend) over \(period.rawValue). Each point is a \(unit)'s average, weighted by minutes."
+        let span = period == .allTime ? "since you started" : "over \(period.rawValue)"
+        return "Level \(start) → \(end), \(trend) \(span). Each point is a \(unit)'s average, weighted by minutes."
     }
 }

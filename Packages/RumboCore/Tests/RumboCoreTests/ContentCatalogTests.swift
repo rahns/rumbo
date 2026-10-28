@@ -108,6 +108,19 @@ import Testing
         #expect(WatchedLevel.series(sessions, period: .twoWeeks, today: today, calendar: calendar).count == 14)
     }
 
+    @Test func allTimeStartsAtTheFirstSession() {
+        let recent = [session(3, 40, 20), session(0, 42, 20)]
+        let short = WatchedLevel.window(recent, period: .allTime, today: today, calendar: calendar)
+        #expect(short.days == 14 && short.bucketDays == 1, "at least two weeks, daily")
+        #expect(WatchedLevel.series(recent, period: .allTime, today: today, calendar: calendar).count == 2)
+
+        let long = [session(800, 30, 20), session(400, 36, 20), session(0, 45, 20)]
+        let window = WatchedLevel.window(long, period: .allTime, today: today, calendar: calendar)
+        #expect(window.days == 801 && window.bucketDays == 30, "over a year: monthly points")
+        let points = WatchedLevel.series(long, period: .allTime, today: today, calendar: calendar)
+        #expect(points.map(\.level) == [30, 36, 45], "nothing is cut off")
+    }
+
     @Test func emptyDaysAreLeftOut() {
         #expect(WatchedLevel.series([], period: .year, today: today, calendar: calendar).isEmpty)
         #expect(WatchedLevel.series([session(0, 40, 0)], period: .month, today: today, calendar: calendar).isEmpty)

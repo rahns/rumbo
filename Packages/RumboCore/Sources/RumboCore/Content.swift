@@ -131,40 +131,57 @@ public enum WatchedLevel {
     }
 
     public enum Period: String, CaseIterable, Sendable {
-        case twoWeeks = "14d", month = "1m", threeMonths = "3m", sixMonths = "6m", year = "1y"
+        case twoWeeks = "14d", month = "1m", threeMonths = "3m", sixMonths = "6m", year = "1y", allTime = "All"
 
-        /// How far back the chart looks.
-        public var days: Int {
+        /// How far back the chart looks; nil for all time, which starts at the first session.
+        public var days: Int? {
             switch self {
             case .twoWeeks: 14
             case .month: 30
             case .threeMonths: 91
             case .sixMonths: 182
             case .year: 365
+            case .allTime: nil
             }
         }
+    }
 
-        /// Days per point: daily for 14 days and a month, weekly beyond.
-        public var bucketDays: Int { days <= 30 ? 1 : 7 }
+    /// The span a chart covers and how many days each point averages.
+    public struct Window: Equatable, Sendable {
+        /// The first day shown.
+        public let start: Date
+        public let days: Int
+        /// 1 (daily) up to a month, 7 (weekly) up to a year, 30 (monthly) beyond.
+        public var bucketDays: Int { days <= 30 ? 1 : days <= 366 ? 7 : 30 }
+    }
+
+    /// The days ending today that `period` covers. All time starts at the first session (at least 14 days).
+    public static func window(_ sessions: [Session], period: Period, today: Date, calendar: Calendar = .current) -> Window {
+        let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: today))!
+        let days = period.days ?? max(14, sessions.map { session in
+            calendar.dateComponents([.day], from: calendar.startOfDay(for: session.date), to: end).day ?? 0
+        }.max() ?? 0)
+        return Window(start: calendar.date(byAdding: .day, value: -days, to: end)!, days: days)
     }
 
     public struct Point: Equatable, Sendable {
-        /// The start of the day or week.
+        /// The start of the day, week or month.
         public let date: Date
         /// Average level, weighted by minutes watched.
         public let level: Double
         public let minutes: Int
     }
 
-    /// Minute-weighted average level per day (14d, 1m) or week (3m, 6m, 1y), oldest first.
+    /// Minute-weighted average level per day, week or month (see `Window.bucketDays`), oldest first.
     /// Days or weeks with nothing watched are left out rather than drawn as zero.
     public static func series(_ sessions: [Session], period: Period, today: Date, calendar: Calendar = .current) -> [Point] {
-        let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: today))!
-        let start = calendar.date(byAdding: .day, value: -period.days, to: end)!
+        let window = window(sessions, period: period, today: today, calendar: calendar)
+        let start = window.start, size = window.bucketDays
+        let end = calendar.date(byAdding: .day, value: window.days, to: start)!
         var buckets: [Date: (weighted: Double, minutes: Int)] = [:]
         for session in sessions where session.date >= start && session.date < end && session.minutes > 0 {
             let days = calendar.dateComponents([.day], from: start, to: calendar.startOfDay(for: session.date)).day ?? 0
-            let bucket = calendar.date(byAdding: .day, value: days / period.bucketDays * period.bucketDays, to: start)!
+            let bucket = calendar.date(byAdding: .day, value: days / size * size, to: start)!
             let current = buckets[bucket] ?? (0, 0)
             buckets[bucket] = (current.weighted + session.level * Double(session.minutes), current.minutes + session.minutes)
         }
