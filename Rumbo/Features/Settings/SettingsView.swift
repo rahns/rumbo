@@ -107,7 +107,10 @@ struct SettingsView: View {
                 get: { profile.dsDifficultyLow },
                 set: { low in profile.dsDifficulty = max(0, low)...(max(0, low) + LearnerProfile.dreamingRangeWidth) }
             ), in: 0...(100 - LearnerProfile.dreamingRangeWidth))
-            Stepper("Language Transfer: track \(profile.languageTransferLastTrack)", value: binding(
+            // The last track finished, like Extra's "seen": finishing 13 means you're up to 14.
+            Stepper(profile.languageTransferLastTrack == 0
+                    ? "Language Transfer: not started"
+                    : "Language Transfer: finished Track \(profile.languageTransferLastTrack)", value: binding(
                 get: { profile.languageTransferLastTrack },
                 set: { profile.languageTransferLastTrack = $0; profile.languageTransferRepeatPending = false }
             ), in: 0...Course.languageTransferTracks)
