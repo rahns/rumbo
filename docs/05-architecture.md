@@ -59,6 +59,7 @@ The content catalog degrades gracefully: with no network (or a failed fetch) the
 - **Fallback with a warning:** with no key, the basic checker runs. If Gemini can't answer (both models out of free requests or busy, key refused, offline, any other error), the basic checker runs and the feedback shows a small warning above it saying why, e.g. "You've used Gemini's free limit for now, so the basic checker did this one. It's less accurate."
 - **Privacy:** the setup screen says that on the free tier Google may use what's sent to improve its products.
 - Request building, reply parsing and error classification are in RumboCore (`Gemini`, tested); sending is `Rumbo/Services/GeminiClient.swift`.
+- **Diagnostics → Gemini:** "Trace a full check" runs a writing check exactly like a task and lists every step with timings (`GeminiTrace`, a task-local log): model order and rests, streaming or one piece, HTTP status, first event, when the answer started, thinking updates, longest silence, why a stream was abandoned, fallbacks, and which checker answered. "Test each model and method" asks Flash-Lite and Flash, streaming and in one piece, directly (4 free requests). It also shows which models are resting, with "Clear rests". The trace is included in the copied report.
 
 **Basic checker (fallback):**
 1. **LanguageTool** (`https://api.languagetool.org/v2/check`, `language=es`) when online. Free, no key, rate-limited (~20 requests/min).

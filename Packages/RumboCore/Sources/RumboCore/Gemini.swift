@@ -168,11 +168,15 @@ public enum Gemini {
 
         public init() {}
 
-        /// True when the stream should be abandoned.
-        public func hasStalled(started: Date, firstEvent first: Date?, lastEvent: Date?, now: Date) -> Bool {
-            if now.timeIntervalSince(started) > total { return true }
-            guard first != nil, let lastEvent else { return now.timeIntervalSince(started) > firstEvent }
-            return now.timeIntervalSince(lastEvent) > silence
+        public enum Stall: Equatable, Sendable {
+            case neverStarted, wentQuiet, tooLong
+        }
+
+        /// Why the stream should be abandoned, or nil while it's fine.
+        public func stall(started: Date, firstEvent first: Date?, lastEvent: Date?, now: Date) -> Stall? {
+            if now.timeIntervalSince(started) > total { return .tooLong }
+            guard first != nil, let lastEvent else { return now.timeIntervalSince(started) > firstEvent ? .neverStarted : nil }
+            return now.timeIntervalSince(lastEvent) > silence ? .wentQuiet : nil
         }
     }
 

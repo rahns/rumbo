@@ -56,6 +56,31 @@ struct DiagnosticsView: View {
             }
 
             Section {
+                Button("Trace a full check", systemImage: "list.bullet.rectangle") {
+                    Task { await model.traceGeminiCheck() }
+                }
+                .disabled(model.geminiRunning)
+                Button("Test each model and method", systemImage: "square.grid.2x2") {
+                    Task { await model.probeGeminiModels() }
+                }
+                .disabled(model.geminiRunning)
+                LabeledContent("Resting", value: model.geminiRestingSummary)
+                    .font(.footnote)
+                Button("Clear rests", systemImage: "arrow.uturn.backward") {
+                    model.clearGeminiResting()
+                }
+                if let trace = model.geminiTrace {
+                    Text(trace)
+                        .font(.system(.caption, design: .monospaced))
+                        .textSelection(.enabled)
+                }
+            } header: {
+                Text("Gemini")
+            } footer: {
+                Text("Trace a full check runs a writing check exactly like a task: which model goes first, streaming or one piece, when the first event arrived, thinking updates, the longest silence, and any fallback. Test each model and method tries Flash-Lite and Flash, streaming and in one piece, directly (uses 4 free requests). A model that was busy or stuck rests for 30 minutes; Clear rests lets it go first again.")
+            }
+
+            Section {
                 Button(copied ? "Copied" : "Copy report", systemImage: copied ? "checkmark" : "doc.on.doc") {
                     UIPasteboard.general.string = model.report
                     copied = true

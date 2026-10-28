@@ -105,10 +105,10 @@ import Testing
         let limits = Gemini.StreamLimits()
         let start = Date(timeIntervalSince1970: 0)
         func at(_ seconds: TimeInterval) -> Date { start.addingTimeInterval(seconds) }
-        #expect(!limits.hasStalled(started: start, firstEvent: nil, lastEvent: nil, now: at(9)))
-        #expect(limits.hasStalled(started: start, firstEvent: nil, lastEvent: nil, now: at(11)), "never started")
-        #expect(!limits.hasStalled(started: start, firstEvent: at(1), lastEvent: at(40), now: at(60)), "still thinking")
-        #expect(limits.hasStalled(started: start, firstEvent: at(1), lastEvent: at(5), now: at(31)), "went quiet")
-        #expect(limits.hasStalled(started: start, firstEvent: at(1), lastEvent: at(90), now: at(91)), "total cap")
+        #expect(limits.stall(started: start, firstEvent: nil, lastEvent: nil, now: at(9)) == nil)
+        #expect(limits.stall(started: start, firstEvent: nil, lastEvent: nil, now: at(11)) == .neverStarted)
+        #expect(limits.stall(started: start, firstEvent: at(1), lastEvent: at(40), now: at(60)) == nil, "still thinking")
+        #expect(limits.stall(started: start, firstEvent: at(1), lastEvent: at(5), now: at(31)) == .wentQuiet)
+        #expect(limits.stall(started: start, firstEvent: at(1), lastEvent: at(90), now: at(91)) == .tooLong)
     }
 }

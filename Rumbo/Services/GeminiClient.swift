@@ -70,17 +70,22 @@ enum GeminiClient {
         for round in 0..<2 {
             if round > 0 {
                 guard lastError == .busy, Date.now.timeIntervalSince(started) < 30 else { break }
+                GeminiTrace.log("All models busy: waiting 2 s, then one more round")
                 try await Task.sleep(for: .seconds(2))
             }
-            for model in Gemini.order(resting: resting) {
+            let order = Gemini.order(resting: resting)
+            GeminiTrace.log("Order: " + order.map(Gemini.displayName(for:)).joined(separator: " → ") + restingNote)
+            for model in order {
                 do {
                     return (try await answer(model: model, input: input, instructions: instructions, key: key), model)
                 } catch let failure as Gemini.Failure where [.rateLimited, .busy, .timedOut, .modelUnavailable].contains(failure) {
                     note(failure)
                     rest(model)
+                    GeminiTrace.log("\(Gemini.displayName(for: model)) rests for 30 min")
                 }
             }
         }
+        GeminiTrace.log("Gave up on Gemini: \(lastError.localizedDescription)")
         throw lastError
     }
 
@@ -88,30 +93,53 @@ enum GeminiClient {
     /// itself goes wrong in an unexpected way, asks once more for the whole answer in one piece.
     private static func answer(model: String, input: String, instructions: String, key: String) async throws -> String {
         do {
-            return try await streamed(request(model: model, input: input, instructions: instructions, key: key, stream: true))
-        } catch Gemini.Failure.other {
-            var plain = request(model: model, input: input, instructions: instructions, key: key, stream: false)
-            plain.timeoutInterval = 50
-            do {
-                let (data, response) = try await URLSession.shared.data(for: plain)
-                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-                if let failure = Gemini.failure(status: status, body: data) { throw failure }
-                return try Gemini.outputText(from: data)
-            } catch let error as URLError where error.code == .timedOut || error.code == .networkConnectionLost {
-                throw Gemini.Failure.timedOut
-            }
+            return try await attempt(model: model, input: input, instructions: instructions, key: key, stream: true)
+        } catch let failure as Gemini.Failure {
+            guard case .other = failure else { throw failure }
+            GeminiTrace.log("Streaming didn't work, so asking for the answer in one piece")
+            return try await attempt(model: model, input: input, instructions: instructions, key: key, stream: false)
+        }
+    }
+
+    /// One request to one model, streamed or in one piece, with every step traced.
+    private static func attempt(model: String, input: String, instructions: String, key: String, stream: Bool) async throws -> String {
+        let name = Gemini.displayName(for: model)
+        let method = stream ? "streaming" : "one piece"
+        GeminiTrace.log("\(name) · \(method): sent")
+        let started = Date.now
+        do {
+            let text = stream
+                ? try await streamed(request(model: model, input: input, instructions: instructions, key: key, stream: true))
+                : try await onePiece(request(model: model, input: input, instructions: instructions, key: key, stream: false))
+            GeminiTrace.log("\(name) · \(method): answered in \(seconds(since: started)) (\(text.count) characters)")
+            return text
+        } catch {
+            GeminiTrace.log("\(name) · \(method): \(describe(error)) after \(seconds(since: started))")
+            throw error
         }
     }
 
     private static func request(model: String, input: String, instructions: String, key: String, stream: Bool) -> URLRequest {
         var request = URLRequest(url: Gemini.endpoint)
         request.httpMethod = "POST"
-        request.timeoutInterval = 30
+        request.timeoutInterval = stream ? 30 : 50
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(key, forHTTPHeaderField: "x-goog-api-key")
         if stream { request.setValue("text/event-stream", forHTTPHeaderField: "Accept") }
         request.httpBody = Gemini.requestBody(model: model, instructions: instructions, input: input, stream: stream)
         return request
+    }
+
+    private static func onePiece(_ request: URLRequest) async throws -> String {
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            GeminiTrace.log("HTTP \(status)")
+            if let failure = Gemini.failure(status: status, body: data) { throw failure }
+            return try Gemini.outputText(from: data)
+        } catch let error as URLError where error.code == .timedOut || error.code == .networkConnectionLost {
+            throw Gemini.Failure.timedOut
+        }
     }
 
     /// Reads a streamed answer while a watchdog checks the stall rules in `Gemini.StreamLimits`:
@@ -127,7 +155,12 @@ enum GeminiClient {
                 repeat {
                     try await Task.sleep(for: .seconds(1))
                     let (first, last) = activity.times
-                    if limits.hasStalled(started: activity.started, firstEvent: first, lastEvent: last, now: .now) {
+                    if let stall = limits.stall(started: activity.started, firstEvent: first, lastEvent: last, now: .now) {
+                        switch stall {
+                        case .neverStarted: GeminiTrace.log("Stopped waiting: no sign of life in \(Int(limits.firstEvent)) s")
+                        case .wentQuiet: GeminiTrace.log("Stopped waiting: silent for \(Int(limits.silence)) s after starting")
+                        case .tooLong: GeminiTrace.log("Stopped waiting: over \(Int(limits.total)) s in all")
+                        }
                         throw Gemini.Failure.timedOut
                     }
                 } while !Task.isCancelled
@@ -149,6 +182,7 @@ enum GeminiClient {
             throw Gemini.Failure.timedOut
         }
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        GeminiTrace.log("HTTP \(status) after \(seconds(since: activity.started))")
         guard (200..<300).contains(status) else {
             var body = Data()
             for try await byte in bytes { body.append(byte) }
@@ -156,17 +190,31 @@ enum GeminiClient {
         }
         var reader = Gemini.StreamReader()
         var text = ""
+        var thoughts = 0
+        var longestGap: TimeInterval = 0
+        func finish() -> String {
+            GeminiTrace.log("Stream finished: \(thoughts) thinking updates, longest silence \(String(format: "%.1f", longestGap)) s")
+            return text
+        }
         do {
             for try await line in bytes.lines {
                 guard let event = reader.read(line: line) else { continue }
+                let (first, last) = activity.times
+                if first == nil { GeminiTrace.log("First event after \(seconds(since: activity.started))") }
+                if let last { longestGap = max(longestGap, Date.now.timeIntervalSince(last)) }
                 activity.touch()
                 switch event {
-                case .activity: continue
-                case .text(let piece): text += piece
+                case .activity:
+                    if line.contains("thought") { thoughts += 1 }
+                case .text(let piece):
+                    if text.isEmpty { GeminiTrace.log("Answer started after \(seconds(since: activity.started))") }
+                    text += piece
                 case .completed:
                     guard !text.isEmpty else { throw Gemini.Failure.other("Gemini sent an empty reply.") }
-                    return text
-                case .failed(let failure): throw failure
+                    return finish()
+                case .failed(let failure):
+                    GeminiTrace.log("Error event in the stream")
+                    throw failure
                 }
             }
         } catch let error as URLError where error.code == .timedOut || error.code == .networkConnectionLost {
@@ -174,7 +222,66 @@ enum GeminiClient {
         }
         // The stream ended without saying it was complete; use what arrived if there is any.
         guard !text.isEmpty else { throw Gemini.Failure.other("Gemini's stream ended early.") }
-        return text
+        GeminiTrace.log("Stream ended without a completion event; using what arrived")
+        return finish()
+    }
+
+    // MARK: Diagnostics
+
+    /// Asks one model with one method directly (no order, rests or fallbacks), for Diagnostics.
+    static func probe(model: String, stream: Bool, key: String) async -> (ok: Bool, trace: [String]) {
+        let trace = GeminiTrace()
+        let ok: Bool = await GeminiTrace.$current.withValue(trace) {
+            do {
+                let text = try await attempt(model: model, input: "Writing task: Write about yesterday.\n\nLearner's text:\nAyer yo voy a la playa con mis amigo.",
+                                             instructions: CorrectionService.instructions(for: .a2_1), key: key, stream: stream)
+                let feedback = try Gemini.feedback(from: text)
+                GeminiTrace.log("Parsed: \(feedback.errors.count) corrections, rewrite \"\(feedback.naturalRewrite)\"")
+                return true
+            } catch {
+                return false
+            }
+        }
+        return (ok, trace.lines)
+    }
+
+    /// A full check exactly as a writing task runs it, with its trace.
+    static func traced(_ text: String, band: Band, prompt: String) async -> (result: Result<CorrectionService.Result, Error>, trace: [String]) {
+        let trace = GeminiTrace()
+        let result: Result<CorrectionService.Result, Error> = await GeminiTrace.$current.withValue(trace) {
+            do {
+                return .success(try await CorrectionService.correct(text, band: band, prompt: prompt))
+            } catch {
+                return .failure(error)
+            }
+        }
+        return (result, trace.lines)
+    }
+
+    /// Which models are resting, e.g. " (Gemini Flash resting until 14:32)".
+    static var restingNote: String {
+        let now = Date.now
+        let notes = resting.filter { $0.value > now }.sorted { $0.key < $1.key }
+            .map { "\(Gemini.displayName(for: $0.key)) resting until \($0.value.formatted(date: .omitted, time: .shortened))" }
+        return notes.isEmpty ? "" : " (" + notes.joined(separator: ", ") + ")"
+    }
+
+    static func clearResting() { UserDefaults.standard.removeObject(forKey: restingKey) }
+
+    private static func seconds(since date: Date) -> String {
+        String(format: "%.1f s", Date.now.timeIntervalSince(date))
+    }
+
+    private static func describe(_ error: Error) -> String {
+        switch error {
+        case Gemini.Failure.rateLimited: "out of free requests (429)"
+        case Gemini.Failure.busy: "busy (high demand)"
+        case Gemini.Failure.timedOut: "no answer in time"
+        case Gemini.Failure.invalidKey: "key not accepted"
+        case Gemini.Failure.modelUnavailable: "model not available (404)"
+        case Gemini.Failure.other(let message): "failed: \(message)"
+        default: "failed: \(error.localizedDescription)"
+        }
     }
 
     // MARK: Resting busy models
@@ -208,6 +315,24 @@ enum GeminiClient {
         default:
             "Gemini couldn't check this (\(error.localizedDescription)), so the basic checker did. It's less accurate."
         }
+    }
+}
+
+/// A step-by-step log of one Gemini check, for Diagnostics. Set as a task-local, so it follows the check
+/// into its child tasks; when nothing set it, logging does nothing.
+final class GeminiTrace: @unchecked Sendable {
+    @TaskLocal static var current: GeminiTrace?
+
+    private let started = Date.now
+    private let lock = NSLock()
+    private var entries: [String] = []
+
+    var lines: [String] { lock.withLock { entries } }
+
+    static func log(_ message: String) {
+        guard let trace = current else { return }
+        let offset = String(format: "%5.1f s", Date.now.timeIntervalSince(trace.started))
+        trace.lock.withLock { trace.entries.append("\(offset)  \(message)") }
     }
 }
 

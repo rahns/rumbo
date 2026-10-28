@@ -2,6 +2,7 @@ import ActivityKit
 import Foundation
 import FoundationModels
 import Observation
+import RumboCore
 import Security
 import UIKit
 import UserNotifications
@@ -48,6 +49,9 @@ enum CheckID: String, CaseIterable, Identifiable {
 final class DiagnosticsModel {
     var results: [CheckID: CheckStatus] = [:]
     var modelSample: String?
+    /// Step-by-step output of the Gemini tests.
+    var geminiTrace: String?
+    var geminiRunning = false
     var isRunning = false
 
     private let profile = ProvisioningProfile.embedded()
@@ -189,6 +193,59 @@ final class DiagnosticsModel {
         }
     }
 
+    // MARK: - Gemini
+
+    /// A full writing check exactly as a task runs it, with every step: order, model, method, timings, fallback.
+    func traceGeminiCheck() async {
+        geminiRunning = true
+        defer { geminiRunning = false }
+        geminiTrace = "Running a full check…"
+        let (result, trace) = await GeminiClient.traced(Self.sampleText, band: .a2_1, prompt: "Write about yesterday.")
+        var lines = ["Full check" + (GeminiKey.current == nil ? " (no Gemini key: basic checker only)" : "")] + trace
+        switch result {
+        case .success(let feedback):
+            lines.append("Checked by: \(feedback.engine)")
+            if let notice = feedback.notice { lines.append("⚠️ \(notice)") }
+            lines += feedback.corrections.map { "• \($0.original) → \($0.corrected)" }
+        case .failure(let error):
+            lines.append("❌ \(error.localizedDescription)")
+        }
+        geminiTrace = lines.joined(separator: "\n")
+    }
+
+    /// Each model with each method, directly (no order, rests or fallbacks). Uses 4 of the free requests.
+    func probeGeminiModels() async {
+        guard let key = GeminiKey.current else {
+            geminiTrace = "No Gemini key. Add one in Settings → Writing feedback."
+            return
+        }
+        geminiRunning = true
+        defer { geminiRunning = false }
+        var lines: [String] = []
+        for model in Gemini.models {
+            for stream in [true, false] {
+                let label = "\(Gemini.displayName(for: model)) · \(stream ? "streaming" : "one piece")"
+                lines.append("— \(label): running…")
+                geminiTrace = lines.joined(separator: "\n")
+                let (ok, trace) = await GeminiClient.probe(model: model, stream: stream, key: key)
+                lines.removeLast()
+                lines.append("— \(label): \(ok ? "✅ works" : "❌ failed")")
+                lines += trace
+                geminiTrace = lines.joined(separator: "\n")
+            }
+        }
+    }
+
+    var geminiRestingSummary: String {
+        let note = GeminiClient.restingNote
+        return note.isEmpty ? "No model is resting." : String(note.dropFirst(2).dropLast()) + "."
+    }
+
+    func clearGeminiResting() {
+        GeminiClient.clearResting()
+        geminiTrace = "Rests cleared: the next check tries \(Gemini.models.map(Gemini.displayName(for:)).joined(separator: " → ")) again."
+    }
+
     // MARK: - Report
 
     static var appVersion: String {
@@ -207,6 +264,9 @@ final class DiagnosticsModel {
         }
         if let modelSample {
             lines.append("\nWriting correction sample:\n\(modelSample)")
+        }
+        if let geminiTrace {
+            lines.append("\nGemini:\n\(geminiTrace)")
         }
         return lines.joined(separator: "\n")
     }
