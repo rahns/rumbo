@@ -161,7 +161,7 @@ Implemented in `Rumbo/Features/Review/MistakeDeckViews.swift`; cards are `Review
 A card at the very bottom of Today (below "Log extra listening", since it isn't needed most days) toggles Travel mode, explaining what it does: a real-world mission joins the plan, and offline days only get offline-capable tasks. It applies to the next plan (re-pick today's time to use it today). Pico wears the backpacker look while it's on.
 
 ### Settings
-Share (send a friend the latest release, see what's new), Goal (opens the goal page: level, weekly goal and target date, linked), sources, Travel mode, progress fixes (the Dreaming Spanish range slides by 1 and is always 5 wide; Language Transfer shows the last track finished, "finished Track 13"; Extra en Español moves one part at a time and shows the last part seen, "seen Ep 3 Part 2"), week start, reminders, AI correction (engine status, optional own API key), backup (save a file / restore from a file), reset (start onboarding again).
+Share (send a friend the latest release, see what's new), Goal (opens the goal page: level, weekly goal and target date, linked), sources, Travel mode, progress fixes (the Dreaming Spanish range slides by 1 and is always 5 wide; Language Transfer shows the last track finished, "finished Track 13"; Duolingo shows where you are, "doing section 4", "doing unit 42"; Extra en Español moves one part at a time and shows the last part seen, "seen Ep 3 Part 2"), week start, reminders, AI correction (engine status, optional own API key), backup (save a file / restore from a file), reset (start onboarding again).
 
 ## 3.5 Motion and haptics catalog
 

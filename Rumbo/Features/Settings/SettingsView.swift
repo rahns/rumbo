@@ -114,11 +114,11 @@ struct SettingsView: View {
                 get: { profile.languageTransferLastTrack },
                 set: { profile.languageTransferLastTrack = $0; profile.languageTransferRepeatPending = false }
             ), in: 0...Course.languageTransferTracks)
-            Stepper("Duolingo: section \(profile.duolingoSection)", value: binding(
+            Stepper("Duolingo: doing section \(profile.duolingoSection)", value: binding(
                 get: { profile.duolingoSection },
                 set: { profile.duolingoSection = $0 }
             ), in: 1...10)
-            Stepper("Duolingo: unit \(profile.duolingoUnit)", value: binding(
+            Stepper("Duolingo: doing unit \(profile.duolingoUnit)", value: binding(
                 get: { profile.duolingoUnit },
                 set: { profile.duolingoUnit = $0 }
             ), in: 1...300)
