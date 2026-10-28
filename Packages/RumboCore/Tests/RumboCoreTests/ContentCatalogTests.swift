@@ -79,3 +79,37 @@ import Testing
         #expect(abs(points.last!.hours - 128) < 0.001)
     }
 }
+
+@Suite struct WatchedLevelTests {
+    let calendar = TestCalendar.utc
+    let today = TestCalendar.day(2026, 10, 28)
+
+    func session(_ daysAgo: Int, _ level: Double, _ minutes: Int) -> WatchedLevel.Session {
+        WatchedLevel.Session(date: TestCalendar.adding(days: -daysAgo, to: today), level: level, minutes: minutes)
+    }
+
+    @Test func dailyPointsAreMinuteWeighted() {
+        // 20 min at 40 and 10 min at 46 on the same day: (800 + 460) / 30 = 42.
+        let points = WatchedLevel.series([session(0, 40, 20), session(0, 46, 10), session(3, 38, 15)],
+                                         period: .twoWeeks, today: today, calendar: calendar)
+        #expect(points.count == 2)
+        #expect(abs(points.last!.level - 42) < 0.001)
+        #expect(points.last!.minutes == 30)
+        #expect(points.first!.level == 38)
+    }
+
+    @Test func longerPeriodsUseWeeksAndDropOlderSessions() {
+        let sessions = (0..<120).map { session($0, 30 + Double(120 - $0) / 10, 20) }
+        let month = WatchedLevel.series(sessions, period: .month, today: today, calendar: calendar)
+        #expect(month.count == 30)
+        let threeMonths = WatchedLevel.series(sessions, period: .threeMonths, today: today, calendar: calendar)
+        #expect(threeMonths.count == 13)
+        #expect(threeMonths.first!.level < threeMonths.last!.level, "rising level shows as rising")
+        #expect(WatchedLevel.series(sessions, period: .twoWeeks, today: today, calendar: calendar).count == 14)
+    }
+
+    @Test func emptyDaysAreLeftOut() {
+        #expect(WatchedLevel.series([], period: .year, today: today, calendar: calendar).isEmpty)
+        #expect(WatchedLevel.series([session(0, 40, 0)], period: .month, today: today, calendar: calendar).isEmpty)
+    }
+}

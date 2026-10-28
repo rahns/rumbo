@@ -57,6 +57,7 @@ struct BackupFile: Codable {
         var isBonus: Bool
         var difficultyLow: Int?
         var difficultyHigh: Int?
+        var levelWatched: Int?
     }
 
     struct WritingData: Codable {
@@ -190,7 +191,8 @@ extension BackupFile.CardData {
 extension BackupFile.LogData {
     init(_ log: ActivityLog) {
         self.init(date: log.date, task: log.taskRaw, minutes: log.minutes, comprehension: log.comprehension,
-                  rating: log.rating, isBonus: log.isBonus, difficultyLow: log.difficultyLow, difficultyHigh: log.difficultyHigh)
+                  rating: log.rating, isBonus: log.isBonus, difficultyLow: log.difficultyLow, difficultyHigh: log.difficultyHigh,
+                  levelWatched: log.levelWatched)
     }
 
     func makeLog() -> ActivityLog {
@@ -201,6 +203,7 @@ extension BackupFile.LogData {
         log.isBonus = isBonus
         log.difficultyLow = difficultyLow
         log.difficultyHigh = difficultyHigh
+        log.levelWatched = levelWatched
         return log
     }
 }

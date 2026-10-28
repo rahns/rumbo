@@ -159,6 +159,9 @@ final class AppModel {
         BudgetAdvisor.advice(weeklyGoal: profile?.weeklyGoalMinutes ?? 150, minutesThisWeek: streak.minutesThisWeek, today: .now, calendar: calendar)
     }
 
+    /// Dreaming Spanish sessions with the level watched, for the Progress chart.
+    var watchedLevels: [WatchedLevel.Session] { logs.compactMap(\.watchedLevel) }
+
     var minutesToday: Int {
         logs.filter { calendar.isDateInToday($0.date) }.reduce(0) { $0 + $1.minutes }
     }
@@ -399,6 +402,8 @@ final class AppModel {
         var duolingoPosition: (section: Int, unit: Int)?
         /// After a Language Transfer task: the track the learner is up to now (91 = course finished).
         var languageTransferNextTrack: Int? = nil
+        /// After a Dreaming Spanish task: the difficulty watched (0–100).
+        var levelWatched: Int? = nil
     }
 
     func complete(_ task: PlannedTaskRecord, with completion: Completion) {
@@ -410,6 +415,9 @@ final class AppModel {
         if task.task == .dsWatch {
             log.difficultyLow = profile.dsDifficultyLow
             log.difficultyHigh = profile.dsDifficultyHigh
+        }
+        if task.task == .dsWatch || task.task == .dsEasy {
+            log.levelWatched = completion.levelWatched
         }
         context.insert(log)
         task.status = .done

@@ -117,7 +117,7 @@ Intro → the next band's 10 can-do statements one at a time → ≥ 7 "¡Sí!" 
 ### Task flow
 1. Tap **Start** → timer starts, Live Activity appears in the Dynamic Island, the source opens via deep link.
 2. Come back to Rumbo → "Done?" sheet with the timer's minutes pre-filled and adjustable.
-3. Quick rating, asked only where the answer changes something, each with small print saying what it does: comprehension after Dreaming Spanish (tunes the difficulty range), "Which track are you up to now?" after Language Transfer (defaults to the next track; set it back to repeat one), Easy / OK / Hard after a Tandem text message (Easy or OK on the latest one is needed to unlock voice notes), and the Duolingo position after the warm-up. Easy Dreaming, Extra, voice notes and calls ask nothing beyond minutes.
+3. Quick rating, asked only where the answer changes something, each with small print saying what it does: comprehension after Dreaming Spanish (tunes the difficulty range), "What level did you watch?" after Dreaming Spanish and Easy Dreaming (difficulty 0–100, pre-filled with the middle of the planned range; feeds the Progress chart), "Which track are you up to now?" after Language Transfer (defaults to the next track; set it back to repeat one), Easy / OK / Hard after a Tandem text message (Easy or OK on the latest one is needed to unlock voice notes), and the Duolingo position after the warm-up. Extra, voice notes and calls ask nothing beyond minutes.
 4. Card flips to complete, Pico cheers, "+22 min" flies into the training-hours badge, haptic success.
 
 ### Writing
@@ -148,6 +148,7 @@ Implemented in `Rumbo/Features/Review/MistakeDeckViews.swift`; cards are `Review
 - Hours ring toward the next band.
 - **Strand balance:** one row per strand, named Listening, Speaking & writing, Study and Fluency practice, each with what counts toward it (e.g. "Easy videos, quick writes and 4-3-2 talks"). Shows the last 7 days' minutes and share, a bar for the share, and a tick at the band's target share.
 - **Where you're heading:** a timeline from now (current level and hours) through each level's expected arrival, with the target as a flag in date order ("Your target: B2 · Jul 2028", what the goal needs in hours, and the hours and level the current pace reaches by then, or "on track"); the goal's level is starred; levels after the target are faded. Below it: what 10 more minutes a day would reach by the target.
+- **Level you watch** (shown when Dreaming Spanish is on): the average Dreaming Spanish difficulty watched, weighted by minutes, with a 14d / 1m / 3m / 6m / 1y picker (remembered). 14d and 1m plot one point per day; 3m, 6m and 1y one per week. Days or weeks with nothing watched are left out, not drawn as zero. Older logs without a level use the middle of their range. A line above says the change, e.g. "Level 42 → 45, up 3 over 3m". Logic: `WatchedLevel.series` in RumboCore.
 - Streak, freezes, training hours.
 - **Heat map:** the last 12 calendar weeks, one square per day (weeks start on the learner's chosen day), shaded by minutes, today outlined.
 - Source progress: Language Transfer track bar, Extra episodes, Duolingo section.

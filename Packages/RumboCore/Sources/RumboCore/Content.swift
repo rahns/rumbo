@@ -114,3 +114,63 @@ public enum ProgressStats {
         return points
     }
 }
+
+/// The Dreaming Spanish level watched over time, for the Progress chart (docs/03-experience.md "Progress tab").
+public enum WatchedLevel {
+    /// One logged session: the level watched and for how long.
+    public struct Session: Equatable, Sendable {
+        public let date: Date
+        public let level: Double
+        public let minutes: Int
+
+        public init(date: Date, level: Double, minutes: Int) {
+            self.date = date
+            self.level = level
+            self.minutes = minutes
+        }
+    }
+
+    public enum Period: String, CaseIterable, Sendable {
+        case twoWeeks = "14d", month = "1m", threeMonths = "3m", sixMonths = "6m", year = "1y"
+
+        /// How far back the chart looks.
+        public var days: Int {
+            switch self {
+            case .twoWeeks: 14
+            case .month: 30
+            case .threeMonths: 91
+            case .sixMonths: 182
+            case .year: 365
+            }
+        }
+
+        /// Days per point: daily for 14 days and a month, weekly beyond.
+        public var bucketDays: Int { days <= 30 ? 1 : 7 }
+    }
+
+    public struct Point: Equatable, Sendable {
+        /// The start of the day or week.
+        public let date: Date
+        /// Average level, weighted by minutes watched.
+        public let level: Double
+        public let minutes: Int
+    }
+
+    /// Minute-weighted average level per day (14d, 1m) or week (3m, 6m, 1y), oldest first.
+    /// Days or weeks with nothing watched are left out rather than drawn as zero.
+    public static func series(_ sessions: [Session], period: Period, today: Date, calendar: Calendar = .current) -> [Point] {
+        let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: today))!
+        let start = calendar.date(byAdding: .day, value: -period.days, to: end)!
+        var buckets: [Date: (weighted: Double, minutes: Int)] = [:]
+        for session in sessions where session.date >= start && session.date < end && session.minutes > 0 {
+            let days = calendar.dateComponents([.day], from: start, to: calendar.startOfDay(for: session.date)).day ?? 0
+            let bucket = calendar.date(byAdding: .day, value: days / period.bucketDays * period.bucketDays, to: start)!
+            let current = buckets[bucket] ?? (0, 0)
+            buckets[bucket] = (current.weighted + session.level * Double(session.minutes), current.minutes + session.minutes)
+        }
+        return buckets.keys.sorted().map { date in
+            let bucket = buckets[date]!
+            return Point(date: date, level: bucket.weighted / Double(bucket.minutes), minutes: bucket.minutes)
+        }
+    }
+}

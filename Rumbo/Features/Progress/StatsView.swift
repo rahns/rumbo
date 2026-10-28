@@ -1,7 +1,7 @@
 import RumboCore
 import SwiftUI
 
-/// Progress tab: level, strand balance, projection chart, streak, 12-week heat map and course progress.
+/// Progress tab: level, strand balance, projection chart, level watched, streak, 12-week heat map and course progress.
 struct StatsView: View {
     @Environment(AppModel.self) private var model
 
@@ -15,6 +15,11 @@ struct StatsView: View {
                             StrandBalanceChart(minutes: model.strandMinutesThisWeek, targets: profile.band.strandTargets)
                         }
                         projectionCard(profile)
+                        if profile.enabledSources.contains(.dreamingSpanish) {
+                            RaisedCard(accent: Palette.coral) {
+                                WatchedLevelChart(sessions: model.watchedLevels, calendar: model.calendar)
+                            }
+                        }
                         streakCard
                         RaisedCard(accent: Palette.leaf) {
                             PracticeHeatMap(weeks: model.heatMapWeeks(), calendar: model.calendar)

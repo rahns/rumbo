@@ -22,6 +22,7 @@ struct TaskSessionView: View {
     @State private var feedback: CorrectionService.Result?
     @State private var addingCorrection = false
     @State private var ltNextTrack = 1
+    @State private var levelWatched = 40
     @State private var duolingoSection = 1
     @State private var duolingoUnit = 1
     @State private var keyboardVisible = false
@@ -30,6 +31,7 @@ struct TaskSessionView: View {
     private var kind: TaskKind { task.task }
     private var color: Color { kind.strand.color }
     private var isWriting: Bool { kind == .writeGuided || kind == .writeQuick }
+    private var isDreaming: Bool { kind == .dsWatch || kind == .dsEasy }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -230,6 +232,14 @@ struct TaskSessionView: View {
                     ], selection: $comprehension)
                 }
             }
+            if isDreaming {
+                question("What level did you watch?",
+                         explanation: "The difficulty on Dreaming Spanish (0–100). Watched a few? Pick the middle. Progress charts it so you can see your level climb.") {
+                    RaisedCard {
+                        NumberStepper(title: "Difficulty", value: $levelWatched, range: 0...100, step: 1)
+                    }
+                }
+            }
             if kind == .ltTrack {
                 question("Which track are you up to now?",
                          explanation: "Rumbo plans this track next. Did more than one? Move it on. Want to repeat one? Set it back.") {
@@ -379,6 +389,9 @@ struct TaskSessionView: View {
         } else {
             ltNextTrack = (model.profile?.languageTransferLastTrack ?? 0) + 1
         }
+        // The middle of the planned range: 40–45 suggests 43.
+        let range: ClosedRange<Int> = if case .dreamingDifficulty(let planned) = task.detail { planned } else { model.profile?.dsDifficulty ?? 40...45 }
+        levelWatched = (range.lowerBound + range.upperBound + 1) / 2
         withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { logging = true }
     }
 
@@ -392,7 +405,8 @@ struct TaskSessionView: View {
             feedback: kind == .writeGuided ? feedback : nil,
             rewrite: kind == .writeGuided ? rewrite : nil,
             duolingoPosition: kind == .duoLesson ? (section: duolingoSection, unit: duolingoUnit) : nil,
-            languageTransferNextTrack: kind == .ltTrack ? ltNextTrack : nil
+            languageTransferNextTrack: kind == .ltTrack ? ltNextTrack : nil,
+            levelWatched: isDreaming ? levelWatched : nil
         ))
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()
