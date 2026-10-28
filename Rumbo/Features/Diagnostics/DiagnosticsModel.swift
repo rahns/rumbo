@@ -118,8 +118,8 @@ final class DiagnosticsModel {
         guard let key = GeminiKey.current else {
             return .warn("Not set up. Writing is checked by the basic checker. Add a key in Settings → Writing feedback.")
         }
-        if let problem = await GeminiClient.test(key: key) { return .fail(problem) }
-        return .pass("Key works. Use \"Test writing correction\" for a sample.")
+        let result = await GeminiClient.test(key: key)
+        return result.works ? .pass("\(result.message) Use \"Test writing correction\" for a sample.") : .fail(result.message)
     }
 
     private func checkOnDeviceModel() -> CheckStatus {

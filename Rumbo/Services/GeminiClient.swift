@@ -38,41 +38,49 @@ enum GeminiClient {
         )
     }
 
-    /// A tiny request to check a key works. Returns nil when it does, or what's wrong.
-    static func test(key: String) async -> String? {
+    /// A tiny request to check a key works. Busy or rate-limited replies still mean Google accepted the key.
+    static func test(key: String) async -> (works: Bool, message: String) {
         do {
             _ = try await send(input: "Escribe: «Ayer fui a la playa.»", instructions: "Reply with the JSON asked for.", key: key)
-            return nil
+            return (true, "It works. Pico will use Gemini to check your writing.")
         } catch Gemini.Failure.rateLimited {
-            // The key is real; it's just out of free requests for now.
-            return nil
+            return (true, "Your key works, but its free limit is used up for now. Pico uses the basic checker until it resets.")
+        } catch Gemini.Failure.busy {
+            return (true, "Your key works. Gemini is busy right now, so a check may use the basic checker until it calms down.")
         } catch Gemini.Failure.invalidKey {
-            return "Google didn't accept that key. Check you copied all of it."
+            return (false, "Google didn't accept that key. Check you copied all of it.")
         } catch {
-            return "Couldn't reach Gemini: \(error.localizedDescription)"
+            return (false, "Couldn't reach Gemini: \(error.localizedDescription)")
         }
     }
 
-    /// Tries each model in turn: each has its own free quota, so the lighter one covers when the first is used up.
+    /// Tries each model in turn: each has its own free quota and load, so the lighter one covers when the first is
+    /// used up or busy. If they're all just busy, waits 2 seconds and goes round once more.
     private static func send(input: String, instructions: String, key: String) async throws -> (text: String, model: String) {
-        var lastError: Error = Gemini.Failure.rateLimited
-        for model in Gemini.models {
-            var request = URLRequest(url: Gemini.endpoint)
-            request.httpMethod = "POST"
-            request.timeoutInterval = 45
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.setValue(key, forHTTPHeaderField: "x-goog-api-key")
-            request.httpBody = Gemini.requestBody(model: model, instructions: instructions, input: input)
-            let (data, response) = try await URLSession.shared.data(for: request)
-            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            switch Gemini.failure(status: status, body: data) {
-            case nil:
-                return (try Gemini.outputText(from: data), model)
-            case .rateLimited?, .modelUnavailable?:
-                lastError = Gemini.failure(status: status, body: data)!
-                continue
-            case let failure?:
-                throw failure
+        // When every model fails, report the most useful reason: out of free requests beats busy beats unavailable.
+        var lastError: Gemini.Failure = .modelUnavailable
+        for round in 0..<2 {
+            if round > 0 {
+                guard lastError == .busy else { break }
+                try await Task.sleep(for: .seconds(2))
+            }
+            for model in Gemini.models {
+                var request = URLRequest(url: Gemini.endpoint)
+                request.httpMethod = "POST"
+                request.timeoutInterval = 45
+                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                request.setValue(key, forHTTPHeaderField: "x-goog-api-key")
+                request.httpBody = Gemini.requestBody(model: model, instructions: instructions, input: input)
+                let (data, response) = try await URLSession.shared.data(for: request)
+                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+                switch Gemini.failure(status: status, body: data) {
+                case nil:
+                    return (try Gemini.outputText(from: data), model)
+                case let failure? where failure == .rateLimited || failure == .busy || failure == .modelUnavailable:
+                    if failure == .rateLimited || (failure == .busy && lastError != .rateLimited) { lastError = failure }
+                case let failure?:
+                    throw failure
+                }
             }
         }
         throw lastError
@@ -85,6 +93,8 @@ enum GeminiClient {
             "You've used Gemini's free limit for now, so the basic checker did this one. It's less accurate. The limit resets daily."
         case Gemini.Failure.invalidKey:
             "Gemini didn't accept your API key, so the basic checker did this one. Check the key in Settings → Writing feedback."
+        case Gemini.Failure.busy:
+            "Gemini is busy right now (high demand), so the basic checker did this one. Try checking again in a minute."
         case Gemini.Failure.modelUnavailable:
             "Gemini's models aren't available to your key right now, so the basic checker did this one."
         case let urlError as URLError where urlError.code == .notConnectedToInternet || urlError.code == .networkConnectionLost:

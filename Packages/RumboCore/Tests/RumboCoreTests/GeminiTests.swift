@@ -44,6 +44,9 @@ import Testing
         #expect(Gemini.failure(status: 401, body: Data()) == .invalidKey)
         #expect(Gemini.failure(status: 400, body: Data(#"{"error":{"code":400,"message":"API key not valid.","status":"INVALID_ARGUMENT"}}"#.utf8)) == .invalidKey)
         #expect(Gemini.failure(status: 404, body: Data()) == .modelUnavailable)
-        #expect(Gemini.failure(status: 500, body: Data(#"{"error":{"code":"internal","message":"Boom"}}"#.utf8)) == .other("Boom"))
+        let busy = Data(#"{"error":{"code":503,"message":"gemini-3.8-flash is currently experiencing high demand.","status":"UNAVAILABLE"}}"#.utf8)
+        #expect(Gemini.failure(status: 503, body: busy) == .busy)
+        #expect(Gemini.failure(status: 500, body: Data()) == .busy)
+        #expect(Gemini.failure(status: 418, body: Data(#"{"error":{"code":"teapot","message":"Boom"}}"#.utf8)) == .other("Boom"))
     }
 }

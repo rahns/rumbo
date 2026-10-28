@@ -6,7 +6,8 @@ public enum Gemini {
     public static let endpoint = URL(string: "https://generativelanguage.googleapis.com/v1beta/interactions")!
     /// Where to create a free key.
     public static let keyPage = URL(string: "https://aistudio.google.com/apikey")!
-    /// Tried in order: each model has its own free quota, so the lighter one picks up when the first runs out.
+    /// Tried in order: each model has its own free quota and load, so the lighter one picks up when the first
+    /// is used up or busy.
     public static let models = ["gemini-3.8-flash", "gemini-3.5-flash-lite"]
 
     /// What the model returns: the same shape as the on-device checker's `WritingFeedback`.
@@ -33,6 +34,8 @@ public enum Gemini {
         case invalidKey
         /// 404: this model isn't available to the key; try the next one.
         case modelUnavailable
+        /// 500/503/504: Google is overloaded ("high demand") or had a hiccup. The key is fine; try the next model.
+        case busy
         /// Anything else, with the server's message when there is one.
         case other(String)
     }
@@ -113,6 +116,7 @@ public enum Gemini {
         case 429: return .rateLimited
         case 401, 403: return .invalidKey
         case 404: return .modelUnavailable
+        case 500, 502, 503, 504: return .busy
         case 400 where code.contains("key") || message.lowercased().contains("api key"): return .invalidKey
         default: return .other(message.isEmpty ? "Gemini returned error \(status)." : message)
         }
@@ -125,6 +129,7 @@ extension Gemini.Failure: LocalizedError {
         case .rateLimited: "Free limit reached"
         case .invalidKey: "Key not accepted"
         case .modelUnavailable: "Model not available"
+        case .busy: "Gemini is busy"
         case .other(let message): message
         }
     }

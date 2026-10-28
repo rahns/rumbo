@@ -96,9 +96,9 @@ struct GeminiKeySetup: View {
     private func test() async {
         testing = true
         defer { testing = false }
-        let problem = await GeminiClient.test(key: key.trimmingCharacters(in: .whitespacesAndNewlines))
-        testPassed = problem == nil
-        testResult = problem ?? "It works. Pico will use Gemini to check your writing."
+        let result = await GeminiClient.test(key: key.trimmingCharacters(in: .whitespacesAndNewlines))
+        testPassed = result.works
+        testResult = result.message
     }
 }
 
