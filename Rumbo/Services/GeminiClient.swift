@@ -34,7 +34,7 @@ enum GeminiClient {
             corrections: Mistakes.merge(model: feedback.corrections, languageTool: []),
             naturalRewrite: feedback.naturalRewrite,
             strengths: Array(feedback.strengths.prefix(2)),
-            engine: reply.model == Gemini.models.first ? "Gemini" : "Gemini (lighter model)"
+            engine: Gemini.displayName(for: reply.model)
         )
     }
 
@@ -56,7 +56,7 @@ enum GeminiClient {
         }
     }
 
-    /// Tries each model in turn: each has its own free quota and load, so the lighter one covers when the first is
+    /// Tries each model in turn: each has its own free quota and load, so the other covers when the first is
     /// used up, busy or too slow. A model that failed rests for 30 minutes (tried last), so checks don't keep waiting on it. If they're all just busy and there's time left, waits 2 seconds and goes round once more.
     private static func send(input: String, instructions: String, key: String) async throws -> (text: String, model: String) {
         let started = Date.now
@@ -74,7 +74,7 @@ enum GeminiClient {
             for (index, model) in Gemini.order(resting: resting).enumerated() {
                 var request = URLRequest(url: Gemini.endpoint)
                 request.httpMethod = "POST"
-                // Short enough that the lighter model still gets its turn while Pico is "reading".
+                // Short enough that the other model still gets its turn while Pico is "reading".
                 request.timeoutInterval = index == 0 ? 25 : 20
                 request.setValue("application/json", forHTTPHeaderField: "Content-Type")
                 request.setValue(key, forHTTPHeaderField: "x-goog-api-key")

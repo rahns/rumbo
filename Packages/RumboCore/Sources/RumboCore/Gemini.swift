@@ -6,9 +6,14 @@ public enum Gemini {
     public static let endpoint = URL(string: "https://generativelanguage.googleapis.com/v1beta/interactions")!
     /// Where to create a free key.
     public static let keyPage = URL(string: "https://aistudio.google.com/apikey")!
-    /// Tried in order: each model has its own free quota and load, so the lighter one picks up when the first
-    /// is used up or busy.
-    public static let models = ["gemini-3.8-flash", "gemini-3.5-flash-lite"]
+    /// Tried in order. Flash-Lite is plenty for short A2–B1 corrections and is rarely busy; Flash, with its own free
+    /// quota and load, picks up when Flash-Lite is used up or busy.
+    public static let models = ["gemini-3.5-flash-lite", "gemini-3.8-flash"]
+
+    /// The name shown under feedback, e.g. "Gemini Flash-Lite".
+    public static func displayName(for model: String) -> String {
+        model.contains("lite") ? "Gemini Flash-Lite" : "Gemini Flash"
+    }
 
     /// How long a model that was busy, too slow or out of free requests is tried last, so checks don't wait on it.
     public static let restAfterFailure: TimeInterval = 30 * 60
@@ -80,8 +85,9 @@ public enum Gemini {
             "system_instruction": instructions,
             "store": false,
             "response_format": ["type": "text", "mime_type": "application/json", "schema": schema],
-            // Corrections don't need long reasoning; the lowest level each model accepts keeps them quick.
-            "generation_config": ["thinking_level": model.contains("lite") ? "minimal" : "low"],
+            // A little reasoning helps with tense and agreement; "low" is the lowest level both models accept above
+            // Flash-Lite's "minimal" and keeps checks quick.
+            "generation_config": ["thinking_level": "low"],
         ]
         return (try? JSONSerialization.data(withJSONObject: body, options: [.sortedKeys])) ?? Data()
     }

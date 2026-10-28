@@ -14,7 +14,10 @@ import Testing
         #expect(format["mime_type"] as? String == "application/json")
         #expect((object["generation_config"] as? [String: Any])?["thinking_level"] as? String == "low")
         let lite = try #require(try JSONSerialization.jsonObject(with: Gemini.requestBody(model: "gemini-3.5-flash-lite", instructions: "", input: "")) as? [String: Any])
-        #expect((lite["generation_config"] as? [String: Any])?["thinking_level"] as? String == "minimal")
+        #expect((lite["generation_config"] as? [String: Any])?["thinking_level"] as? String == "low")
+        #expect(Gemini.models.first == "gemini-3.5-flash-lite", "Flash-Lite is the default")
+        #expect(Gemini.displayName(for: "gemini-3.5-flash-lite") == "Gemini Flash-Lite")
+        #expect(Gemini.displayName(for: "gemini-3.8-flash") == "Gemini Flash")
     }
 
     @Test func readsTheModelOutputStep() throws {
