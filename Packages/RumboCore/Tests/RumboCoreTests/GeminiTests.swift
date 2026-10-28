@@ -62,3 +62,53 @@ import Testing
         #expect(Gemini.failure(status: 418, body: Data(#"{"error":{"code":"teapot","message":"Boom"}}"#.utf8)) == .other("Boom"))
     }
 }
+
+@Suite struct GeminiStreamTests {
+    @Test func streamedRequestsAskForThoughtSummaries() throws {
+        let body = try #require(try JSONSerialization.jsonObject(with: Gemini.requestBody(model: "m", instructions: "", input: "", stream: true)) as? [String: Any])
+        #expect(body["stream"] as? Bool == true)
+        #expect((body["generation_config"] as? [String: Any])?["thinking_summaries"] as? String == "auto")
+        let plain = try #require(try JSONSerialization.jsonObject(with: Gemini.requestBody(model: "m", instructions: "", input: "")) as? [String: Any])
+        #expect(plain["stream"] == nil)
+    }
+
+    @Test func readsTextOnlyFromTheOutputStep() {
+        var reader = Gemini.StreamReader()
+        let lines = [
+            "event: interaction.created",
+            #"data: {"interaction":{"id":"v1_x","status":"in_progress"},"event_type":"interaction.created"}"#,
+            #"data: {"index":0,"step":{"type":"thought"},"event_type":"step.start"}"#,
+            #"data: {"index":0,"delta":{"type":"thought_summary","content":{"type":"text","text":"Checking tenses"}},"event_type":"step.delta"}"#,
+            #"data: {"index":0,"delta":{"type":"text","text":"not the answer"},"event_type":"step.delta"}"#,
+            #"data: {"index":1,"step":{"type":"model_output"},"event_type":"step.start"}"#,
+            #"data: {"index":1,"delta":{"text":"{\"errors\":[],","type":"text"},"event_type":"step.delta"}"#,
+            #"data: {"index":1,"delta":{"text":"\"naturalRewrite\":\"Hola\",\"strengths\":[]}","type":"text"},"event_type":"step.delta"}"#,
+            #"data: {"interaction":{"id":"v1_x","status":"completed"},"event_type":"interaction.completed"}"#,
+            "data: [DONE]",
+        ]
+        let events = lines.compactMap { reader.read(line: $0) }
+        let text = events.compactMap { if case .text(let t) = $0 { t } else { nil } }.joined()
+        #expect(text == #"{"errors":[],"naturalRewrite":"Hola","strengths":[]}"#)
+        #expect(events.first == .activity)
+        #expect(events.filter { $0 == .completed }.count == 2)
+        #expect((try? Gemini.feedback(from: text))?.naturalRewrite == "Hola")
+    }
+
+    @Test func errorEventsAreClassified() {
+        var reader = Gemini.StreamReader()
+        #expect(reader.read(line: #"data: {"error":{"message":"Deadline expired before operation could complete.","code":"gateway_timeout"},"event_type":"error"}"#) == .failed(.busy))
+        #expect(reader.read(line: #"data: {"error":{"code":"quota_exceeded","message":"daily"},"event_type":"error"}"#) == .failed(.rateLimited))
+        #expect(reader.read(line: #"data: {"error":{"code":"weird","message":"Boom"},"event_type":"error"}"#) == .failed(.other("Boom")))
+    }
+
+    @Test func stallRules() {
+        let limits = Gemini.StreamLimits()
+        let start = Date(timeIntervalSince1970: 0)
+        func at(_ seconds: TimeInterval) -> Date { start.addingTimeInterval(seconds) }
+        #expect(!limits.hasStalled(started: start, firstEvent: nil, lastEvent: nil, now: at(9)))
+        #expect(limits.hasStalled(started: start, firstEvent: nil, lastEvent: nil, now: at(11)), "never started")
+        #expect(!limits.hasStalled(started: start, firstEvent: at(1), lastEvent: at(40), now: at(60)), "still thinking")
+        #expect(limits.hasStalled(started: start, firstEvent: at(1), lastEvent: at(5), now: at(31)), "went quiet")
+        #expect(limits.hasStalled(started: start, firstEvent: at(1), lastEvent: at(90), now: at(91)), "total cap")
+    }
+}

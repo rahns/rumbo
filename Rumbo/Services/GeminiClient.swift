@@ -57,7 +57,8 @@ enum GeminiClient {
     }
 
     /// Tries each model in turn: each has its own free quota and load, so the other covers when the first is
-    /// used up, busy or too slow. A model that failed rests for 30 minutes (tried last), so checks don't keep waiting on it. If they're all just busy and there's time left, waits 2 seconds and goes round once more.
+    /// used up, busy or stuck. A model that failed rests for 30 minutes (tried last), so checks don't keep waiting on it.
+    /// If they're all just busy and there's time left, waits 2 seconds and goes round once more.
     private static func send(input: String, instructions: String, key: String) async throws -> (text: String, model: String) {
         let started = Date.now
         // When every model fails, report the most useful reason: out of free requests, then busy, then slow, then unavailable.
@@ -71,35 +72,109 @@ enum GeminiClient {
                 guard lastError == .busy, Date.now.timeIntervalSince(started) < 30 else { break }
                 try await Task.sleep(for: .seconds(2))
             }
-            for (index, model) in Gemini.order(resting: resting).enumerated() {
-                var request = URLRequest(url: Gemini.endpoint)
-                request.httpMethod = "POST"
-                // Medium thinking can take a while, but short enough that the other model still gets its turn.
-                request.timeoutInterval = index == 0 ? 50 : 40
-                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                request.setValue(key, forHTTPHeaderField: "x-goog-api-key")
-                request.httpBody = Gemini.requestBody(model: model, instructions: instructions, input: input)
-                let data: Data, response: URLResponse
+            for model in Gemini.order(resting: resting) {
                 do {
-                    (data, response) = try await URLSession.shared.data(for: request)
-                } catch let error as URLError where error.code == .timedOut || error.code == .networkConnectionLost {
-                    note(.timedOut)
-                    rest(model)
-                    continue
-                }
-                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-                switch Gemini.failure(status: status, body: data) {
-                case nil:
-                    return (try Gemini.outputText(from: data), model)
-                case let failure? where [.rateLimited, .busy, .modelUnavailable].contains(failure):
+                    return (try await answer(model: model, input: input, instructions: instructions, key: key), model)
+                } catch let failure as Gemini.Failure where [.rateLimited, .busy, .timedOut, .modelUnavailable].contains(failure) {
                     note(failure)
                     rest(model)
-                case let failure?:
-                    throw failure
                 }
             }
         }
         throw lastError
+    }
+
+    /// One model's answer: streamed, so a model that's thinking is told apart from one that's stuck. If streaming
+    /// itself goes wrong in an unexpected way, asks once more for the whole answer in one piece.
+    private static func answer(model: String, input: String, instructions: String, key: String) async throws -> String {
+        do {
+            return try await streamed(request(model: model, input: input, instructions: instructions, key: key, stream: true))
+        } catch Gemini.Failure.other {
+            var plain = request(model: model, input: input, instructions: instructions, key: key, stream: false)
+            plain.timeoutInterval = 50
+            do {
+                let (data, response) = try await URLSession.shared.data(for: plain)
+                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+                if let failure = Gemini.failure(status: status, body: data) { throw failure }
+                return try Gemini.outputText(from: data)
+            } catch let error as URLError where error.code == .timedOut || error.code == .networkConnectionLost {
+                throw Gemini.Failure.timedOut
+            }
+        }
+    }
+
+    private static func request(model: String, input: String, instructions: String, key: String, stream: Bool) -> URLRequest {
+        var request = URLRequest(url: Gemini.endpoint)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 30
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(key, forHTTPHeaderField: "x-goog-api-key")
+        if stream { request.setValue("text/event-stream", forHTTPHeaderField: "Accept") }
+        request.httpBody = Gemini.requestBody(model: model, instructions: instructions, input: input, stream: stream)
+        return request
+    }
+
+    /// Reads a streamed answer while a watchdog checks the stall rules in `Gemini.StreamLimits`:
+    /// a first event within 10 s, no more than 25 s of silence after it, 90 s in all.
+    private static func streamed(_ request: URLRequest) async throws -> String {
+        let activity = StreamActivity()
+        let limits = Gemini.StreamLimits()
+        return try await withThrowingTaskGroup(of: String?.self) { group in
+            group.addTask {
+                try await read(request, activity: activity)
+            }
+            group.addTask {
+                repeat {
+                    try await Task.sleep(for: .seconds(1))
+                    let (first, last) = activity.times
+                    if limits.hasStalled(started: activity.started, firstEvent: first, lastEvent: last, now: .now) {
+                        throw Gemini.Failure.timedOut
+                    }
+                } while !Task.isCancelled
+                return nil
+            }
+            defer { group.cancelAll() }
+            while let result = try await group.next() {
+                if let text = result { return text }
+            }
+            throw Gemini.Failure.timedOut
+        }
+    }
+
+    private static func read(_ request: URLRequest, activity: StreamActivity) async throws -> String? {
+        let bytes: URLSession.AsyncBytes, response: URLResponse
+        do {
+            (bytes, response) = try await URLSession.shared.bytes(for: request)
+        } catch let error as URLError where error.code == .timedOut || error.code == .networkConnectionLost {
+            throw Gemini.Failure.timedOut
+        }
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(status) else {
+            var body = Data()
+            for try await byte in bytes { body.append(byte) }
+            throw Gemini.failure(status: status, body: body) ?? .other("Gemini returned error \(status).")
+        }
+        var reader = Gemini.StreamReader()
+        var text = ""
+        do {
+            for try await line in bytes.lines {
+                guard let event = reader.read(line: line) else { continue }
+                activity.touch()
+                switch event {
+                case .activity: continue
+                case .text(let piece): text += piece
+                case .completed:
+                    guard !text.isEmpty else { throw Gemini.Failure.other("Gemini sent an empty reply.") }
+                    return text
+                case .failed(let failure): throw failure
+                }
+            }
+        } catch let error as URLError where error.code == .timedOut || error.code == .networkConnectionLost {
+            throw Gemini.Failure.timedOut
+        }
+        // The stream ended without saying it was complete; use what arrived if there is any.
+        guard !text.isEmpty else { throw Gemini.Failure.other("Gemini's stream ended early.") }
+        return text
     }
 
     // MARK: Resting busy models
@@ -132,6 +207,26 @@ enum GeminiClient {
             "You're offline, so the basic checker did this one. It's less accurate than Gemini."
         default:
             "Gemini couldn't check this (\(error.localizedDescription)), so the basic checker did. It's less accurate."
+        }
+    }
+}
+
+/// When a streamed answer started and last showed signs of life, shared with its watchdog.
+private final class StreamActivity: @unchecked Sendable {
+    let started = Date.now
+    private let lock = NSLock()
+    private var first: Date?
+    private var last: Date?
+
+    var times: (first: Date?, last: Date?) {
+        lock.withLock { (first, last) }
+    }
+
+    func touch() {
+        lock.withLock {
+            let now = Date.now
+            if first == nil { first = now }
+            last = now
         }
     }
 }

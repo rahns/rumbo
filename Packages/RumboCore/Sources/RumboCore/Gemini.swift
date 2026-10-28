@@ -57,7 +57,8 @@ public enum Gemini {
     }
 
     /// The JSON body for one check. `store: false` keeps the text off Google's interaction history.
-    public static func requestBody(model: String, instructions: String, input: String) -> Data {
+    /// Streamed requests also ask for thought summaries, so events keep arriving while the model thinks.
+    public static func requestBody(model: String, instructions: String, input: String, stream: Bool = false) -> Data {
         let errorSchema: [String: Any] = [
             "type": "object",
             "properties": [
@@ -79,15 +80,18 @@ public enum Gemini {
             ],
             "required": ["errors", "naturalRewrite", "strengths"],
         ]
-        let body: [String: Any] = [
+        var generation: [String: Any] = ["thinking_level": "medium"]
+        if stream { generation["thinking_summaries"] = "auto" }
+        var body: [String: Any] = [
             "model": model,
             "input": input,
             "system_instruction": instructions,
             "store": false,
             "response_format": ["type": "text", "mime_type": "application/json", "schema": schema],
             // Medium reasoning catches more tense, agreement and naturalness errors; the learner would rather wait a bit.
-            "generation_config": ["thinking_level": "medium"],
+            "generation_config": generation,
         ]
+        if stream { body["stream"] = true }
         return (try? JSONSerialization.data(withJSONObject: body, options: [.sortedKeys])) ?? Data()
     }
 
@@ -128,6 +132,7 @@ public enum Gemini {
         let error = (try? JSONSerialization.jsonObject(with: body) as? [String: Any])?["error"] as? [String: Any]
         let code = (error?["code"] as? String ?? error?["status"] as? String ?? "").lowercased()
         let message = error?["message"] as? String ?? ""
+        if let failure = failure(code: code, message: message), status != 400 || failure == .invalidKey { return failure }
         switch status {
         case 429: return .rateLimited
         case 401, 403: return .invalidKey
@@ -135,6 +140,84 @@ public enum Gemini {
         case 500, 502, 503, 504: return .busy
         case 400 where code.contains("key") || message.lowercased().contains("api key"): return .invalidKey
         default: return .other(message.isEmpty ? "Gemini returned error \(status)." : message)
+        }
+    }
+
+    /// Classifies an error by its code, e.g. "quota_exceeded" or "UNAVAILABLE" (also used for errors inside a stream).
+    public static func failure(code: String, message: String) -> Failure? {
+        let code = code.lowercased()
+        switch code {
+        case "rate_limit_exceeded", "quota_exceeded", "too_many_requests", "resource_exhausted": return .rateLimited
+        case "authentication", "permission_denied", "unauthenticated": return .invalidKey
+        case "model_not_found": return .modelUnavailable
+        case "unavailable", "internal", "gateway_timeout", "deadline_exceeded", "overloaded", "service_unavailable": return .busy
+        default:
+            if code.contains("key") || message.lowercased().contains("api key") { return .invalidKey }
+            return nil
+        }
+    }
+
+    // MARK: - Streaming
+
+    /// When to give up on a streamed answer. A model that has started keeps sending events while it thinks,
+    /// so silence means stuck: no first event, or a long gap after it.
+    public struct StreamLimits: Equatable, Sendable {
+        public var firstEvent: TimeInterval = 10
+        public var silence: TimeInterval = 25
+        public var total: TimeInterval = 90
+
+        public init() {}
+
+        /// True when the stream should be abandoned.
+        public func hasStalled(started: Date, firstEvent first: Date?, lastEvent: Date?, now: Date) -> Bool {
+            if now.timeIntervalSince(started) > total { return true }
+            guard first != nil, let lastEvent else { return now.timeIntervalSince(started) > firstEvent }
+            return now.timeIntervalSince(lastEvent) > silence
+        }
+    }
+
+    /// Reads a streamed reply (server-sent events), one line at a time.
+    public struct StreamReader: Sendable {
+        public enum Event: Equatable, Sendable {
+            /// Any sign of life: the interaction started, a thought, a status update.
+            case activity
+            /// A piece of the answer.
+            case text(String)
+            case completed
+            case failed(Failure)
+        }
+
+        /// Step types by index, so only `model_output` text counts as the answer.
+        private var stepTypes: [Int: String] = [:]
+
+        public init() {}
+
+        public mutating func read(line: String) -> Event? {
+            guard line.hasPrefix("data:") else { return line.isEmpty ? nil : .activity }
+            let payload = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
+            if payload == "[DONE]" { return .completed }
+            guard let object = try? JSONSerialization.jsonObject(with: Data(payload.utf8)) as? [String: Any] else { return .activity }
+            let index = object["index"] as? Int ?? -1
+            switch object["event_type"] as? String {
+            case "step.start":
+                stepTypes[index] = (object["step"] as? [String: Any])?["type"] as? String
+                return .activity
+            case "step.delta":
+                let delta = object["delta"] as? [String: Any] ?? [:]
+                let isOutput = (stepTypes[index] ?? "model_output") == "model_output"
+                if isOutput, (delta["type"] as? String) == "text", let text = delta["text"] as? String { return .text(text) }
+                return .activity
+            case "interaction.completed":
+                let status = (object["interaction"] as? [String: Any])?["status"] as? String
+                return status == "failed" ? .failed(.other("Gemini couldn't finish this check.")) : .completed
+            case "error":
+                let error = object["error"] as? [String: Any] ?? [:]
+                let code = error["code"] as? String ?? ""
+                let message = error["message"] as? String ?? ""
+                return .failed(Gemini.failure(code: code, message: message) ?? .other(message.isEmpty ? "Gemini stopped with an error." : message))
+            default:
+                return .activity
+            }
         }
     }
 }
