@@ -63,16 +63,15 @@ jobs:
           ldid -SRumbo/Rumbo.entitlements "$APP/Rumbo"
           mkdir -p build/ipa/Payload
           cp -R "$APP" build/ipa/Payload/
-          (cd build/ipa && zip -qry ../Rumbo.ipa Payload)
           mkdir -p build/dist
-          cp build/Rumbo.ipa "build/dist/Rumbo-$APP_VERSION.ipa"
-          cp Rumbo/Rumbo.entitlements RumboWidgets/RumboWidgets.entitlements build/dist/
+          (cd build/ipa && zip -qry "../dist/Rumbo-$APP_VERSION.ipa" Payload)
 
+      # Just the IPA, not zipped (the artifact is named after the file).
       - name: Upload IPA
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: Rumbo-${{ env.APP_VERSION }}
-          path: build/dist/
+          path: build/dist/Rumbo-${{ env.APP_VERSION }}.ipa
+          archive: false
 
       - name: Upload build log on failure
         if: failure()
@@ -89,7 +88,4 @@ jobs:
           name: Rumbo ${{ env.APP_VERSION }}
           body_path: .github/release-notes.md
           make_latest: true
-          files: |
-            build/dist/Rumbo-${{ env.APP_VERSION }}.ipa
-            build/dist/Rumbo.entitlements
-            build/dist/RumboWidgets.entitlements
+          files: build/dist/Rumbo-${{ env.APP_VERSION }}.ipa

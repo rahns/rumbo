@@ -2,7 +2,7 @@
 
 ### Install
 1. Download **Rumbo-x.y.z.ipa** below.
-2. Sign it with your own Apple certificate and install it (for example with Sideloadly, AltStore or your own signing tool). If the tool asks for entitlements, use the two `.entitlements` files below.
+2. Sign it with your own Apple certificate and install it (for example with Sideloadly, AltStore or your own signing tool). The IPA already carries the app's entitlements.
 3. Open Rumbo and answer the setup questions: where you are in each source, how much time you have, and your goal. It takes about two minutes.
 
 Needs iOS 27. New versions install over the old one and keep your data.

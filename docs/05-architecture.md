@@ -98,7 +98,7 @@ URL schemes are confirmed during implementation and listed in `LSApplicationQuer
 3. `swift test` in `Packages/RumboCore`.
 4. `xcodebuild archive -scheme Rumbo -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO`.
 5. Copy `Rumbo.app` from the archive into `Payload/`, zip it as `Rumbo.ipa`.
-6. Upload as a workflow artifact. On tags, also attach it to a GitHub Release.
+6. Upload just the IPA as a workflow artifact, not zipped (`actions/upload-artifact@v7` with `archive: false`), with no separate entitlements files. On tags, also attach the IPA to a GitHub Release.
 
 The public repo gets free macOS runner minutes.
 
