@@ -253,6 +253,9 @@ struct TodayView: View {
             if model.canChangeBudget {
                 budgetChips(selected: plan.budgetMinutes)
             }
+            if plan.hasStarted {
+                dayProgressBar(plan)
+            }
             if tasks.isEmpty {
                 Text("Nothing fits with the sources you have switched on. Check Settings → Sources.")
                     .font(.rounded(.subheadline, weight: .medium))
@@ -276,6 +279,27 @@ struct TodayView: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: plan.sortedTasks.map(\.statusRaw))
+    }
+
+    /// Today's minutes against the plan's, in blue (the green bar above is the week). Extra minutes
+    /// beyond the plan show as "+N extra".
+    private func dayProgressBar(_ plan: DayPlanRecord) -> some View {
+        let progress = model.dayProgress(for: plan)
+        let extra = progress.done - progress.planned
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Today")
+                Spacer()
+                Text(extra > 0 ? "\(progress.done) / \(progress.planned) min · +\(extra) extra" : "\(progress.done) / \(progress.planned) min")
+                    .contentTransition(.numericText())
+            }
+            .font(.rounded(.caption, weight: .heavy))
+            .foregroundStyle(Palette.secondaryText)
+            ChunkyProgressBar(value: Double(progress.done) / Double(max(progress.planned, 1)), color: Palette.sky, shimmers: true)
+                .accessibilityHidden(true)
+        }
+        .accessibilityElement(children: .combine)
+        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: progress.done)
     }
 
     // MARK: Keep going

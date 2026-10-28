@@ -625,6 +625,16 @@ final class AppModel {
         Reminders.refresh(for: profile, practisedToday: minutesToday >= StreakCalculator.minutesForStreakDay, calendar: calendar)
     }
 
+    /// Today's progress against the plan: minutes logged (plan tasks, Keep going extras, and extra
+    /// listening logged today) and the plan's minutes (its tasks, leaving out skipped ones).
+    func dayProgress(for plan: DayPlanRecord) -> (done: Int, planned: Int) {
+        let allLogs = logs
+        let logged = plan.sortedTasks.compactMap(\.logID).compactMap { id in allLogs.first { $0.id == id }?.minutes }.reduce(0, +)
+        let bonus = calendar.isDateInToday(plan.day) ? bonusLogsToday.reduce(0) { $0 + $1.minutes } : 0
+        let planned = plan.planTasks.filter { $0.status != .skipped }.reduce(0) { $0 + $1.minutesPlanned }
+        return (logged + bonus, planned)
+    }
+
     var bonusLogsToday: [ActivityLog] {
         logs.filter { $0.isBonus && calendar.isDateInToday($0.date) }
     }
