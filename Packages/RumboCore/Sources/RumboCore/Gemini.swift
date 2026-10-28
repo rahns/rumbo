@@ -6,23 +6,11 @@ public enum Gemini {
     public static let endpoint = URL(string: "https://generativelanguage.googleapis.com/v1beta/interactions")!
     /// Where to create a free key.
     public static let keyPage = URL(string: "https://aistudio.google.com/apikey")!
-    /// Tried in order. Flash-Lite is plenty for short A2–B1 corrections and is rarely busy; Flash, with its own free
-    /// quota and load, picks up when Flash-Lite is used up or busy.
-    public static let models = ["gemini-3.5-flash-lite", "gemini-3.8-flash"]
-
-    /// The name shown under feedback, e.g. "Gemini Flash-Lite".
-    public static func displayName(for model: String) -> String {
-        model.contains("lite") ? "Gemini Flash-Lite" : "Gemini Flash"
-    }
-
-    /// How long a model that was busy, too slow or out of free requests is tried last, so checks don't wait on it.
-    public static let restAfterFailure: TimeInterval = 30 * 60
-
-    /// The models in the order to try now: ones resting after a recent failure go last (still tried if the rest fail).
-    public static func order(resting: [String: Date], now: Date = .now) -> [String] {
-        let ready = models.filter { (resting[$0] ?? .distantPast) <= now }
-        return ready + models.filter { !ready.contains($0) }
-    }
+    /// Flash-Lite at medium thinking: plenty for short A2–B1 corrections. In testing it answered in about 3 s,
+    /// streamed or not, while Flash (`gemini-3.8-flash`) never started, so Flash isn't used.
+    public static let model = "gemini-3.5-flash-lite"
+    /// Shown under feedback: "Checked by Gemini Flash-Lite".
+    public static let displayName = "Gemini Flash-Lite"
 
     /// What the model returns: the same shape as the on-device checker's `WritingFeedback`.
     public struct Feedback: Codable, Equatable, Sendable {

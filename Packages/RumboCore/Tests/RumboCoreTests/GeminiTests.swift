@@ -15,9 +15,7 @@ import Testing
         #expect((object["generation_config"] as? [String: Any])?["thinking_level"] as? String == "medium")
         let lite = try #require(try JSONSerialization.jsonObject(with: Gemini.requestBody(model: "gemini-3.5-flash-lite", instructions: "", input: "")) as? [String: Any])
         #expect((lite["generation_config"] as? [String: Any])?["thinking_level"] as? String == "medium")
-        #expect(Gemini.models.first == "gemini-3.5-flash-lite", "Flash-Lite is the default")
-        #expect(Gemini.displayName(for: "gemini-3.5-flash-lite") == "Gemini Flash-Lite")
-        #expect(Gemini.displayName(for: "gemini-3.8-flash") == "Gemini Flash")
+        #expect(Gemini.model == "gemini-3.5-flash-lite", "Flash-Lite only")
     }
 
     @Test func readsTheModelOutputStep() throws {
@@ -38,15 +36,6 @@ import Testing
     @Test func emptyOrMalformedRepliesThrow() {
         #expect(throws: Gemini.Failure.self) { try Gemini.outputText(from: Data(#"{"steps":[]}"#.utf8)) }
         #expect(throws: Gemini.Failure.self) { try Gemini.feedback(from: "Sorry, I can't help.") }
-    }
-
-    @Test func restingModelsAreTriedLast() {
-        let now = Date(timeIntervalSince1970: 1_000_000)
-        #expect(Gemini.order(resting: [:], now: now) == Gemini.models)
-        let resting = [Gemini.models[0]: now.addingTimeInterval(Gemini.restAfterFailure)]
-        #expect(Gemini.order(resting: resting, now: now) == [Gemini.models[1], Gemini.models[0]])
-        #expect(Gemini.order(resting: resting, now: now.addingTimeInterval(Gemini.restAfterFailure + 1)) == Gemini.models,
-                "after its rest, the main model goes first again")
     }
 
     @Test func classifiesErrors() {

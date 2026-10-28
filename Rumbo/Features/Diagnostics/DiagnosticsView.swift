@@ -60,15 +60,10 @@ struct DiagnosticsView: View {
                     Task { await model.traceGeminiCheck() }
                 }
                 .disabled(model.geminiRunning)
-                Button("Test each model and method", systemImage: "square.grid.2x2") {
-                    Task { await model.probeGeminiModels() }
+                Button("Test streaming and one piece", systemImage: "square.split.2x1") {
+                    Task { await model.probeGeminiMethods() }
                 }
                 .disabled(model.geminiRunning)
-                LabeledContent("Resting", value: model.geminiRestingSummary)
-                    .font(.footnote)
-                Button("Clear rests", systemImage: "arrow.uturn.backward") {
-                    model.clearGeminiResting()
-                }
                 if let trace = model.geminiTrace {
                     Text(trace)
                         .font(.system(.caption, design: .monospaced))
@@ -77,7 +72,7 @@ struct DiagnosticsView: View {
             } header: {
                 Text("Gemini")
             } footer: {
-                Text("Trace a full check runs a writing check exactly like a task: which model goes first, streaming or one piece, when the first event arrived, thinking updates, the longest silence, and any fallback. Test each model and method tries Flash-Lite and Flash, streaming and in one piece, directly (uses 4 free requests). A model that was busy or stuck rests for 30 minutes; Clear rests lets it go first again.")
+                Text("Trace a full check runs a writing check exactly like a task: streaming or one piece, when the first event arrived, thinking updates, the longest silence, and any retry or fallback. Test streaming and one piece asks Gemini Flash-Lite both ways, directly (uses 2 free requests).")
             }
 
             Section {

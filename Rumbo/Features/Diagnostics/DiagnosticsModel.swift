@@ -213,8 +213,8 @@ final class DiagnosticsModel {
         geminiTrace = lines.joined(separator: "\n")
     }
 
-    /// Each model with each method, directly (no order, rests or fallbacks). Uses 4 of the free requests.
-    func probeGeminiModels() async {
+    /// Streaming and one piece, directly (no retry or fallback). Uses 2 of the free requests.
+    func probeGeminiMethods() async {
         guard let key = GeminiKey.current else {
             geminiTrace = "No Gemini key. Add one in Settings → Writing feedback."
             return
@@ -222,28 +222,16 @@ final class DiagnosticsModel {
         geminiRunning = true
         defer { geminiRunning = false }
         var lines: [String] = []
-        for model in Gemini.models {
-            for stream in [true, false] {
-                let label = "\(Gemini.displayName(for: model)) · \(stream ? "streaming" : "one piece")"
-                lines.append("— \(label): running…")
-                geminiTrace = lines.joined(separator: "\n")
-                let (ok, trace) = await GeminiClient.probe(model: model, stream: stream, key: key)
-                lines.removeLast()
-                lines.append("— \(label): \(ok ? "✅ works" : "❌ failed")")
-                lines += trace
-                geminiTrace = lines.joined(separator: "\n")
-            }
+        for stream in [true, false] {
+            let label = "\(Gemini.displayName) · \(stream ? "streaming" : "one piece")"
+            lines.append("— \(label): running…")
+            geminiTrace = lines.joined(separator: "\n")
+            let (ok, trace) = await GeminiClient.probe(stream: stream, key: key)
+            lines.removeLast()
+            lines.append("— \(label): \(ok ? "✅ works" : "❌ failed")")
+            lines += trace
+            geminiTrace = lines.joined(separator: "\n")
         }
-    }
-
-    var geminiRestingSummary: String {
-        let note = GeminiClient.restingNote
-        return note.isEmpty ? "No model is resting." : String(note.dropFirst(2).dropLast()) + "."
-    }
-
-    func clearGeminiResting() {
-        GeminiClient.clearResting()
-        geminiTrace = "Rests cleared: the next check tries \(Gemini.models.map(Gemini.displayName(for:)).joined(separator: " → ")) again."
     }
 
     // MARK: - Report

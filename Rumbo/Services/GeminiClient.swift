@@ -29,12 +29,12 @@ enum GeminiClient {
     static func correct(_ text: String, band: Band, prompt: String, key: String) async throws -> CorrectionService.Result {
         let input = "Writing task: \(prompt)\n\nLearner's text:\n\(text)"
         let reply = try await send(input: input, instructions: CorrectionService.instructions(for: band), key: key)
-        let feedback = try Gemini.feedback(from: reply.text)
+        let feedback = try Gemini.feedback(from: reply)
         return CorrectionService.Result(
             corrections: Mistakes.merge(model: feedback.corrections, languageTool: []),
             naturalRewrite: feedback.naturalRewrite,
             strengths: Array(feedback.strengths.prefix(2)),
-            engine: Gemini.displayName(for: reply.model)
+            engine: Gemini.displayName
         )
     }
 
@@ -56,40 +56,18 @@ enum GeminiClient {
         }
     }
 
-    /// Tries each model in turn: each has its own free quota and load, so the other covers when the first is
-    /// used up, busy or stuck. A model that failed rests for 30 minutes (tried last), so checks don't keep waiting on it.
-    /// If they're all just busy and there's time left, waits 2 seconds and goes round once more.
-    private static func send(input: String, instructions: String, key: String) async throws -> (text: String, model: String) {
-        let started = Date.now
-        // When every model fails, report the most useful reason: out of free requests, then busy, then slow, then unavailable.
-        var lastError: Gemini.Failure = .modelUnavailable
-        func note(_ failure: Gemini.Failure) {
-            let rank: [Gemini.Failure: Int] = [.rateLimited: 3, .busy: 2, .timedOut: 1, .modelUnavailable: 0]
-            if rank[failure, default: 0] >= rank[lastError, default: 0] { lastError = failure }
+    /// Asks Flash-Lite. If Google is busy, waits 2 seconds and asks once more.
+    private static func send(input: String, instructions: String, key: String) async throws -> String {
+        do {
+            return try await answer(model: Gemini.model, input: input, instructions: instructions, key: key)
+        } catch Gemini.Failure.busy {
+            GeminiTrace.log("Busy: waiting 2 s, then trying once more")
+            try await Task.sleep(for: .seconds(2))
+            return try await answer(model: Gemini.model, input: input, instructions: instructions, key: key)
         }
-        for round in 0..<2 {
-            if round > 0 {
-                guard lastError == .busy, Date.now.timeIntervalSince(started) < 30 else { break }
-                GeminiTrace.log("All models busy: waiting 2 s, then one more round")
-                try await Task.sleep(for: .seconds(2))
-            }
-            let order = Gemini.order(resting: resting)
-            GeminiTrace.log("Order: " + order.map(Gemini.displayName(for:)).joined(separator: " → ") + restingNote)
-            for model in order {
-                do {
-                    return (try await answer(model: model, input: input, instructions: instructions, key: key), model)
-                } catch let failure as Gemini.Failure where [.rateLimited, .busy, .timedOut, .modelUnavailable].contains(failure) {
-                    note(failure)
-                    rest(model)
-                    GeminiTrace.log("\(Gemini.displayName(for: model)) rests for 30 min")
-                }
-            }
-        }
-        GeminiTrace.log("Gave up on Gemini: \(lastError.localizedDescription)")
-        throw lastError
     }
 
-    /// One model's answer: streamed, so a model that's thinking is told apart from one that's stuck. If streaming
+    /// The answer, streamed, so a model that's thinking is told apart from one that's stuck. If streaming
     /// itself goes wrong in an unexpected way, asks once more for the whole answer in one piece.
     private static func answer(model: String, input: String, instructions: String, key: String) async throws -> String {
         do {
@@ -103,7 +81,7 @@ enum GeminiClient {
 
     /// One request to one model, streamed or in one piece, with every step traced.
     private static func attempt(model: String, input: String, instructions: String, key: String, stream: Bool) async throws -> String {
-        let name = Gemini.displayName(for: model)
+        let name = Gemini.displayName
         let method = stream ? "streaming" : "one piece"
         GeminiTrace.log("\(name) · \(method): sent")
         let started = Date.now
@@ -228,12 +206,12 @@ enum GeminiClient {
 
     // MARK: Diagnostics
 
-    /// Asks one model with one method directly (no order, rests or fallbacks), for Diagnostics.
-    static func probe(model: String, stream: Bool, key: String) async -> (ok: Bool, trace: [String]) {
+    /// Asks with one method directly (no retry or fallback), for Diagnostics.
+    static func probe(stream: Bool, key: String) async -> (ok: Bool, trace: [String]) {
         let trace = GeminiTrace()
         let ok: Bool = await GeminiTrace.$current.withValue(trace) {
             do {
-                let text = try await attempt(model: model, input: "Writing task: Write about yesterday.\n\nLearner's text:\nAyer yo voy a la playa con mis amigo.",
+                let text = try await attempt(model: Gemini.model, input: "Writing task: Write about yesterday.\n\nLearner's text:\nAyer yo voy a la playa con mis amigo.",
                                              instructions: CorrectionService.instructions(for: .a2_1), key: key, stream: stream)
                 let feedback = try Gemini.feedback(from: text)
                 GeminiTrace.log("Parsed: \(feedback.errors.count) corrections, rewrite \"\(feedback.naturalRewrite)\"")
@@ -258,16 +236,6 @@ enum GeminiClient {
         return (result, trace.lines)
     }
 
-    /// Which models are resting, e.g. " (Gemini Flash resting until 14:32)".
-    static var restingNote: String {
-        let now = Date.now
-        let notes = resting.filter { $0.value > now }.sorted { $0.key < $1.key }
-            .map { "\(Gemini.displayName(for: $0.key)) resting until \($0.value.formatted(date: .omitted, time: .shortened))" }
-        return notes.isEmpty ? "" : " (" + notes.joined(separator: ", ") + ")"
-    }
-
-    static func clearResting() { UserDefaults.standard.removeObject(forKey: restingKey) }
-
     private static func seconds(since date: Date) -> String {
         String(format: "%.1f s", Date.now.timeIntervalSince(date))
     }
@@ -284,21 +252,6 @@ enum GeminiClient {
         }
     }
 
-    // MARK: Resting busy models
-
-    private static let restingKey = "gemini.restingUntil"
-
-    /// Models resting after a failure, and until when (kept across launches).
-    private static var resting: [String: Date] {
-        (UserDefaults.standard.dictionary(forKey: restingKey) as? [String: Date]) ?? [:]
-    }
-
-    private static func rest(_ model: String) {
-        var resting = resting
-        resting[model] = Date.now.addingTimeInterval(Gemini.restAfterFailure)
-        UserDefaults.standard.set(resting, forKey: restingKey)
-    }
-
     /// The small warning shown above feedback from the basic checker.
     static func notice(for error: Error) -> String {
         switch error {
@@ -309,7 +262,7 @@ enum GeminiClient {
         case Gemini.Failure.busy, Gemini.Failure.timedOut:
             "Gemini is busy right now (high demand), so the basic checker did this one. Try checking again in a minute."
         case Gemini.Failure.modelUnavailable:
-            "Gemini's models aren't available to your key right now, so the basic checker did this one."
+            "Gemini Flash-Lite isn't available to your key right now, so the basic checker did this one."
         case let urlError as URLError where urlError.code == .notConnectedToInternet:
             "You're offline, so the basic checker did this one. It's less accurate than Gemini."
         default:
