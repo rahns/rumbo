@@ -94,14 +94,3 @@ enum GeminiClient {
         }
     }
 }
-
-extension Gemini.Failure: LocalizedError {
-    public var errorDescription: String? {
-        switch self {
-        case .rateLimited: "Free limit reached"
-        case .invalidKey: "Key not accepted"
-        case .modelUnavailable: "Model not available"
-        case .other(let message): message
-        }
-    }
-}
