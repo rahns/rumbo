@@ -907,13 +907,9 @@ final class AppModel {
         // No plan yet: preview the one the gold-starred budget would give, so the widget shows what's on track.
         var suggested: Int?
         if plan == nil {
-            let budget = budgetAdvice.recommended
-            let preview = DayPlanner(calendar: calendar).plan(budget: budget, learner: snapshot(for: profile), history: history, today: today)
-            suggested = budget
-            tasks = preview.tasks.map {
-                WidgetSnapshot.TaskLine(title: TaskCopy.title(for: $0.kind), symbol: TaskCopy.symbol(for: $0.kind),
-                                        minutes: $0.minutes, done: false, colorHex: $0.kind.strand.hex)
-            }
+            let preview = suggestedPreview(for: today, profile: profile)
+            suggested = preview.minutes
+            tasks = preview.tasks
         }
         let status = streak
         let mood: String = switch picoMood {
@@ -925,7 +921,8 @@ final class AppModel {
             updated: .now, day: today, streak: status.streak, minutesThisWeek: status.minutesThisWeek,
             weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.band.label) · \(profile.band.rawValue)",
             dayComplete: plan?.isComplete ?? false, hasPlan: plan != nil, tasks: tasks, mood: mood,
-            suggestedMinutes: suggested
+            suggestedMinutes: suggested, minutesToday: minutesToday,
+            upcoming: (1...3).compactMap { calendar.date(byAdding: .day, value: $0, to: today) }.map { upcomingSnapshot(for: $0, profile: profile) }
         )
         var comparable = snapshot
         comparable.updated = lastSnapshot?.updated ?? snapshot.updated
@@ -934,5 +931,29 @@ final class AppModel {
         snapshot.save()
         lastSnapshot = snapshot
         WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// The plan the gold-starred budget would give on `day`, as widget lines.
+    private func suggestedPreview(for day: Date, profile: LearnerProfile) -> (minutes: Int, tasks: [WidgetSnapshot.TaskLine]) {
+        let status = StreakCalculator(weeklyGoalMinutes: profile.weeklyGoalMinutes, calendar: calendar).status(history: history, today: day)
+        let budget = BudgetAdvisor.advice(weeklyGoal: profile.weeklyGoalMinutes, minutesThisWeek: status.minutesThisWeek, today: day, calendar: calendar).recommended
+        let preview = DayPlanner(calendar: calendar).plan(budget: budget, learner: snapshot(for: profile), history: history, today: day)
+        return (budget, preview.tasks.map {
+            WidgetSnapshot.TaskLine(title: TaskCopy.title(for: $0.kind), symbol: TaskCopy.symbol(for: $0.kind),
+                                    minutes: $0.minutes, done: false, colorHex: $0.kind.strand.hex)
+        })
+    }
+
+    /// A later day as the widget should show it if nothing more is logged before then: the suggested plan,
+    /// that week's minutes (a new week starts at zero) and the streak as it would stand.
+    private func upcomingSnapshot(for day: Date, profile: LearnerProfile) -> WidgetSnapshot {
+        let status = StreakCalculator(weeklyGoalMinutes: profile.weeklyGoalMinutes, calendar: calendar).status(history: history, today: day)
+        let preview = suggestedPreview(for: day, profile: profile)
+        return WidgetSnapshot(
+            updated: day, day: day, streak: status.streak, minutesThisWeek: status.minutesThisWeek,
+            weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.band.label) · \(profile.band.rawValue)",
+            dayComplete: false, hasPlan: false, tasks: preview.tasks, mood: profile.travelMode ? "backpacker" : "hovering",
+            suggestedMinutes: preview.minutes, minutesToday: 0
+        )
     }
 }

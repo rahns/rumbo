@@ -31,6 +31,11 @@ struct WidgetSnapshot: Codable, Equatable {
     var mood: String
     /// With no plan yet: the budget that keeps the weekly goal on track. `tasks` then previews its plan.
     var suggestedMinutes: Int? = nil
+    /// Minutes logged that day, so Pico can turn sleepy at 8 pm without the app. Optional for older snapshots.
+    var minutesToday: Int? = nil
+    /// The next few days, worked out by the app ahead of time (suggested plan, week minutes, streak), so the
+    /// widget is right after midnight even before the app is opened. Optional for older snapshots.
+    var upcoming: [WidgetSnapshot]? = nil
 
     var isSuggestion: Bool { !hasPlan && suggestedMinutes != nil && !tasks.isEmpty }
 
@@ -51,16 +56,43 @@ struct WidgetSnapshot: Codable, Equatable {
         mood: "hovering"
     )
 
-    /// The snapshot as of `date`: yesterday's plan doesn't carry over into today.
+    /// The snapshot as of `date`: the app's precomputed day if it has one, otherwise today with yesterday's
+    /// plan cleared. From 8 pm with nothing logged, Pico is sleepy (as in the app).
     func current(at date: Date = .now, calendar: Calendar = .current) -> WidgetSnapshot {
-        guard !calendar.isDate(day, inSameDayAs: date) else { return self }
-        var fresh = self
-        fresh.day = calendar.startOfDay(for: date)
-        fresh.dayComplete = false
-        fresh.hasPlan = false
-        fresh.tasks = []
-        fresh.suggestedMinutes = nil
-        return fresh
+        var result: WidgetSnapshot
+        if calendar.isDate(day, inSameDayAs: date) {
+            result = self
+        } else if let ahead = upcoming?.first(where: { calendar.isDate($0.day, inSameDayAs: date) }) {
+            result = ahead
+        } else {
+            result = self
+            result.day = calendar.startOfDay(for: date)
+            result.dayComplete = false
+            result.hasPlan = false
+            result.tasks = []
+            result.suggestedMinutes = nil
+            result.minutesToday = 0
+        }
+        result.upcoming = nil
+        if result.mood == "hovering", calendar.component(.hour, from: date) >= 20, result.minutesToday == 0 {
+            result.mood = "sleepy"
+        }
+        return result
+    }
+
+    /// When the widget should next change by itself: 8 pm today if Pico may turn sleepy, then each midnight
+    /// (and 8 pm) of the precomputed days.
+    func changeDates(after now: Date, calendar: Calendar = .current) -> [Date] {
+        let today = calendar.startOfDay(for: now)
+        let lastDay = upcoming?.map(\.day).max() ?? today
+        let days = calendar.dateComponents([.day], from: today, to: lastDay).day ?? 0
+        var dates: [Date] = []
+        for offset in 0...max(days + 1, 1) {
+            guard let start = calendar.date(byAdding: .day, value: offset, to: today) else { continue }
+            if offset > 0 { dates.append(start.addingTimeInterval(60)) }
+            if offset <= days, let evening = calendar.date(bySettingHour: 20, minute: 0, second: 30, of: start) { dates.append(evening) }
+        }
+        return dates.filter { $0 > now }.sorted()
     }
 
     var nextTask: TaskLine? { tasks.first { !$0.done } }

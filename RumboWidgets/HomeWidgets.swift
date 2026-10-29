@@ -18,16 +18,15 @@ struct RumboProvider: TimelineProvider {
         completion(RumboEntry(date: .now, snapshot: context.isPreview ? .placeholder : WidgetSnapshot.load()?.current()))
     }
 
-    /// One entry now and one just after midnight, when yesterday's plan stops showing.
+    /// An entry now, then one at each moment the widget changes by itself: 8 pm (Pico gets sleepy) and each
+    /// midnight, using the days the app worked out ahead. The app reloads the timeline whenever it saves.
     func getTimeline(in context: Context, completion: @escaping (Timeline<RumboEntry>) -> Void) {
         let now = Date.now
         let snapshot = WidgetSnapshot.load()
-        let midnight = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: now))!.addingTimeInterval(60)
-        let entries = [
-            RumboEntry(date: now, snapshot: snapshot?.current(at: now)),
-            RumboEntry(date: midnight, snapshot: snapshot?.current(at: midnight)),
-        ]
-        completion(Timeline(entries: entries, policy: .after(midnight)))
+        let dates = snapshot?.changeDates(after: now) ?? []
+        let entries = [RumboEntry(date: now, snapshot: snapshot?.current(at: now))]
+            + dates.map { RumboEntry(date: $0, snapshot: snapshot?.current(at: $0)) }
+        completion(Timeline(entries: entries, policy: .atEnd))
     }
 }
 

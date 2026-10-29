@@ -189,7 +189,7 @@ Every animation respects **Reduce Motion** (switches to fades).
 
 ## 3.6 Widgets and Live Activity
 
-Implemented in `RumboWidgets/`. Widgets read a `WidgetSnapshot` the app writes after every change (streak, this week's minutes and goal, today's tasks, whether the day is complete, Pico's mood), shared through the Keychain's default group. A plan from yesterday never shows today; the timeline refreshes just after midnight. Tapping a widget opens Today (`rumbo://today`).
+Implemented in `RumboWidgets/`. Widgets read a `WidgetSnapshot` the app writes after every change (streak, this week's minutes and goal, today's tasks, whether the day is complete, Pico's mood), shared through the Keychain's default group. A plan from yesterday never shows today. Each save also works out the next 3 days (`upcoming`) as they'll stand if nothing more is logged: the suggested plan and budget, that week's minutes (a new week starts at zero) and the streak. So just after midnight the widget switches to the new day by itself, before the app is opened. Pico turns sleepy at 8 pm on a day with nothing logged, like in the app. The timeline has an entry for each of these moments, which don't use WidgetKit's refresh budget; any change in the app republishes and reloads it. If the app isn't opened for more than 3 days, the widget falls back to an empty day. Tapping a widget opens Today (`rumbo://today`).
 
 **Before today's time is picked**, the widgets show the **suggested plan**: the plan the gold-starred, on-track budget would give ("★ Suggested: 30 min · Keeps you on track for your weekly goal" and its tasks). Tapping it (`rumbo://plan?minutes=30`) picks that time and opens Today; if a plan already exists by then, it just opens Today.
 
