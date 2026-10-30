@@ -179,13 +179,13 @@ struct PathView: View {
             freezeShatters += 1
             model.banner = AppModel.Banner(
                 title: "🧊 A streak freeze saved you",
-                message: "Nothing was logged on \(day.formatted(.dateTime.weekday(.wide))), so a freeze kept the streak going. Every second week you meet your weekly goal earns another (you can hold \(StreakCalculator.maxFreezes))."
+                message: "Nothing was logged on \(day.formatted(.dateTime.weekday(.wide))), so a freeze kept the streak going. Every 14 days of streak earns another (you can hold \(StreakCalculator.maxFreezes))."
             )
-        } else if model.takeUnseenFreezeEarned() != nil {
+        } else if let earned = model.takeUnseenFreezeEarned() {
             freezeEarned += 1
             model.banner = AppModel.Banner(
                 title: "🧊 You earned a streak freeze",
-                message: "Two weeks with your weekly goal met. If you miss a day, a freeze keeps your streak going. You have \(model.streak.freezes) of \(StreakCalculator.maxFreezes)."
+                message: "A \(earned.streak)-day streak! If you miss a day, a freeze keeps it going. You have \(model.streak.freezes) of \(StreakCalculator.maxFreezes)."
             )
         }
         if let unit = map.units.last(where: { model.takeUnitCompletion($0) }) {
@@ -484,18 +484,21 @@ struct PathNodeView: View {
     }
 }
 
-/// A streak freeze on the path: one earned at the end of a week, or the next one still to earn.
+/// A streak freeze on the path: one earned on the day the streak reached 14, 28… days, or the next one still to earn.
 struct FreezeRow: View {
     let marker: PathFreezeMarker
 
-    private var earned: Bool { marker.kind == .earned }
+    private var earned: Bool {
+        if case .earned = marker.kind { return true }
+        return false
+    }
 
     private var title: String { earned ? "+1 streak freeze" : "Next streak freeze" }
 
     private var detail: String {
         switch marker.kind {
-        case .earned: "Weekly goal met for the second time"
-        case .next(let left): left <= 1 ? "Meet this week's goal to earn it" : "Meet your goal this week and next"
+        case .earned(let streak): "For a \(streak)-day streak"
+        case .next(let left): left == 1 ? "Keep your streak 1 more day" : "Keep your streak \(left) more days"
         }
     }
 

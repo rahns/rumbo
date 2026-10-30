@@ -604,11 +604,11 @@ final class AppModel {
     }
 
     /// A freeze earned in the last week, not shown yet. Marks it shown.
-    func takeUnseenFreezeEarned() -> Date? {
-        guard let day = streak.freezesEarned.last,
+    func takeUnseenFreezeEarned() -> StreakCalculator.EarnedFreeze? {
+        guard let earned = streak.freezesEarned.last,
               let weekAgo = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: .now)),
-              day >= weekAgo, Self.once("freeze-earned-\(Self.dayKey(day))") else { return nil }
-        return day
+              earned.day >= weekAgo, Self.once("freeze-earned-\(Self.dayKey(earned.day))") else { return nil }
+        return earned
     }
 
     /// A day a streak freeze saved, not shown yet. Marks it shown.
@@ -861,10 +861,9 @@ final class AppModel {
         arrivals = arrivals.filter { $0.key > profile.band }
         let status = streak
         let calculator = StreakCalculator(weeklyGoalMinutes: profile.weeklyGoalMinutes, calendar: calendar)
-        let next = calculator.nextFreezeWeekEnd(status, today: .now)
-            .map { (weekEnd: $0, goalWeeksLeft: StreakCalculator.goalWeeksPerFreeze - status.goalWeeksTowardFreeze) }
         return PathLayout.map(start: profile.createdAt, today: .now, days: days, arrivals: arrivals,
-                              frozen: Set(status.frozenDays), freezesEarned: status.freezesEarned, nextFreeze: next, calendar: calendar)
+                              frozen: Set(status.frozenDays), freezesEarned: status.freezesEarned.map { (day: $0.day, streak: $0.streak) },
+                              nextFreeze: calculator.nextFreeze(status, today: .now), calendar: calendar)
     }
 
     func acceptDifficultySuggestion() {

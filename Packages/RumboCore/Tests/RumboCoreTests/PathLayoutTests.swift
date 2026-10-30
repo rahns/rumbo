@@ -46,10 +46,10 @@ import Testing
 
     @Test func freezeMarkersSitAfterTheirWeekEnd() {
         let path = PathLayout.map(start: start, today: TestCalendar.adding(days: 9, to: start), days: [:], arrivals: [:],
-                                  freezesEarned: [day(6)], nextFreeze: (weekEnd: day(20), goalWeeksLeft: 2), calendar: calendar)
+                                  freezesEarned: [(day: day(6), streak: 14)], nextFreeze: (day: day(20), daysLeft: 11), calendar: calendar)
         #expect(path.freezeMarkers.map(\.afterNode) == [7, 21])
-        #expect(path.freezeMarkers.map(\.kind) == [.earned, .next(goalWeeksLeft: 2)])
-        let beforeStart = PathLayout.map(start: start, today: start, days: [:], arrivals: [:], freezesEarned: [day(-3)], calendar: calendar)
+        #expect(path.freezeMarkers.map(\.kind) == [.earned(streak: 14), .next(daysLeft: 11)])
+        let beforeStart = PathLayout.map(start: start, today: start, days: [:], arrivals: [:], freezesEarned: [(day: day(-3), streak: 14)], calendar: calendar)
         #expect(beforeStart.freezeMarkers.isEmpty, "weeks before the path started aren't drawn")
     }
 

@@ -330,7 +330,7 @@ struct OnboardingView: View {
                 ChipButton(title: "Monday", isSelected: !draft.weekStartsOnSunday) { draft.weekStartsOnSunday = false }
                 ChipButton(title: "Sunday", isSelected: draft.weekStartsOnSunday) { draft.weekStartsOnSunday = true }
             }
-            Text("Your weekly goal resets at the start of each week. Every second week you meet it earns a streak freeze.")
+            Text("Your weekly goal resets at the start of each week.")
                 .font(.rounded(.subheadline, weight: .medium))
                 .foregroundStyle(Palette.secondaryText)
         }
