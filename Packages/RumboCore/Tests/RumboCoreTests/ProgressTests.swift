@@ -13,43 +13,82 @@ import Testing
         }
     }
 
-    @Test func tenMinuteDaysCount() {
-        let history = log([10, 15, 30], from: monday)
+    @Test func anyPracticeCountsEvenAPartialDay() {
+        // Day 2 is just a 3-minute Duolingo lesson: still a streak day.
+        let history = log([20, 3, 15], from: monday)
         #expect(calculator.status(history: history, today: TestCalendar.adding(days: 2, to: monday)).streak == 3)
     }
 
-    @Test func aShortDayBreaksTheStreakWithoutAFreeze() {
-        let history = log([20, 9, 20], from: monday)
-        #expect(calculator.status(history: history, today: TestCalendar.adding(days: 2, to: monday)).streak == 1)
+    @Test func everyoneStartsWithOneFreeze() {
+        #expect(calculator.status(history: [], today: monday).freezes == 1)
+        #expect(calculator.status(history: log([20], from: monday), today: monday).freezes == 1)
     }
 
-    @Test func anUnfinishedTodayDoesNotBreakTheStreak() {
-        let history = log([20, 20, 5], from: monday)
-        #expect(calculator.status(history: history, today: TestCalendar.adding(days: 2, to: monday)).streak == 2)
-    }
-
-    @Test func meetingTheWeeklyGoalEarnsAFreezeThatSavesAMissedDay() {
-        // Week 1: 7 × 30 = 210 min ≥ 150 → one freeze. Then one missed day in week 2.
-        let history = log([30, 30, 30, 30, 30, 30, 30, 20, 0, 20], from: monday)
-        let status = calculator.status(history: history, today: TestCalendar.adding(days: 9, to: monday))
-        #expect(status.streak == 9, "the missed day is covered, not counted")
+    @Test func theStartingFreezeSavesAMissedDay() {
+        let history = log([20, 0, 20], from: monday)
+        let status = calculator.status(history: history, today: TestCalendar.adding(days: 2, to: monday))
+        #expect(status.streak == 2, "the missed day is covered, not counted")
         #expect(status.freezes == 0)
-        #expect(status.lastFreezeUsed == TestCalendar.utc.startOfDay(for: TestCalendar.adding(days: 8, to: monday)),
-                "the app shows that the freeze saved the streak")
+        let missed = TestCalendar.utc.startOfDay(for: TestCalendar.adding(days: 1, to: monday))
+        #expect(status.lastFreezeUsed == missed, "the app shows that the freeze saved the streak")
+        #expect(status.frozenDays == [missed])
     }
 
-    @Test func noFreezeReportedWithoutOneOrAfterTheStreakBreaks() {
-        #expect(calculator.status(history: log([20, 20, 20], from: monday), today: TestCalendar.adding(days: 2, to: monday)).lastFreezeUsed == nil)
-        // The freeze saves day 8, then days 10–11 are missed with none left: the streak resets, so nothing to show.
-        let history = log([30, 30, 30, 30, 30, 30, 30, 20, 0, 20, 0, 0, 20], from: monday)
-        let status = calculator.status(history: history, today: TestCalendar.adding(days: 12, to: monday))
+    @Test func aMissedDayWithoutAFreezeBreaksTheStreak() {
+        let history = log([20, 0, 0, 20], from: monday)
+        let status = calculator.status(history: history, today: TestCalendar.adding(days: 3, to: monday))
         #expect(status.streak == 1)
         #expect(status.lastFreezeUsed == nil)
     }
 
-    @Test func freezesAreCappedAtThree() {
-        let history = log(Array(repeating: 30, count: 35), from: monday)
-        #expect(calculator.status(history: history, today: TestCalendar.adding(days: 35, to: monday)).freezes == 3)
+    @Test func anUnfinishedTodayDoesNotBreakTheStreak() {
+        let history = log([20, 20], from: monday)
+        #expect(calculator.status(history: history, today: TestCalendar.adding(days: 2, to: monday)).streak == 2)
+    }
+
+    @Test func noFreezeIsSpentWithoutAStreakToSave() {
+        // The streak is already lost on day 2 (freeze spent on day 1); days 3–4 don't use anything.
+        let history = log([20, 0, 0, 0, 0, 20], from: monday)
+        let status = calculator.status(history: history, today: TestCalendar.adding(days: 5, to: monday))
+        #expect(status.frozenDays.count == 1)
+        #expect(status.streak == 1)
+    }
+
+    @Test func everySecondGoalWeekEarnsAFreeze() {
+        // Weeks of 7 × 30 = 210 min ≥ 150. Week 1 banks one; week 2 earns a freeze, but the inventory
+        // already holds the starting one, so it goes to 2.
+        let history = log(Array(repeating: 30, count: 14), from: monday)
+        let status = calculator.status(history: history, today: TestCalendar.adding(days: 14, to: monday))
+        #expect(status.freezes == 2)
+        #expect(status.freezesEarned == [TestCalendar.utc.startOfDay(for: TestCalendar.adding(days: 13, to: monday))])
+        #expect(status.goalWeeksTowardFreeze == 0)
+        let oneWeek = calculator.status(history: log(Array(repeating: 30, count: 7), from: monday), today: TestCalendar.adding(days: 7, to: monday))
+        #expect(oneWeek.freezes == 1 && oneWeek.goalWeeksTowardFreeze == 1)
+    }
+
+    @Test func aWeekBelowTheGoalDoesNotCountButDoesNotReset() {
+        // Goal met in weeks 1 and 3, not 2: the freeze comes at the end of week 3.
+        let week = Array(repeating: 30, count: 7)
+        let history = log(week + Array(repeating: 10, count: 7) + week, from: monday)
+        let status = calculator.status(history: history, today: TestCalendar.adding(days: 21, to: monday))
+        #expect(status.freezesEarned == [TestCalendar.utc.startOfDay(for: TestCalendar.adding(days: 20, to: monday))])
+    }
+
+    @Test func freezesAreCappedAtTwo() {
+        let history = log(Array(repeating: 30, count: 56), from: monday)
+        let status = calculator.status(history: history, today: TestCalendar.adding(days: 56, to: monday))
+        #expect(status.freezes == 2)
+        #expect(status.freezesEarned.count == 1, "later rewards are skipped while the inventory is full")
+    }
+
+    @Test func nextFreezeWeekEnd() {
+        let sunday = TestCalendar.utc.startOfDay(for: TestCalendar.adding(days: 6, to: monday))
+        var status = StreakCalculator.Status(streak: 3, freezes: 1, minutesThisWeek: 0)
+        #expect(calculator.nextFreezeWeekEnd(status, today: monday) == TestCalendar.adding(days: 7, to: sunday), "two goal weeks to go")
+        status.goalWeeksTowardFreeze = 1
+        #expect(calculator.nextFreezeWeekEnd(status, today: monday) == sunday, "one banked: this week")
+        status.freezes = 2
+        #expect(calculator.nextFreezeWeekEnd(status, today: monday) == nil, "full")
     }
 
     // MARK: Goal pace

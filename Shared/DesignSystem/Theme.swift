@@ -10,6 +10,8 @@ enum Palette {
     static let leaf = dynamic(light: 0x5BC236, dark: 0x6BD144)
     static let sky = dynamic(light: 0x2FA6EE, dark: 0x4DB5F5)
     static let lilac = dynamic(light: 0xDEE4FF, dark: 0x2A3560)
+    /// Streak freezes.
+    static let ice = dynamic(light: 0x5CC8F2, dark: 0x6FD0F5)
     static let cream = dynamic(light: 0xFFF3D6, dark: 0x3A3320)
 
     /// App background: soft off-white by day, Dreaming-style navy by night.

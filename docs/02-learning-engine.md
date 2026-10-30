@@ -160,8 +160,8 @@ Over the last 5 ratings at the current difficulty: 3 or more "Easy" → suggest 
 | Mechanic | Rule |
 |---|---|
 | Weekly goal | Main metric, set on the goal page in onboarding and Settings (default 150 min/week, 10-minute steps from 30 to 900), linked to the target date (§2.9). Shown as a ring. |
-| Streak | A day counts if ≥ 10 minutes are logged (R12) |
-| Streak freeze | Earn 1 for each week you meet the weekly goal; hold at most 3; used automatically |
+| Streak | A day counts if anything is logged: a partial day (even one Duolingo lesson) keeps the streak (R12) |
+| Streak freeze | Everyone starts with 1. Every second week the weekly goal is met earns 1 (weeks below the goal don't count but don't reset the count). Hold at most 2; a reward that comes while full is skipped. Used automatically on a missed day, only when there's a streak to save; the frozen day keeps the streak but doesn't add to it |
 | Training hours | The running total shown in the header (clock badge) instead of XP: every minute logged, plus listening from before Rumbo ÷ 0.55. It's the same number levels are measured in, so it always means something. |
 
 ## 2.9 Projection

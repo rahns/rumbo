@@ -89,7 +89,8 @@ Implemented in `Rumbo/Features/Goal/GoalEditor.swift`, with `GoalPace` in RumboC
 ### Path (home tab)
 Implemented in `Rumbo/Features/Path/PathView.swift`, laid out by `PathLayout` in RumboCore.
 
-- **One node per calendar day** since onboarding, labelled with its weekday in Spanish and its date ("Lun 26", "Mié 28", and "Hoy" for today; the day summary reads "Lunes 26 de octubre"); 7 nodes per unit ("Unidad N", with its dates). Day complete (its plan finished, or ≥ 10 minutes logged with no plan) = green tick; partly done = yellow; missed = grey moon; upcoming = locked and faded.
+- **One node per calendar day** since onboarding, labelled with its weekday in Spanish and its date ("Lun 26", "Mié 28", and "Hoy" for today; the day summary reads "Lunes 26 de octubre"); 7 nodes per unit ("Unidad N", with its dates). Day complete (its plan finished, or ≥ 10 minutes logged with no plan) = green tick; partly done = yellow; missed = grey moon; missed but saved by a streak freeze = ice-blue snowflake; upcoming = locked and faded.
+- **Streak freezes on the path:** after the last day of a week that earned a freeze, a snowflake row "+1 streak freeze · Weekly goal met for the second time". Ahead, a faded row marks the next one at the end of the week it can be earned: "Meet this week's goal to earn it" or "Meet your goal this week and next" (none while holding the maximum of 2).
 - **Today** is the big node with Pico beside it. Unfinished: coral star, pulsing, with a "START"/"CONTINUE" bubble; tapping zooms into Today.
 - **Finished today is unmistakable:** the node turns into a big green tick inside a gold ring with sparkles, the bubble says "¡HECHO!", Pico cheers, and the header shows a green "Day done" badge.
 - **Keep going:** once every task in today's plan is done or skipped (at least one done), a **Keep going** section appears under the plan on Today. It lists every other task you can do that isn't in today's plan, each with its length, detail (next track, next Extra part) and strand, most-behind strand first, with a Start button. A started extra becomes a card like any other (timer, logging, undo by tapping the grey tick, which puts it back in the list). Extras count toward minutes, streak, training hours and course progress, but don't change whether the day is complete. Future days on the path stay locked: there is no working ahead. (A day finished early in an older version still shows as done and opens in Today.) Widgets list done extras ("Extra: …") and show "¡Hecho! +2 extra".
@@ -101,7 +102,7 @@ Implemented in `Rumbo/Features/Path/PathView.swift`, laid out by `PathLayout` in
 
 ### Level-up check
 Intro → the next band's 10 can-do statements one at a time → ≥ 7 "¡Sí!" passes: confetti, proud Pico, new band badge, and the plan's strand mix changes from the next day. Otherwise "Not yet, and that's fine", and the check returns in 14 days.
-- Header: level chip, "Day done" when today is finished, streak flame and training hours (clock badge). On narrow screens the left chips shorten ("A2.1", then a tick for "Day done") rather than squashing or pushing the path off screen.
+- Header: level chip, "Day done" when today is finished, streak flame, streak freezes (snowflake with the number held; tapping shows "1 of 2 streak freezes") and training hours (clock badge). On narrow screens the left chips shorten ("A2.1", then a tick for "Day done") rather than squashing or pushing the path off screen.
 - Tap today's node → its card **expands into the Today screen** (`matchedGeometryEffect` / zoom navigation transition).
 
 ### Today
@@ -150,7 +151,7 @@ Implemented in `Rumbo/Features/Review/MistakeDeckViews.swift`; cards are `Review
 - **Strand balance:** one row per strand, named Listening, Speaking & writing, Study and Fluency practice, each with what counts toward it (e.g. "Easy videos, quick writes and 4-3-2 talks"). Shows the last 7 days' minutes and share, a bar for the share, and a tick at the band's target share.
 - **Where you're heading:** a timeline from now (current level and hours) through each level's expected arrival, with the target as a flag in date order ("Your target: B2 · Jul 2028", what the goal needs in hours, and the hours and level the current pace reaches by then, or "on track"); the goal's level is starred; levels after the target are faded. Below it: what 10 more minutes a day would reach by the target.
 - **Level you watch** (shown when Dreaming Spanish is on): the average Dreaming Spanish difficulty watched, weighted by minutes, with a 14d / 1m / 3m / 6m / 1y / All picker (remembered). All starts at the first logged session (at least 14 days). Spans up to a month plot one point per day, up to a year one per week, and longer (All only) one per 30 days. Days or weeks with nothing watched are left out, not drawn as zero. Older logs without a level use the middle of their range. A line above says the change, e.g. "Level 42 → 45, up 3 over 3m" ("since you started" for All). Logic: `WatchedLevel.series` in RumboCore.
-- Streak, freezes, training hours.
+- Streak, freezes held ("1 of 2"), training hours.
 - **Heat map:** the last 12 calendar weeks, one square per day (weeks start on the learner's chosen day), shaded by minutes, today outlined.
 - Source progress: Language Transfer track bar, Extra episodes, Duolingo section.
 
@@ -178,7 +179,8 @@ Share (send a friend the latest release, see what's new), Goal (opens the goal p
 | Weekly minutes go up | A light sweep runs along the "This week" bar | A light tap for each 25% of the weekly goal just passed |
 | Weekly goal met | Fireworks (particle `Canvas`) behind a "¡Meta cumplida!" card with Pico cheering; over any tab, once a week | `.success`, then a tap per burst |
 | Streak milestone (7, 30, 100, 365 days) | A big flame swells and beats twice with the day count; Pico's message as a banner on Today; once per milestone | Heartbeat (heavy–medium, twice) |
-| Streak freeze used | On the next visit to the path, an ice crystal forms over the flame and shatters; a banner on Today says which day it saved | Crack (rigid, then light) |
+| Streak freeze used | On the next visit to the path, an ice crystal forms over the flame and shatters and the freeze count drops; a banner on Today says which day it saved | Crack (rigid, then light) |
+| Streak freeze earned | The snowflake in the path header bounces; a banner on Today: "🧊 You earned a streak freeze", with how many are held (once, within a week of earning it) | — |
 | Unit complete | The unit banner flips over to its gold "¡Unidad completa!" side and the seal stamps down; once, the first time the path shows it | Stamp (heavy + rigid) |
 | Pico tapped | A random trick: a flip, a spin, a squash-and-stretch hop, or a speech bubble ("¡Vamos!", "¡Olé!"…) | Light tap |
 | Gate passed | Lock shatters (particle `Canvas`), confetti, Pico spin | Custom pattern |
@@ -217,8 +219,8 @@ Implemented in `RumboWidgets/`. Widgets read a `WidgetSnapshot` the app writes a
 
 Implemented in `Reminders` (`Rumbo/Services/Platform.swift`), rescheduled after every change to the reminder settings or today's practice, and whenever the app comes back to the foreground.
 
-- **Daily reminder** at the learner's chosen time ("Pico has today's plan ready. Even 10 minutes counts."). Repeats every day.
-- **Evening nudge** at 8 pm on days with fewer than 10 minutes logged ("Pico's still awake 🌙"). Scheduled for the coming week and removed for today as soon as today reaches 10 minutes. Not sent if the daily reminder is itself set for 8 pm or later.
+- **Daily reminder** at the learner's chosen time ("Pico has today's plan ready. Even 10 minutes counts."). Scheduled one by one for the next 30 days and rescheduled whenever anything changes, so each day's text can differ: on the day after a streak freeze was used it reads "🧊 A streak freeze saved you: Nothing was logged yesterday, so a freeze kept your 12-day streak going (1 freeze left). Pico has today's plan ready." Each day's text is worked out ahead assuming nothing more is logged, and logging anything reschedules it.
+- **Evening nudge** at 8 pm on days with nothing logged ("Pico's still awake 🌙 Nothing logged today yet. Even one quick lesson keeps your streak going."). Scheduled for the coming week and removed for today as soon as anything is logged. Not sent if the daily reminder is itself set for 8 pm or later.
 - Notifications also appear while Rumbo is open (a notification-centre delegate allows banners in the foreground).
 - Settings → Habit → **Send a test notification** sends one after 5 seconds, or explains how to turn notifications on if they're off.
 - No marketing-style notifications.

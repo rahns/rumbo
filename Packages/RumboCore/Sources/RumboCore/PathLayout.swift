@@ -10,6 +10,8 @@ public struct PathNode: Equatable, Sendable, Identifiable {
         /// A past day with some practice but an unfinished session.
         case partial
         case missed
+        /// A past day with nothing logged that a streak freeze covered.
+        case frozen
         /// Today, not finished yet.
         case current
         case upcoming
@@ -23,6 +25,23 @@ public struct PathNode: Equatable, Sendable, Identifiable {
     public let isToday: Bool
 
     public var id: Int { number }
+}
+
+/// A streak freeze on the path, shown after the last day of the week it belongs to.
+public struct PathFreezeMarker: Equatable, Sendable, Identifiable {
+    public enum Kind: Equatable, Sendable {
+        /// Earned: the weekly goal was met for the second time.
+        case earned
+        /// The next one, earned at the end of this week if one goal week is banked (`goalWeeksLeft` 1),
+        /// or of next week (`goalWeeksLeft` 2).
+        case next(goalWeeksLeft: Int)
+    }
+
+    public let kind: Kind
+    public let weekEnd: Date
+    public let afterNode: Int
+
+    public var id: String { "\(kind)-\(afterNode)" }
 }
 
 /// A projected level-up, shown after the day it's expected.
@@ -47,11 +66,13 @@ public struct PathMap: Equatable, Sendable {
     public let milestones: [PathMilestone]
     /// Level-ups projected beyond the end of the drawn path. They move onto it as they get closer.
     public let laterMilestones: [PathMilestone]
+    public let freezeMarkers: [PathFreezeMarker]
 
-    public init(units: [PathUnit], milestones: [PathMilestone], laterMilestones: [PathMilestone] = []) {
+    public init(units: [PathUnit], milestones: [PathMilestone], laterMilestones: [PathMilestone] = [], freezeMarkers: [PathFreezeMarker] = []) {
         self.units = units
         self.milestones = milestones
         self.laterMilestones = laterMilestones
+        self.freezeMarkers = freezeMarkers
     }
 
     public var allNodes: [PathNode] { units.flatMap(\.nodes) }
@@ -62,6 +83,8 @@ public struct PathMap: Equatable, Sendable {
 
 public enum PathLayout {
     public static let nodesPerUnit = 7
+    /// With no plan, a day with this much logged shows as done (less is partly done). The streak counts any practice.
+    public static let minutesForDoneDay = 10
     /// Always show at least this many units after today's.
     public static let minimumUnitsAhead = 4
     /// Never draw more than this many units after today's (about two years).
@@ -86,7 +109,12 @@ public enum PathLayout {
     /// - Parameters:
     ///   - days: what happened on each day, keyed by start of day. A session done early is keyed by the day it's for.
     ///   - arrivals: projected dates for upcoming bands.
-    public static func map(start: Date, today: Date, days: [Date: Day], arrivals: [Band: Date], calendar: Calendar = .current) -> PathMap {
+    ///   - frozen: days a streak freeze covered (start of day).
+    ///   - freezesEarned: the last day of each week that earned a freeze.
+    ///   - nextFreeze: the last day of the week the next freeze can be earned, and how many goal weeks that takes.
+    public static func map(start: Date, today: Date, days: [Date: Day], arrivals: [Band: Date],
+                           frozen: Set<Date> = [], freezesEarned: [Date] = [], nextFreeze: (weekEnd: Date, goalWeeksLeft: Int)? = nil,
+                           calendar: Calendar = .current) -> PathMap {
         let first = calendar.startOfDay(for: min(start, today))
         let todayStart = calendar.startOfDay(for: today)
         let todayIndex = calendar.dateComponents([.day], from: first, to: todayStart).day ?? 0
@@ -117,7 +145,8 @@ public enum PathLayout {
             } else if index < todayIndex {
                 switch info.session {
                 case .unfinished: status = .partial
-                case .none: status = info.minutes >= StreakCalculator.minutesForStreakDay ? .done : info.minutes > 0 ? .partial : .missed
+                case .none:
+                    status = info.minutes >= minutesForDoneDay ? .done : info.minutes > 0 ? .partial : frozen.contains(day) ? .frozen : .missed
                 case .finished: status = .done
                 }
             } else if index == todayIndex {
@@ -133,6 +162,12 @@ public enum PathLayout {
         let units = stride(from: 0, to: nodes.count, by: nodesPerUnit).map { start in
             PathUnit(number: start / nodesPerUnit + 1, nodes: Array(nodes[start..<min(start + nodesPerUnit, nodes.count)]))
         }
-        return PathMap(units: units, milestones: milestones, laterMilestones: later)
+        var markers = freezesEarned.map { PathFreezeMarker(kind: .earned, weekEnd: $0, afterNode: number(of: $0)) }
+        if let nextFreeze {
+            markers.append(PathFreezeMarker(kind: .next(goalWeeksLeft: nextFreeze.goalWeeksLeft), weekEnd: nextFreeze.weekEnd,
+                                            afterNode: number(of: nextFreeze.weekEnd)))
+        }
+        markers = markers.filter { $0.afterNode >= 1 && $0.afterNode <= nodes.count }
+        return PathMap(units: units, milestones: milestones, laterMilestones: later, freezeMarkers: markers)
     }
 }

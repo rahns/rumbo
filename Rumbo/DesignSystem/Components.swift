@@ -169,9 +169,11 @@ extension View {
     }
 }
 
-/// A small speech bubble in the app's style: card colour, raised edge, and a centred pointer below.
+/// A small speech bubble in the app's style: card colour, raised edge, and a centred pointer below
+/// (or above, for something at the top of the screen).
 struct TipBubble: View {
     let text: String
+    var pointsUp = false
 
     var body: some View {
         Text(text)
@@ -182,12 +184,13 @@ struct TipBubble: View {
             .padding(.horizontal, 12)
             .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Palette.card))
             .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Palette.cardEdge).offset(y: 3))
-            .overlay(alignment: .bottom) {
-                // A symmetric pointer, centred under the bubble.
+            .overlay(alignment: pointsUp ? .top : .bottom) {
+                // A symmetric pointer, centred under (or over) the bubble.
                 Triangle()
                     .fill(Palette.card)
                     .frame(width: 14, height: 7)
-                    .offset(y: 7)
+                    .rotationEffect(.degrees(pointsUp ? 180 : 0))
+                    .offset(y: pointsUp ? -7 : 7)
             }
             .allowsHitTesting(false)
     }

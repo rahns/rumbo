@@ -37,6 +37,22 @@ import Testing
         #expect(path.allNodes.prefix(6).map(\.status) == [.done, .partial, .missed, .done, .current, .upcoming])
     }
 
+    @Test func aFrozenDayShowsAsFrozenNotMissed() {
+        let path = PathLayout.map(start: start, today: TestCalendar.adding(days: 3, to: start),
+                                  days: [day(0): finished, day(2): finished], arrivals: [:],
+                                  frozen: [day(1)], calendar: calendar)
+        #expect(path.allNodes.prefix(4).map(\.status) == [.done, .frozen, .done, .current])
+    }
+
+    @Test func freezeMarkersSitAfterTheirWeekEnd() {
+        let path = PathLayout.map(start: start, today: TestCalendar.adding(days: 9, to: start), days: [:], arrivals: [:],
+                                  freezesEarned: [day(6)], nextFreeze: (weekEnd: day(20), goalWeeksLeft: 2), calendar: calendar)
+        #expect(path.freezeMarkers.map(\.afterNode) == [7, 21])
+        #expect(path.freezeMarkers.map(\.kind) == [.earned, .next(goalWeeksLeft: 2)])
+        let beforeStart = PathLayout.map(start: start, today: start, days: [:], arrivals: [:], freezesEarned: [day(-3)], calendar: calendar)
+        #expect(beforeStart.freezeMarkers.isEmpty, "weeks before the path started aren't drawn")
+    }
+
     @Test func finishingTodayMakesItDoneAndTomorrowStaysLocked() {
         let path = map(today: 2, [2: finished])
         #expect(path.todayNode?.status == .done)

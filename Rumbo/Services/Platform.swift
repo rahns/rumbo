@@ -72,32 +72,60 @@ enum LiveActivities {
 /// Notifications (docs/03-experience.md §3.7): a daily reminder at the learner's time, phrased around
 /// their habit cue (R13), and an evening nudge on days with nothing logged yet.
 enum Reminders {
-    static let dailyID = "rumbo.daily"
+    static let dailyPrefix = "rumbo.daily."
+    /// The repeating reminder older versions scheduled; removed so it doesn't double up.
+    static let legacyDailyID = "rumbo.daily"
     static let nudgePrefix = "rumbo.nudge."
     static let testID = "rumbo.test"
     static let nudgeHour = 20
     static let nudgeDaysAhead = 7
+    /// Daily reminders are scheduled one by one, so each day's text can differ (a freeze used overnight).
+    /// Rescheduled whenever the app changes anything; 30 days covers a long break (iOS allows 64 pending).
+    static let dailyDaysAhead = 30
+
+    /// What a day's reminder says when a streak freeze covered the day before.
+    struct FreezeNote {
+        var streak: Int
+        var freezesLeft: Int
+    }
 
     static func requestPermission() async -> Bool {
         (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])) ?? false
     }
 
+    private static var allIDs: [String] {
+        [legacyDailyID] + (0..<dailyDaysAhead).map { "\(dailyPrefix)\($0)" } + (0..<nudgeDaysAhead).map { "\(nudgePrefix)\($0)" }
+    }
+
     /// Reschedules everything. Called after anything that changes the reminder settings or today's practice.
-    static func refresh(for profile: LearnerProfile, practisedToday: Bool, calendar: Calendar = .current) {
+    /// `freezeNote` says, for a day, whether a freeze will have covered the day before if nothing more is logged.
+    static func refresh(for profile: LearnerProfile, practisedToday: Bool, calendar: Calendar = .current,
+                        freezeNote: (Date) -> FreezeNote? = { _ in nil }) {
         let center = UNUserNotificationCenter.current()
-        let nudgeIDs = (0..<nudgeDaysAhead).map { "\(nudgePrefix)\($0)" }
-        center.removePendingNotificationRequests(withIdentifiers: [dailyID] + nudgeIDs)
+        center.removePendingNotificationRequests(withIdentifiers: allIDs)
         guard profile.reminderEnabled else { return }
 
-        let daily = UNMutableNotificationContent()
-        daily.title = "¿Rumbo a dónde?"
-        daily.body = "Pico has today's plan ready. Even 10 minutes counts."
-        daily.sound = .default
-        let time = DateComponents(hour: profile.reminderHour, minute: profile.reminderMinute)
-        center.add(UNNotificationRequest(identifier: dailyID, content: daily, trigger: UNCalendarNotificationTrigger(dateMatching: time, repeats: true)))
+        let now = Date.now
+        for offset in 0..<dailyDaysAhead {
+            guard let day = calendar.date(byAdding: .day, value: offset, to: now),
+                  let fireDate = calendar.date(bySettingHour: profile.reminderHour, minute: profile.reminderMinute, second: 0, of: day),
+                  fireDate > now else { continue }
+            let daily = UNMutableNotificationContent()
+            if let note = freezeNote(fireDate) {
+                daily.title = "🧊 A streak freeze saved you"
+                let left = note.freezesLeft == 1 ? "1 freeze left" : "\(note.freezesLeft) freezes left"
+                daily.body = "Nothing was logged yesterday, so a freeze kept your \(note.streak)-day streak going (\(left)). Pico has today's plan ready."
+            } else {
+                daily.title = "¿Rumbo a dónde?"
+                daily.body = "Pico has today's plan ready. Even 10 minutes counts."
+            }
+            daily.sound = .default
+            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
+            center.add(UNNotificationRequest(identifier: "\(dailyPrefix)\(offset)", content: daily,
+                                             trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: false)))
+        }
 
         // Evening nudges for the coming week; today's is skipped once something has been logged.
-        let now = Date.now
         for offset in 0..<nudgeDaysAhead {
             guard let day = calendar.date(byAdding: .day, value: offset, to: now),
                   let fireDate = calendar.date(bySettingHour: nudgeHour, minute: 0, second: 0, of: day),
@@ -108,7 +136,7 @@ enum Reminders {
             else { continue }
             let nudge = UNMutableNotificationContent()
             nudge.title = "Pico's still awake 🌙"
-            nudge.body = "Nothing logged today yet. Ten minutes keeps your streak going."
+            nudge.body = "Nothing logged today yet. Even one quick lesson keeps your streak going."
             nudge.sound = .default
             let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
             center.add(UNNotificationRequest(identifier: "\(nudgePrefix)\(offset)", content: nudge,
@@ -130,8 +158,7 @@ enum Reminders {
     }
 
     static func cancel() {
-        let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: [dailyID] + (0..<nudgeDaysAhead).map { "\(nudgePrefix)\($0)" })
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: allIDs)
     }
 }
 

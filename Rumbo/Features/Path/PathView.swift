@@ -14,6 +14,10 @@ struct PathView: View {
     @State private var showingGate = false
     /// Bumped to play the ice-shatter on the streak flame (a freeze saved the streak).
     @State private var freezeShatters = 0
+    /// Shows "1 of 2 streak freezes" under the freeze pill for a moment.
+    @State private var showingFreezeTip = false
+    /// Bumped to bounce the freeze pill when one is earned.
+    @State private var freezeEarned = 0
     /// The unit whose banner is flipping to "¡Unidad completa!".
     @State private var celebratingUnit: Int?
 
@@ -34,6 +38,9 @@ struct PathView: View {
                                     .id(node.id)
                                 if node.isToday && model.isGateOpen {
                                     gateRow(after: node.number)
+                                }
+                                ForEach(map.freezeMarkers.filter { $0.afterNode == node.number }) { marker in
+                                    FreezeRow(marker: marker)
                                 }
                                 ForEach(map.milestones.filter { $0.afterNode == node.number }) { milestone in
                                     MilestoneRow(milestone: milestone)
@@ -98,6 +105,7 @@ struct PathView: View {
             StatPill(symbol: "flame.fill", value: "\(model.streak.streak)", color: Palette.sun, bounce: model.streak.streak,
                      accessibilityText: "\(model.streak.streak) day streak")
                 .overlay { IceShatter(trigger: freezeShatters) }
+            freezePill
             StatPill(symbol: "clock.fill", value: "\(Int(model.trainingHours)) h", color: Palette.sky, bounce: Int(model.trainingHours),
                      accessibilityText: "\(Int(model.trainingHours)) training hours")
         }
@@ -106,6 +114,31 @@ struct PathView: View {
         .frame(maxWidth: .infinity)
         .background(.bar)
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: todayDone)
+    }
+
+    /// Streak freezes held, out of the maximum. Tapping says what it is.
+    private var freezePill: some View {
+        let freezes = model.streak.freezes
+        return Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { showingFreezeTip = true }
+        } label: {
+            StatPill(symbol: "snowflake", value: "\(freezes)", color: Palette.ice, bounce: freezeEarned + freezeShatters,
+                     accessibilityText: "\(freezes) of \(StreakCalculator.maxFreezes) streak freezes")
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .bottom) {
+            if showingFreezeTip {
+                TipBubble(text: "\(freezes) of \(StreakCalculator.maxFreezes) streak freezes", pointsUp: true)
+                    .offset(y: 40)
+                    .transition(.scale(scale: 0.5, anchor: .top).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(2))
+                        withAnimation(.easeOut(duration: 0.2)) { showingFreezeTip = false }
+                    }
+            }
+        }
+        .sensoryFeedback(.selection, trigger: showingFreezeTip)
+        .zIndex(1)
     }
 
     private func leftChips(fullLevel: Bool, doneText: Bool, todayDone: Bool) -> some View {
@@ -146,7 +179,13 @@ struct PathView: View {
             freezeShatters += 1
             model.banner = AppModel.Banner(
                 title: "🧊 A streak freeze saved you",
-                message: "You missed \(day.formatted(.dateTime.weekday(.wide))), so one of your freezes kept the streak going. Meet your weekly goal to earn more."
+                message: "Nothing was logged on \(day.formatted(.dateTime.weekday(.wide))), so a freeze kept the streak going. Every second week you meet your weekly goal earns another (you can hold \(StreakCalculator.maxFreezes))."
+            )
+        } else if model.takeUnseenFreezeEarned() != nil {
+            freezeEarned += 1
+            model.banner = AppModel.Banner(
+                title: "🧊 You earned a streak freeze",
+                message: "Two weeks with your weekly goal met. If you miss a day, a freeze keeps your streak going. You have \(model.streak.freezes) of \(StreakCalculator.maxFreezes)."
             )
         }
         if let unit = map.units.last(where: { model.takeUnitCompletion($0) }) {
@@ -356,6 +395,7 @@ struct PathNodeView: View {
         case .done: return Palette.leaf
         case .partial: return Palette.sun
         case .missed: return Palette.lilac
+        case .frozen: return Palette.ice
         case .current: return Palette.coral
         case .upcoming: return Palette.lilac
         }
@@ -367,6 +407,7 @@ struct PathNodeView: View {
         case .done: return "checkmark"
         case .partial: return "circle.lefthalf.filled"
         case .missed: return "moon.zzz.fill"
+        case .frozen: return "snowflake"
         case .current: return "star.fill"
         case .upcoming: return "lock.fill"
         }
@@ -436,9 +477,49 @@ struct PathNodeView: View {
         case .done: return isToday ? "Today, complete" : "Day complete"
         case .partial: return "Day partly done"
         case .missed: return "Missed day"
+        case .frozen: return "Missed day, saved by a streak freeze"
         case .current: return "Today"
         case .upcoming: return "Locked day"
         }
+    }
+}
+
+/// A streak freeze on the path: one earned at the end of a week, or the next one still to earn.
+struct FreezeRow: View {
+    let marker: PathFreezeMarker
+
+    private var earned: Bool { marker.kind == .earned }
+
+    private var title: String { earned ? "+1 streak freeze" : "Next streak freeze" }
+
+    private var detail: String {
+        switch marker.kind {
+        case .earned: "Weekly goal met for the second time"
+        case .next(let left): left <= 1 ? "Meet this week's goal to earn it" : "Meet your goal this week and next"
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "snowflake")
+                .font(.system(size: 26, weight: .black))
+                .foregroundStyle(.white)
+                .frame(width: 58, height: 58)
+                .background(Circle().fill(Palette.ice))
+                .background(Circle().fill(Palette.ice.edge()).offset(y: 5))
+                .opacity(earned ? 1 : 0.5)
+            VStack(spacing: 2) {
+                Text(title)
+                    .font(.rounded(.headline, weight: .black))
+                    .foregroundStyle(Palette.ink)
+                Text(detail)
+                    .font(.rounded(.subheadline, weight: .semibold))
+                    .foregroundStyle(Palette.secondaryText)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 18)
+        .accessibilityElement(children: .combine)
     }
 }
 

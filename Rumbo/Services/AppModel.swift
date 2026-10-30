@@ -603,6 +603,14 @@ final class AppModel {
         return Self.once("unit-\(Self.dayKey(last))")
     }
 
+    /// A freeze earned in the last week, not shown yet. Marks it shown.
+    func takeUnseenFreezeEarned() -> Date? {
+        guard let day = streak.freezesEarned.last,
+              let weekAgo = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: .now)),
+              day >= weekAgo, Self.once("freeze-earned-\(Self.dayKey(day))") else { return nil }
+        return day
+    }
+
     /// A day a streak freeze saved, not shown yet. Marks it shown.
     func takeUnseenFreeze() -> Date? {
         guard let day = streak.lastFreezeUsed, Self.once("freeze-\(Self.dayKey(day))") else { return nil }
@@ -634,7 +642,15 @@ final class AppModel {
     /// Reschedules the daily reminder and the evening nudges (skipping today's once it's practised).
     func refreshReminders() {
         guard let profile else { return }
-        Reminders.refresh(for: profile, practisedToday: minutesToday >= StreakCalculator.minutesForStreakDay, calendar: calendar)
+        let calculator = StreakCalculator(weeklyGoalMinutes: profile.weeklyGoalMinutes, calendar: calendar)
+        let history = history
+        Reminders.refresh(for: profile, practisedToday: minutesToday >= StreakCalculator.minutesForStreakDay, calendar: calendar) { day in
+            // If nothing more is logged before `day`, did a freeze just cover the day before?
+            let status = calculator.status(history: history, today: day)
+            guard let used = status.lastFreezeUsed, let yesterday = self.calendar.date(byAdding: .day, value: -1, to: self.calendar.startOfDay(for: day)),
+                  used == yesterday else { return nil }
+            return Reminders.FreezeNote(streak: status.streak, freezesLeft: status.freezes)
+        }
     }
 
     /// Today's progress against the plan: minutes logged (plan tasks, Keep going extras, and extra
@@ -843,7 +859,12 @@ final class AppModel {
 
         var arrivals = Projection(calendar: calendar).arrivalDates(hours: trainingHours, weeklyHours: forecastWeeklyHours.hours, from: .now)
         arrivals = arrivals.filter { $0.key > profile.band }
-        return PathLayout.map(start: profile.createdAt, today: .now, days: days, arrivals: arrivals, calendar: calendar)
+        let status = streak
+        let calculator = StreakCalculator(weeklyGoalMinutes: profile.weeklyGoalMinutes, calendar: calendar)
+        let next = calculator.nextFreezeWeekEnd(status, today: .now)
+            .map { (weekEnd: $0, goalWeeksLeft: StreakCalculator.goalWeeksPerFreeze - status.goalWeeksTowardFreeze) }
+        return PathLayout.map(start: profile.createdAt, today: .now, days: days, arrivals: arrivals,
+                              frozen: Set(status.frozenDays), freezesEarned: status.freezesEarned, nextFreeze: next, calendar: calendar)
     }
 
     func acceptDifficultySuggestion() {

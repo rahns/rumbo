@@ -2,8 +2,14 @@ import Foundation
 
 /// Streaks and freezes. See docs/02-learning-engine.md §2.8.
 public struct StreakCalculator: Sendable {
-    public static let minutesForStreakDay = 10
-    public static let maxFreezes = 3
+    /// Any logged practice keeps the streak going: a partial day (even just Duolingo) counts.
+    public static let minutesForStreakDay = 1
+    /// Freezes held at most.
+    public static let maxFreezes = 2
+    /// Every learner starts with one.
+    public static let startingFreezes = 1
+    /// Every second week the weekly goal is met earns a freeze.
+    public static let goalWeeksPerFreeze = 2
 
     public var calendar: Calendar
     public var weeklyGoalMinutes: Int
@@ -19,10 +25,16 @@ public struct StreakCalculator: Sendable {
         public var minutesThisWeek: Int
         /// The last day a freeze covered, if the streak it saved is still going.
         public var lastFreezeUsed: Date? = nil
+        /// Every day a freeze covered (start of day), for the path.
+        public var frozenDays: [Date] = []
+        /// The last day of each week that earned a freeze (start of day), for the path.
+        public var freezesEarned: [Date] = []
+        /// Weeks with the goal met since the last freeze was earned (0 or 1).
+        public var goalWeeksTowardFreeze: Int = 0
     }
 
-    /// Replays the whole history day by day. Today only counts once it reaches the threshold,
-    /// and an unfinished today never breaks the streak.
+    /// Replays the whole history day by day. Today only counts once something is logged, and an
+    /// unfinished today never breaks the streak. A missed day uses a freeze only if there's a streak to save.
     public func status(history: [ActivityRecord], today: Date) -> Status {
         let todayStart = calendar.startOfDay(for: today)
         var minutesByDay: [Date: Int] = [:]
@@ -30,40 +42,56 @@ public struct StreakCalculator: Sendable {
             minutesByDay[calendar.startOfDay(for: record.date), default: 0] += record.minutes
         }
         guard let first = minutesByDay.keys.min(), first <= todayStart else {
-            return Status(streak: 0, freezes: 0, minutesThisWeek: 0)
+            return Status(streak: 0, freezes: Self.startingFreezes, minutesThisWeek: 0)
         }
 
-        var streak = 0
-        var freezes = 0
-        var weekMinutes = 0
-        var lastFreezeUsed: Date?
+        var status = Status(streak: 0, freezes: Self.startingFreezes, minutesThisWeek: 0)
         var day = first
         while day <= todayStart {
             let minutes = minutesByDay[day] ?? 0
-            weekMinutes += minutes
+            status.minutesThisWeek += minutes
             if minutes >= Self.minutesForStreakDay {
-                streak += 1
-            } else if day < todayStart {
-                if freezes > 0 {
-                    freezes -= 1
-                    if streak > 0 { lastFreezeUsed = day }
+                status.streak += 1
+            } else if day < todayStart && status.streak > 0 {
+                if status.freezes > 0 {
+                    status.freezes -= 1
+                    status.lastFreezeUsed = day
+                    status.frozenDays.append(day)
                 } else {
-                    streak = 0
-                    lastFreezeUsed = nil
+                    status.streak = 0
+                    status.lastFreezeUsed = nil
                 }
             }
 
             let nextDay = calendar.date(byAdding: .day, value: 1, to: day)!
             let weekEnds = !calendar.isDate(nextDay, equalTo: day, toGranularity: .weekOfYear)
             if weekEnds && day < todayStart {
-                if weekMinutes >= weeklyGoalMinutes {
-                    freezes = min(Self.maxFreezes, freezes + 1)
+                if status.minutesThisWeek >= weeklyGoalMinutes {
+                    status.goalWeeksTowardFreeze += 1
+                    if status.goalWeeksTowardFreeze >= Self.goalWeeksPerFreeze {
+                        status.goalWeeksTowardFreeze = 0
+                        // With the inventory full, the reward is skipped and counting starts again.
+                        if status.freezes < Self.maxFreezes {
+                            status.freezes += 1
+                            status.freezesEarned.append(day)
+                        }
+                    }
                 }
-                weekMinutes = 0
+                status.minutesThisWeek = 0
             }
             day = nextDay
         }
-        return Status(streak: streak, freezes: freezes, minutesThisWeek: weekMinutes, lastFreezeUsed: lastFreezeUsed)
+        return status
+    }
+
+    /// The last day of the week that would earn the next freeze if the goal is met until then
+    /// (this week if one goal week is already banked, otherwise next week), or nil with the inventory full.
+    public func nextFreezeWeekEnd(_ status: Status, today: Date) -> Date? {
+        guard status.freezes < Self.maxFreezes,
+              let week = calendar.dateInterval(of: .weekOfYear, for: today) else { return nil }
+        let weeksAhead = Self.goalWeeksPerFreeze - 1 - status.goalWeeksTowardFreeze
+        let lastDay = calendar.date(byAdding: .day, value: -1, to: week.end)!
+        return calendar.startOfDay(for: calendar.date(byAdding: .weekOfYear, value: weeksAhead, to: lastDay)!)
     }
 }
 

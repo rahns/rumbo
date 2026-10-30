@@ -103,7 +103,7 @@ struct StatsView: View {
         return RaisedCard(accent: Palette.sun) {
             HStack(spacing: 20) {
                 stat("\(status.streak)", "day streak", "flame.fill", Palette.sun)
-                stat("\(status.freezes)", "freezes", "snowflake", Palette.sky)
+                stat("\(status.freezes) of \(StreakCalculator.maxFreezes)", "freezes", "snowflake", Palette.ice)
                 stat("\(Int(model.trainingHours))", "training hours", "clock.fill", Palette.leaf)
             }
             .frame(maxWidth: .infinity)
