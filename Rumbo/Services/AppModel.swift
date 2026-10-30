@@ -847,6 +847,37 @@ final class AppModel {
         return (Projection.weeklyHours(atGoalMinutes: profile.weeklyGoalMinutes), false)
     }
 
+    /// Training hours still needed for the goal level by the end of a day: what was logged up to then for
+    /// days so far, the forecast pace for days ahead. Nil without a profile.
+    struct GoalCountdown {
+        let band: Band
+        fileprivate let baseline: Double
+        fileprivate let logs: [(date: Date, minutes: Int)]
+        fileprivate let now: Date
+        fileprivate let hoursNow: Double
+        fileprivate let weeklyHours: Double
+        fileprivate let calendar: Calendar
+
+        /// Hours left after `day` ends, and whether that's a projection.
+        func hoursLeft(after day: Date) -> (hours: Double, projected: Bool) {
+            guard let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: day)) else { return (0, false) }
+            if end <= now {
+                let minutes = logs.filter { $0.date < end }.reduce(0) { $0 + $1.minutes }
+                return (max(0, band.hoursThreshold - baseline - Double(minutes) / 60), false)
+            }
+            let weeks = end.timeIntervalSince(now) / (7 * 24 * 3600)
+            let projected = calendar.isDate(day, inSameDayAs: now) ? hoursNow : hoursNow + weeklyHours * weeks
+            return (max(0, band.hoursThreshold - projected), !calendar.isDate(day, inSameDayAs: now))
+        }
+    }
+
+    var goalCountdown: GoalCountdown? {
+        guard let profile else { return nil }
+        return GoalCountdown(band: profile.goalBand, baseline: Band.trainingHours(fromListening: profile.baselineInputHours),
+                             logs: logs.map { ($0.date, $0.minutes) }, now: .now, hoursNow: trainingHours,
+                             weeklyHours: forecastWeeklyHours.hours, calendar: calendar)
+    }
+
     var pathMap: PathMap {
         guard let profile else { return PathMap(units: [], milestones: []) }
         let allLogs = logs

@@ -24,6 +24,7 @@ struct PathView: View {
     var body: some View {
         let map = model.pathMap
         let todayDone = map.todayNode?.status == .done
+        let countdown = model.goalCountdown
         NavigationStack {
             ScrollViewReader { proxy in
                 ScrollView {
@@ -45,6 +46,9 @@ struct PathView: View {
                                 ForEach(map.milestones.filter { $0.afterNode == node.number }) { milestone in
                                     MilestoneRow(milestone: milestone)
                                 }
+                            }
+                            if let countdown, let last = unit.nodes.last {
+                                GoalCountdownLine(countdown: countdown, unitEnd: last.date)
                             }
                         }
                         if !map.laterMilestones.isEmpty {
@@ -477,6 +481,25 @@ struct PathNodeView: View {
         case .current: return "Today"
         case .upcoming: return "Locked day"
         }
+    }
+}
+
+/// Small text at the end of each unit: training hours still to go to the goal level by then
+/// (projected, with "about", for units ahead).
+struct GoalCountdownLine: View {
+    let countdown: AppModel.GoalCountdown
+    let unitEnd: Date
+
+    var body: some View {
+        let left = countdown.hoursLeft(after: unitEnd)
+        let hours = Int(left.hours.rounded(.up))
+        Text(hours == 0
+             ? "Goal (\(countdown.band.rawValue)) reached"
+             : "Time to goal (\(countdown.band.rawValue)): \(left.projected ? "about " : "")\(hours) hours")
+            .font(.rounded(.caption, weight: .semibold))
+            .foregroundStyle(Palette.secondaryText)
+            .frame(maxWidth: .infinity)
+            .padding(.top, 10)
     }
 }
 
