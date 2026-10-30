@@ -181,11 +181,11 @@ struct PathView: View {
                 title: "🧊 A streak freeze saved you",
                 message: "Nothing was logged on \(day.formatted(.dateTime.weekday(.wide))), so a freeze kept the streak going. Every 14 days of streak earns another (you can hold \(StreakCalculator.maxFreezes))."
             )
-        } else if let earned = model.takeUnseenFreezeEarned() {
+        } else if model.takeUnseenFreezeEarned() != nil {
             freezeEarned += 1
             model.banner = AppModel.Banner(
-                title: "🧊 You earned a streak freeze",
-                message: "A \(earned.streak)-day streak! If you miss a day, a freeze keeps it going. You have \(model.streak.freezes) of \(StreakCalculator.maxFreezes)."
+                title: "🧊 +1 streak freeze",
+                message: "Every 14 days of streak earns one. If you miss a day, a freeze keeps your streak going. You have \(model.streak.freezes) of \(StreakCalculator.maxFreezes)."
             )
         }
         if let unit = map.units.last(where: { model.takeUnitCompletion($0) }) {
@@ -497,7 +497,7 @@ struct FreezeRow: View {
 
     private var detail: String {
         switch marker.kind {
-        case .earned(let streak): "For a \(streak)-day streak"
+        case .earned: "Earned for keeping your streak"
         case .next(let left): left == 1 ? "Keep your streak 1 more day" : "Keep your streak \(left) more days"
         }
     }
