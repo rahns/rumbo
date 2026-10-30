@@ -493,19 +493,21 @@ struct GoalCountdownLine: View {
     var body: some View {
         let left = countdown.hoursLeft(after: unitEnd)
         let hours = Int(left.hours.rounded(.up))
-        VStack(spacing: 2) {
+        VStack(spacing: 1) {
             Text(hours == 0
                  ? "Goal (\(countdown.band.rawValue)) reached"
                  : "Time to goal (\(countdown.band.rawValue)): \(left.projected ? "about " : "")\(hours) hours")
-            if hours > 0, let weeks = countdown.weeks(for: left.hours) {
+            // Only for this unit and the ones ahead; finished units just show where things stood.
+            if hours > 0, left.projected, let weeks = countdown.weeks(for: left.hours) {
                 Text("At your current pace, that's \(weeks == 1 ? "1 more week" : "\(weeks) more weeks")")
             }
         }
-        .font(.rounded(.caption, weight: .semibold))
-        .foregroundStyle(Palette.secondaryText)
+        // Quiet on purpose: a footnote to the unit, not another milestone.
+        .font(.rounded(.caption2, weight: .medium))
+        .foregroundStyle(Palette.secondaryText.opacity(0.75))
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)
-        .padding(.top, 10)
+        .padding(.top, 6)
     }
 }
 
