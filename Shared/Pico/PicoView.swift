@@ -19,6 +19,8 @@ struct PicoView: View {
     var celebrate: Int = 0
     /// Tapping Pico plays a random trick. Off where Pico sits inside another control.
     var reactsToTaps = true
+    /// Faces the other way. Only the bird is flipped, so a speech bubble stays readable.
+    var mirrored = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var taps = 0
@@ -37,6 +39,7 @@ struct PicoView: View {
             }
         }
         .frame(width: size, height: size)
+        .scaleEffect(x: mirrored ? -1 : 1, y: 1)
         .rotation3DEffect(.degrees(flipAngle), axis: (x: 0, y: 1, z: 0))
         .rotationEffect(.degrees(spinAngle))
         .keyframeAnimator(initialValue: PicoMotion(), trigger: hops) { content, motion in
@@ -68,8 +71,9 @@ struct PicoView: View {
                     .background(Capsule().fill(.white))
                     .overlay(Capsule().strokeBorder(Palette.ink.opacity(0.15), lineWidth: 1))
                     .fixedSize()
-                    .offset(x: size * 0.35, y: -size * 0.15)
-                    .transition(.scale(scale: 0.3, anchor: .bottomLeading).combined(with: .opacity))
+                    // On the side Pico faces.
+                    .offset(x: mirrored ? -size * 0.35 : size * 0.35, y: -size * 0.15)
+                    .transition(.scale(scale: 0.3, anchor: mirrored ? .bottomTrailing : .bottomLeading).combined(with: .opacity))
             }
         }
         .contentShape(Rectangle())

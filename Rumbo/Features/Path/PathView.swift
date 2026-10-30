@@ -225,9 +225,8 @@ struct PathView: View {
                 }
             }
             if node.isToday {
-                // Mirror first, then move: Pico faces the node from whichever side has room.
-                PicoView(mood: todayDone ? .cheering : model.picoMood, size: 84, celebrate: model.celebrations)
-                    .scaleEffect(x: offset > 0 ? 1 : -1, y: 1)
+                // Pico faces the node from whichever side has room. Only the bird is mirrored, not its speech bubble.
+                PicoView(mood: todayDone ? .cheering : model.picoMood, size: 84, celebrate: model.celebrations, mirrored: offset <= 0)
                     .offset(x: offset > 0 ? -118 : 118, y: -10)
             }
         }
