@@ -96,8 +96,8 @@ struct PathView: View {
                                 .font(.system(size: 18, weight: .black))
                                 .foregroundStyle(.white)
                                 .frame(width: 48, height: 48)
-                                .background(Circle().fill(Palette.coral))
-                                .background(Circle().fill(Palette.coral.edge()).offset(y: 4))
+                                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Palette.coral))
+                                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Palette.coral.edge()).offset(y: 4))
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Back to today")
