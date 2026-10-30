@@ -221,6 +221,7 @@ Implemented in `Reminders` (`Rumbo/Services/Platform.swift`), rescheduled after 
 
 - **Daily reminder** at the learner's chosen time ("Pico has today's plan ready. Even 10 minutes counts."). Scheduled one by one for the next 30 days and rescheduled whenever anything changes, so each day's text can differ: on the day after a streak freeze was used it reads "🧊 Streak freeze used: Your 12-day streak is safe. A little Spanish today keeps it going." Each day's text is worked out ahead assuming nothing more is logged, and logging anything reschedules it.
 - **Evening nudge** at 8 pm on days with nothing logged ("Pico's still awake 🌙 Nothing logged today yet. Even one quick lesson keeps your streak going."). Scheduled for the coming week and removed for today as soon as anything is logged. Not sent if the daily reminder is itself set for 8 pm or later.
+- **Cleared once you practise:** as soon as anything is logged today (or the app opens on a day with practice), Rumbo removes its reminders and nudges already sitting in Notification Centre. The test notification is left alone.
 - Notifications also appear while Rumbo is open (a notification-centre delegate allows banners in the foreground).
 - Settings → Habit → **Send a test notification** sends one after 5 seconds, or explains how to turn notifications on if they're off.
 - No marketing-style notifications.

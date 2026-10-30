@@ -102,6 +102,7 @@ enum Reminders {
                         freezeNote: (Date) -> FreezeNote? = { _ in nil }) {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: allIDs)
+        if practisedToday { clearDelivered() }
         guard profile.reminderEnabled else { return }
 
         let now = Date.now
@@ -139,6 +140,16 @@ enum Reminders {
             let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
             center.add(UNNotificationRequest(identifier: "\(nudgePrefix)\(offset)", content: nudge,
                                              trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: false)))
+        }
+    }
+
+    /// Removes reminders and nudges already shown in Notification Centre, once something has been logged today.
+    static func clearDelivered() {
+        let center = UNUserNotificationCenter.current()
+        center.getDeliveredNotifications { delivered in
+            let ids = delivered.map(\.request.identifier)
+                .filter { $0 == legacyDailyID || $0.hasPrefix(dailyPrefix) || $0.hasPrefix(nudgePrefix) }
+            center.removeDeliveredNotifications(withIdentifiers: ids)
         }
     }
 
