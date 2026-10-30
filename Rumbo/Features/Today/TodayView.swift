@@ -251,6 +251,8 @@ struct TodayView: View {
                     .foregroundStyle(Palette.secondaryText)
             }
             if model.canChangeBudget {
+                // The goal advice stays while choosing, until a task is started.
+                goalAdvice
                 budgetChips(selected: plan.budgetMinutes)
             }
             if plan.hasStarted {
