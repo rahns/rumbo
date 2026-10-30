@@ -386,7 +386,7 @@ struct UnitBanner: View {
                         .font(.rounded(.subheadline, weight: .bold))
                         .opacity(0.85)
                 } else if let first = dates.first, let last = dates.last {
-                    Text("\(first.formatted(.dateTime.day().month(.abbreviated))) – \(last.formatted(.dateTime.day().month(.abbreviated)))")
+                    Text("\(Self.bannerDate(first)) – \(Self.bannerDate(last))")
                         .font(.rounded(.subheadline, weight: .bold))
                         .opacity(0.85)
                 }
@@ -411,6 +411,14 @@ struct UnitBanner: View {
         .onChange(of: celebrating) { _, now in
             if now { Task { await flip() } }
         }
+    }
+
+    /// "3 Nov", or "29 Dec 2025" for a date outside the current year.
+    private static func bannerDate(_ date: Date) -> String {
+        let thisYear = Calendar.current.isDate(date, equalTo: .now, toGranularity: .year)
+        return thisYear
+            ? date.formatted(.dateTime.day().month(.abbreviated))
+            : date.formatted(.dateTime.day().month(.abbreviated).year())
     }
 
     private func flip() async {
