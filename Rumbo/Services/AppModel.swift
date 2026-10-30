@@ -855,8 +855,15 @@ final class AppModel {
         fileprivate let logs: [(date: Date, minutes: Int)]
         fileprivate let now: Date
         fileprivate let hoursNow: Double
-        fileprivate let weeklyHours: Double
+        /// The forecast pace: the learner's own over the last 4 weeks, or the weekly goal until there's a week of history.
+        let weeklyHours: Double
         fileprivate let calendar: Calendar
+
+        /// Weeks `hours` takes at the forecast pace, or nil with no pace yet.
+        func weeks(for hours: Double) -> Int? {
+            guard weeklyHours > 0 else { return nil }
+            return Int((hours / weeklyHours).rounded(.up))
+        }
 
         /// Hours left after `day` ends, and whether that's a projection.
         func hoursLeft(after day: Date) -> (hours: Double, projected: Bool) {
