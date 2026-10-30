@@ -183,10 +183,7 @@ struct PathView: View {
             )
         } else if model.takeUnseenFreezeEarned() != nil {
             freezeEarned += 1
-            model.banner = AppModel.Banner(
-                title: "🧊 +1 streak freeze",
-                message: "Every 14 days of streak earns one. If you miss a day, a freeze keeps your streak going. You have \(model.streak.freezes) of \(StreakCalculator.maxFreezes)."
-            )
+            model.banner = AppModel.Banner(title: "🧊 +1 streak freeze", message: "")
         }
         if let unit = map.units.last(where: { model.takeUnitCompletion($0) }) {
             Task {

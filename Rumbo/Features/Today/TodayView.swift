@@ -457,7 +457,9 @@ struct BannerCard<Actions: View>: View {
         RaisedCard(accent: color) {
             VStack(alignment: .leading, spacing: 8) {
                 Text(title).font(.rounded(.headline, weight: .black)).foregroundStyle(Palette.ink)
-                Text(message).font(.rounded(.subheadline, weight: .medium)).foregroundStyle(Palette.secondaryText)
+                if !message.isEmpty {
+                    Text(message).font(.rounded(.subheadline, weight: .medium)).foregroundStyle(Palette.secondaryText)
+                }
                 actions
             }
         }

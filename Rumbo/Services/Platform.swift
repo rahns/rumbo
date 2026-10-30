@@ -112,9 +112,10 @@ enum Reminders {
                   fireDate > now else { continue }
             let daily = UNMutableNotificationContent()
             if let note = freezeNote(fireDate) {
-                daily.title = "🧊 A streak freeze saved you"
+                daily.title = "🧊 A streak freeze saved your streak"
                 let left = note.freezesLeft == 1 ? "1 freeze left" : "\(note.freezesLeft) freezes left"
-                daily.body = "Nothing was logged yesterday, so a freeze kept your \(note.streak)-day streak going (\(left)). Pico has today's plan ready."
+                daily.body = "Nothing was logged yesterday, so a freeze kept your \(note.streak)-day streak alive (\(left)). "
+                    + "Do a little Spanish today to keep it going: even one lesson counts. Pico has your plan ready."
             } else {
                 daily.title = "¿Rumbo a dónde?"
                 daily.body = "Pico has today's plan ready. Even 10 minutes counts."

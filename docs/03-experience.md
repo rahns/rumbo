@@ -180,7 +180,7 @@ Share (send a friend the latest release, see what's new), Goal (opens the goal p
 | Weekly goal met | Fireworks (particle `Canvas`) behind a "¡Meta cumplida!" card with Pico cheering; over any tab, once a week | `.success`, then a tap per burst |
 | Streak milestone (7, 30, 100, 365 days) | A big flame swells and beats twice with the day count; Pico's message as a banner on Today; once per milestone | Heartbeat (heavy–medium, twice) |
 | Streak freeze used | On the next visit to the path, an ice crystal forms over the flame and shatters and the freeze count drops; a banner on Today says which day it saved | Crack (rigid, then light) |
-| Streak freeze earned | The snowflake in the path header bounces; a matter-of-fact banner on Today: "🧊 +1 streak freeze · Every 14 days of streak earns one…", with how many are held (once, within a week of earning it) | — |
+| Streak freeze earned | The snowflake in the path header bounces; a banner on Today that just says "🧊 +1 streak freeze" (once, within a week of earning it) | — |
 | Unit complete | The unit banner flips over to its gold "¡Unidad completa!" side and the seal stamps down; once, the first time the path shows it | Stamp (heavy + rigid) |
 | Pico tapped | A random trick: a flip, a spin, a squash-and-stretch hop, or a speech bubble ("¡Vamos!", "¡Olé!"…) | Light tap |
 | Gate passed | Lock shatters (particle `Canvas`), confetti, Pico spin | Custom pattern |
@@ -219,7 +219,7 @@ Implemented in `RumboWidgets/`. Widgets read a `WidgetSnapshot` the app writes a
 
 Implemented in `Reminders` (`Rumbo/Services/Platform.swift`), rescheduled after every change to the reminder settings or today's practice, and whenever the app comes back to the foreground.
 
-- **Daily reminder** at the learner's chosen time ("Pico has today's plan ready. Even 10 minutes counts."). Scheduled one by one for the next 30 days and rescheduled whenever anything changes, so each day's text can differ: on the day after a streak freeze was used it reads "🧊 A streak freeze saved you: Nothing was logged yesterday, so a freeze kept your 12-day streak going (1 freeze left). Pico has today's plan ready." Each day's text is worked out ahead assuming nothing more is logged, and logging anything reschedules it.
+- **Daily reminder** at the learner's chosen time ("Pico has today's plan ready. Even 10 minutes counts."). Scheduled one by one for the next 30 days and rescheduled whenever anything changes, so each day's text can differ: on the day after a streak freeze was used it reads "🧊 A streak freeze saved your streak: Nothing was logged yesterday, so a freeze kept your 12-day streak alive (1 freeze left). Do a little Spanish today to keep it going: even one lesson counts. Pico has your plan ready." Each day's text is worked out ahead assuming nothing more is logged, and logging anything reschedules it.
 - **Evening nudge** at 8 pm on days with nothing logged ("Pico's still awake 🌙 Nothing logged today yet. Even one quick lesson keeps your streak going."). Scheduled for the coming week and removed for today as soon as anything is logged. Not sent if the daily reminder is itself set for 8 pm or later.
 - Notifications also appear while Rumbo is open (a notification-centre delegate allows banners in the foreground).
 - Settings → Habit → **Send a test notification** sends one after 5 seconds, or explains how to turn notifications on if they're off.
