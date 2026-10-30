@@ -19,6 +19,9 @@ enum TaskCopy {
         case .fluency432: "4 · 3 · 2 story"
         case .reviewMistakes: "Mistake review"
         case .missionTravel: "Travel mission"
+        case .otherStudy: "Other language study"
+        case .otherOutput: "Other speaking & writing"
+        case .otherFluency: "Other fluency practice"
         }
     }
 
@@ -37,6 +40,9 @@ enum TaskCopy {
         case .fluency432: "stopwatch.fill"
         case .reviewMistakes: "arrow.triangle.2.circlepath"
         case .missionTravel: "backpack.fill"
+        case .otherStudy: "book.fill"
+        case .otherOutput: "text.bubble.fill"
+        case .otherFluency: "hare.fill"
         }
     }
 
@@ -100,6 +106,8 @@ enum TaskCopy {
             "Review the mistakes that are due."
         case .missionTravel:
             "Do it for real, then come back and log it."
+        case .otherStudy, .otherOutput, .otherFluency:
+            "Logged with Log other."
         }
     }
 
@@ -110,6 +118,29 @@ enum TaskCopy {
         case .extraPart(let episode, _), .extraEpisode(let episode): "Try to reuse a phrase from Extra episode \(episode)."
         default: nil
         }
+    }
+
+    /// "Log other": what each kind of practice covers, and its name in the form.
+    static func otherName(_ strand: Strand) -> String {
+        switch strand {
+        case .input: "Listening"
+        case .languageFocused: "Language study"
+        case .output: "Speaking & writing"
+        case .fluency: "Fluency practice"
+        }
+    }
+
+    static func otherExamples(_ strand: Strand) -> String {
+        switch strand {
+        case .input: "Podcasts, a show, a tour in Spanish, a long conversation you mostly listened to."
+        case .languageFocused: "A grammar book, a class, flashcards, another app."
+        case .output: "A conversation, a class where you spoke, messages or a diary in Spanish."
+        case .fluency: "Easy reading or listening at speed, retelling a story, chatting about familiar things."
+        }
+    }
+
+    static func otherSymbol(_ strand: Strand) -> String {
+        strand == .input ? "ear.fill" : symbol(for: TaskKind.other(for: strand))
     }
 
     static func minutesLabel(_ minutes: Int) -> String {

@@ -32,14 +32,29 @@ public enum TaskKind: String, CaseIterable, Codable, Sendable {
     case fluency432 = "fluency.432"
     case reviewMistakes = "review.mistakes"
     case missionTravel = "mission.travel"
+    /// Practice logged by hand outside the plan ("Log other"), one per strand besides listening
+    /// (which uses `contentWatch`). Never planned.
+    case otherStudy = "other.study"
+    case otherOutput = "other.output"
+    case otherFluency = "other.fluency"
+
+    /// The kind "Log other" records for practice in `strand`.
+    public static func other(for strand: Strand) -> TaskKind {
+        switch strand {
+        case .input: .contentWatch
+        case .languageFocused: .otherStudy
+        case .output: .otherOutput
+        case .fluency: .otherFluency
+        }
+    }
 
     public var strand: Strand {
         switch self {
         // Intensive Extra viewing is captioned input with a short shadowing step, so it sits in input.
         case .dsWatch, .extraIntensive, .extraExtensive, .contentWatch: .input
-        case .writeGuided, .tandemText, .tandemVoice, .tandemCall, .missionTravel: .output
-        case .duoLesson, .ltTrack, .reviewMistakes: .languageFocused
-        case .dsEasy, .writeQuick, .fluency432: .fluency
+        case .writeGuided, .tandemText, .tandemVoice, .tandemCall, .missionTravel, .otherOutput: .output
+        case .duoLesson, .ltTrack, .reviewMistakes, .otherStudy: .languageFocused
+        case .dsEasy, .writeQuick, .fluency432, .otherFluency: .fluency
         }
     }
 
@@ -62,6 +77,7 @@ public enum TaskKind: String, CaseIterable, Codable, Sendable {
         case .fluency432: MinuteRange(min: 10, standard: 10, max: 12)
         case .reviewMistakes: MinuteRange(min: 3, standard: 5, max: 10)
         case .missionTravel: MinuteRange(min: 5, standard: 10, max: 20)
+        case .otherStudy, .otherOutput, .otherFluency: MinuteRange(min: 1, standard: 20, max: 600)
         }
     }
 
@@ -75,7 +91,7 @@ public enum TaskKind: String, CaseIterable, Codable, Sendable {
         case .contentWatch: .suggestedContent
         case .writeGuided, .writeQuick: .writing
         case .tandemText, .tandemVoice, .tandemCall: .tandem
-        case .fluency432, .reviewMistakes, .missionTravel: nil
+        case .fluency432, .reviewMistakes, .missionTravel, .otherStudy, .otherOutput, .otherFluency: nil
         }
     }
 

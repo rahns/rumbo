@@ -153,7 +153,7 @@ Over the last 5 ratings at the current difficulty: 3 or more "Easy" → suggest 
 
 - **Offline preference.** Tasks are marked offline-capable or not. Offline: downloaded Language Transfer tracks, Dreaming Spanish downloads (where the user's DS subscription allows), writing with on-device AI feedback. Online-only: LanguageTool, Extra on YouTube (unless downloaded with YouTube Premium).
 - **Missions.** `mission.travel` becomes the preferred output task.
-- **Bonus input.** One-tap logging for Spanish heard outside the app (a bus podcast, a tour in Spanish, a long conversation). It counts toward input hours and strand balance.
+- **Log other.** Logging for practice outside the plan, in any strand: Listening (a bus podcast, a tour in Spanish; logged as `content.watch`, so it also counts toward listening hours), Language study (`other.study`: a grammar book, a class, another app), Speaking & writing (`other.output`) and Fluency practice (`other.fluency`). It counts toward training hours, the weekly goal, the streak and strand balance. The `other.*` kinds are never planned and don't count toward weekly anchors (writing, Tandem).
 
 ## 2.8 Streaks, hours and goals
 

@@ -553,9 +553,10 @@ final class AppModel {
         return record
     }
 
-    func logBonusInput(minutes: Int) {
+    /// "Log other": practice outside the plan, in any strand (listening is logged as `contentWatch`).
+    func logOther(minutes: Int, strand: Strand) {
         let before = streak
-        let log = ActivityLog(date: .now, task: .contentWatch, minutes: minutes)
+        let log = ActivityLog(date: .now, task: TaskKind.other(for: strand), minutes: minutes)
         log.isBonus = true
         context.insert(log)
         save()

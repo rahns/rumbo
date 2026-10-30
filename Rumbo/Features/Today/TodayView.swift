@@ -25,7 +25,7 @@ struct TodayView: View {
                     Button {
                         showingBonus = true
                     } label: {
-                        Label("Log extra listening", systemImage: "plus.circle.fill")
+                        Label("Log other", systemImage: "plus.circle.fill")
                     }
                     .buttonStyle(ChunkySecondaryButtonStyle())
                     // At the bottom: most days it isn't needed.
@@ -54,7 +54,6 @@ struct TodayView: View {
         }
         .sheet(isPresented: $showingBonus) {
             BonusInputSheet()
-                .presentationDetents([.medium])
         }
     }
 
@@ -381,19 +380,19 @@ struct ExtraOptionRow: View {
 
 extension TodayView {
 
-    /// Extra listening logged today, each with an undo.
+    /// Other practice logged today ("Log other"), each with an undo.
     @ViewBuilder
     var bonusSection: some View {
         let logs = model.bonusLogsToday
         if !logs.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Extra listening today")
+                Text("Other practice today")
                     .font(.rounded(.headline, weight: .black))
                     .foregroundStyle(Palette.ink)
                 ForEach(logs) { log in
                     HStack {
-                        Image(systemName: "ear.fill").foregroundStyle(Palette.coral)
-                        Text("\(log.minutes) min")
+                        Image(systemName: TaskCopy.otherSymbol(log.task.strand)).foregroundStyle(log.task.strand.color)
+                        Text("\(TaskCopy.otherName(log.task.strand)) · \(log.minutes) min")
                             .font(.rounded(.body, weight: .bold))
                             .foregroundStyle(Palette.ink)
                         Text(log.date.formatted(date: .omitted, time: .shortened))

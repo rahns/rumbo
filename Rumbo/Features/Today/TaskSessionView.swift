@@ -481,18 +481,30 @@ struct ChoiceRow<Value: Hashable>: View {
     }
 }
 
-/// Spanish heard outside the plan, e.g. on a bus or a walking tour (§2.7).
+/// "Log other": practice outside the plan, e.g. a podcast on the bus, a class or a grammar book (§2.7).
 struct BonusInputSheet: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @State private var minutes = 20
+    @State private var strand = Strand.input
+    /// The form's height, so the sheet fits it exactly.
+    @State private var height: CGFloat = 520
+
+    private static let strands: [Strand] = [.input, .languageFocused, .output, .fluency]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            StepTitle("Extra listening")
-            Text("Podcasts, a tour in Spanish, a long conversation: it all counts toward your input hours.")
+            StepTitle("Log other practice")
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 10) {
+                ForEach(Self.strands, id: \.self) { option in
+                    ChipButton(title: TaskCopy.otherName(option), isSelected: strand == option, color: option.color) { strand = option }
+                }
+            }
+            Text(TaskCopy.otherExamples(strand) + (strand == .input ? " It all counts toward your listening hours." : " It counts toward your training hours."))
                 .font(.rounded(.subheadline, weight: .medium))
                 .foregroundStyle(Palette.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+                .animation(nil, value: strand)
             HStack {
                 ForEach([10, 20, 30, 60], id: \.self) { value in
                     ChipButton(title: "\(value) min", isSelected: minutes == value) { minutes = value }
@@ -500,12 +512,15 @@ struct BonusInputSheet: View {
             }
             NumberStepper(title: "Minutes", value: $minutes, range: 1...600, step: 5)
             Button("Log it") {
-                model.logBonusInput(minutes: minutes)
+                model.logOther(minutes: minutes, strand: strand)
                 dismiss()
             }
-            .buttonStyle(ChunkyButtonStyle(color: Palette.coral))
+            .buttonStyle(ChunkyButtonStyle(color: strand.color))
         }
         .padding(24)
-        .background(Palette.background.ignoresSafeArea())
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
+        // Sized to the form, with a solid background edge to edge (no see-through glass at the top or bottom).
+        .presentationDetents([.height(height)])
+        .presentationBackground(Palette.background)
     }
 }

@@ -134,6 +134,9 @@ public struct LearnerSnapshot: Sendable {
             return dueReviewCards > 0
         case .missionTravel:
             return travelMode
+        case .otherStudy, .otherOutput, .otherFluency:
+            // Only ever logged by hand.
+            return false
         }
     }
 

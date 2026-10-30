@@ -157,6 +157,16 @@ import Testing
         #expect(extras.first { $0.kind == .ltTrack }?.minutes == 16)
     }
 
+    @Test func otherPracticeIsLoggedNeverPlanned() {
+        let others: [TaskKind] = [.otherStudy, .otherOutput, .otherFluency]
+        for budget in DayPlanner.budgetChoices {
+            #expect(plan(budget, authorAtStart).tasks.allSatisfy { !others.contains($0.kind) })
+        }
+        let extras = planner.extraTasks(learner: authorAtStart, history: [], today: today, excluding: [])
+        #expect(extras.allSatisfy { !others.contains($0.kind) })
+        for strand in Strand.allCases { #expect(TaskKind.other(for: strand).strand == strand) }
+    }
+
     @Test func languageTransferPlansTheNextTrackOrRepeatsAShakyOne() {
         let fresh = plan(45).task(.ltTrack)
         #expect(fresh?.detail == .languageTransferTrack(13))

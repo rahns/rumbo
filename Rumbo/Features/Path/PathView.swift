@@ -738,8 +738,8 @@ struct DaySummarySheet: View {
                     minutes: logs.first { $0.id == task.logID }?.minutes ?? task.minutesPlanned)
             }
             ForEach(others) { log in
-                row(symbol: log.isBonus ? "ear.fill" : TaskCopy.symbol(for: log.task), color: log.task.strand.color,
-                    title: log.isBonus ? "Extra listening" : TaskCopy.title(for: log.task), minutes: log.minutes)
+                row(symbol: log.isBonus ? TaskCopy.otherSymbol(log.task.strand) : TaskCopy.symbol(for: log.task), color: log.task.strand.color,
+                    title: log.isBonus ? "Other: \(TaskCopy.otherName(log.task.strand).lowercased())" : TaskCopy.title(for: log.task), minutes: log.minutes)
             }
         }
         .padding(24)
