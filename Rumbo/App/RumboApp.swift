@@ -110,7 +110,6 @@ struct MainTabView: View {
             Tab("Mistakes", systemImage: "rectangle.stack.fill", value: 2) {
                 NavigationStack { MistakeDeckView() }
             }
-            .badge(model.dueCards.count)
             Tab("Library", systemImage: "books.vertical.fill", value: 3) { LibraryView() }
             Tab("Settings", systemImage: "gearshape.fill", value: 4) { SettingsView() }
         }

@@ -500,7 +500,8 @@ struct TaskCardView: View {
                             .rotation3DEffect(.degrees(task.status == .done && !reduceMotion ? 360 : 0), axis: (x: 0, y: 1, z: 0))
                     }
                     .buttonStyle(.plain)
-                    .disabled(!finished)
+                    // Not .disabled: that fades the icon. It only reacts once the task is done or skipped (undo).
+                    .allowsHitTesting(finished)
                     .accessibilityLabel("Undo \(TaskCopy.title(for: kind))")
                     .accessibilityHint("Marks it as not done again")
                     .accessibilityHidden(!finished)

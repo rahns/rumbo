@@ -84,7 +84,7 @@ Implemented in `Rumbo/Features/Goal/GoalEditor.swift`, with `GoalPace` in RumboC
 - In Settings it's its own page, opened from the Goal row ("B2 by Jun 2034 · 150 min a week"), and saves as it changes. Profiles from before this have a target date filled in from their weekly goal.
 
 ### Tabs
-**Path** (home), **Progress**, **Mistakes** (badge: cards due), **Library**, **Settings**. Today isn't a tab: it opens from today's node, like starting a lesson in Duolingo.
+**Path** (home), **Progress**, **Mistakes**, **Library**, **Settings**. Today isn't a tab: it opens from today's node, like starting a lesson in Duolingo.
 
 ### Path (home tab)
 Implemented in `Rumbo/Features/Path/PathView.swift`, laid out by `PathLayout` in RumboCore.
