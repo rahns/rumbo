@@ -86,7 +86,6 @@ enum Reminders {
     /// What a day's reminder says when a streak freeze covered the day before.
     struct FreezeNote {
         var streak: Int
-        var freezesLeft: Int
     }
 
     static func requestPermission() async -> Bool {
@@ -112,10 +111,8 @@ enum Reminders {
                   fireDate > now else { continue }
             let daily = UNMutableNotificationContent()
             if let note = freezeNote(fireDate) {
-                daily.title = "🧊 A streak freeze saved your streak"
-                let left = note.freezesLeft == 1 ? "1 freeze left" : "\(note.freezesLeft) freezes left"
-                daily.body = "Nothing was logged yesterday, so a freeze kept your \(note.streak)-day streak alive (\(left)). "
-                    + "Do a little Spanish today to keep it going: even one lesson counts. Pico has your plan ready."
+                daily.title = "🧊 Streak freeze used"
+                daily.body = "Your \(note.streak)-day streak is safe. A little Spanish today keeps it going."
             } else {
                 daily.title = "¿Rumbo a dónde?"
                 daily.body = "Pico has today's plan ready. Even 10 minutes counts."

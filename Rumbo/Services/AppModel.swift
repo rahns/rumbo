@@ -649,7 +649,7 @@ final class AppModel {
             let status = calculator.status(history: history, today: day)
             guard let used = status.lastFreezeUsed, let yesterday = self.calendar.date(byAdding: .day, value: -1, to: self.calendar.startOfDay(for: day)),
                   used == yesterday else { return nil }
-            return Reminders.FreezeNote(streak: status.streak, freezesLeft: status.freezes)
+            return Reminders.FreezeNote(streak: status.streak)
         }
     }
 
