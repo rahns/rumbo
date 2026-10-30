@@ -99,11 +99,12 @@ struct PathView: View {
     private func header(todayDone: Bool) -> some View {
         HStack(spacing: 8) {
             // The left chips use the longest wording that fits the screen, so nothing is squashed or cut off:
-            // "Explorador · A2.1" + "Day done", then "A2.1" + "Day done", then "A2.1" + a tick.
+            // "Explorador · A2.1" + "Day done", then "A2.1" + "Day done", then "A2.1" + "Hoy", then "A2.1" + a tick.
             ViewThatFits(in: .horizontal) {
-                leftChips(fullLevel: true, doneText: true, todayDone: todayDone)
-                leftChips(fullLevel: false, doneText: true, todayDone: todayDone)
-                leftChips(fullLevel: false, doneText: false, todayDone: todayDone)
+                leftChips(fullLevel: true, doneText: "Day done", todayDone: todayDone)
+                leftChips(fullLevel: false, doneText: "Day done", todayDone: todayDone)
+                leftChips(fullLevel: false, doneText: "Hoy", todayDone: todayDone)
+                leftChips(fullLevel: false, doneText: nil, todayDone: todayDone)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             StatPill(symbol: "flame.fill", value: "\(model.streak.streak)", color: Palette.sun, bounce: model.streak.streak,
@@ -145,7 +146,7 @@ struct PathView: View {
         .zIndex(1)
     }
 
-    private func leftChips(fullLevel: Bool, doneText: Bool, todayDone: Bool) -> some View {
+    private func leftChips(fullLevel: Bool, doneText: String?, todayDone: Bool) -> some View {
         HStack(spacing: 8) {
             if let profile = model.profile {
                 Text(fullLevel ? "\(profile.band.label) · \(profile.band.rawValue)" : profile.band.rawValue)
@@ -159,8 +160,8 @@ struct PathView: View {
             }
             if todayDone {
                 Group {
-                    if doneText {
-                        Label("Day done", systemImage: "checkmark.circle.fill")
+                    if let doneText {
+                        Label(doneText, systemImage: "checkmark.circle.fill")
                     } else {
                         Image(systemName: "checkmark.circle.fill")
                     }

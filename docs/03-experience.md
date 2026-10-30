@@ -104,7 +104,7 @@ Implemented in `Rumbo/Features/Path/PathView.swift`, laid out by `PathLayout` in
 
 ### Level-up check
 Intro → the next band's 10 can-do statements one at a time → ≥ 7 "¡Sí!" passes: confetti, proud Pico, new band badge, and the plan's strand mix changes from the next day. Otherwise "Not yet, and that's fine", and the check returns in 14 days.
-- Header: level chip, "Day done" when today is finished, streak flame, streak freezes (snowflake with the number held; tapping shows "1 of 2 streak freezes") and training hours (clock badge). On narrow screens the left chips shorten ("A2.1", then a tick for "Day done") rather than squashing or pushing the path off screen.
+- Header: level chip, "Day done" when today is finished, streak flame, streak freezes (snowflake with the number held; tapping shows "1 of 2 streak freezes") and training hours (clock badge). On narrow screens the left chips shorten ("A2.1" + "Day done", then "A2.1" + "Hoy", then just a tick) rather than squashing or pushing the path off screen.
 - Tap today's node → its card **expands into the Today screen** (`matchedGeometryEffect` / zoom navigation transition).
 
 ### Today
