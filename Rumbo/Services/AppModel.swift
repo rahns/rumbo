@@ -502,6 +502,12 @@ final class AppModel {
                 profile.duolingoSection = section
                 profile.duolingoUnit = unit
             }
+            // Mistake review: the cards go back to how they were, so they're due again (and the task is offered again).
+            if let data = task.reviewsBefore, let before = try? JSONDecoder().decode([String: FSRS.Card].self, from: data) {
+                for card in allCards {
+                    if let schedule = before[card.id.uuidString] { card.schedule = schedule }
+                }
+            }
         }
         task.status = .planned
         task.startedAt = nil
@@ -510,6 +516,7 @@ final class AppModel {
         task.progressBefore = nil
         task.duolingoSectionBefore = nil
         task.duolingoUnitBefore = nil
+        task.reviewsBefore = nil
         save()
         refreshReminders()
     }
@@ -709,6 +716,14 @@ final class AppModel {
     }
 
     func review(_ card: ReviewCard, rating: FSRS.Rating) {
+        // During a mistake-review task, remember the card as it was, so undoing the task can put it back.
+        if let task = activeTask, task.task == .reviewMistakes {
+            var before = task.reviewsBefore.flatMap { try? JSONDecoder().decode([String: FSRS.Card].self, from: $0) } ?? [:]
+            if before[card.id.uuidString] == nil {
+                before[card.id.uuidString] = card.schedule
+                task.reviewsBefore = try? JSONEncoder().encode(before)
+            }
+        }
         card.schedule = FSRS().review(card.schedule, rating: rating, now: .now)
         save()
     }

@@ -192,6 +192,9 @@ import SwiftData
     var progressBefore: Data?
     var duolingoSectionBefore: Int?
     var duolingoUnitBefore: Int?
+    /// Mistake review: each card's schedule from before it was first reviewed during this task
+    /// (encoded `[card id: FSRS.Card]`), so undo can make those cards due again.
+    var reviewsBefore: Data?
 
     init(task: PlannedTask, order: Int, prompt: String) {
         self.taskRaw = task.kind.rawValue
