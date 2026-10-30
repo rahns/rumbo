@@ -478,7 +478,6 @@ struct TaskCardView: View {
     let onSkip: () -> Void
     let onUndo: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var showingWeeklyTip = false
 
     var body: some View {
         let kind = task.task
@@ -506,36 +505,9 @@ struct TaskCardView: View {
                     .accessibilityHint("Marks it as not done again")
                     .accessibilityHidden(!finished)
                     VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 6) {
-                            Text(TaskCopy.title(for: kind))
-                                .font(.rounded(.headline, weight: .heavy))
-                            if task.isAnchor {
-                                // Tap for a tiny "Weekly task" tooltip.
-                                Button {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { showingWeeklyTip.toggle() }
-                                } label: {
-                                    Image(systemName: "star.circle.fill")
-                                        .foregroundStyle(Palette.sun)
-                                        .contentShape(Circle().inset(by: -8))
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityLabel("Weekly task")
-                                .overlay(alignment: .top) {
-                                    if showingWeeklyTip {
-                                        TipBubble(text: "Weekly task")
-                                            .offset(y: -38)
-                                            .transition(.scale(scale: 0.5, anchor: .bottom).combined(with: .opacity))
-                                            .task {
-                                                try? await Task.sleep(for: .seconds(1.8))
-                                                withAnimation(.easeOut(duration: 0.2)) { showingWeeklyTip = false }
-                                            }
-                                    }
-                                }
-                                .sensoryFeedback(.selection, trigger: showingWeeklyTip)
-                                .zIndex(1)
-                            }
-                        }
-                        .foregroundStyle(Palette.ink)
+                        Text(TaskCopy.title(for: kind))
+                            .font(.rounded(.headline, weight: .heavy))
+                            .foregroundStyle(Palette.ink)
                         if let detail {
                             Text(detail)
                                 .font(.rounded(.subheadline, weight: .semibold))
