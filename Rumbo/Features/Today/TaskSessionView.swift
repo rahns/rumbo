@@ -271,7 +271,8 @@ struct TaskSessionView: View {
             if kind == .tandemText {
                 question("How did it feel?",
                          explanation: "Voice notes unlock once texting feels comfortable: your latest message needs to be Easy or OK.") {
-                    ChoiceRow(options: [("easy", "😎", "Easy"), ("ok", "🙂", "OK"), ("hard", "😬", "Hard")], selection: $tandemFeeling)
+                    // Hard on the left, easy on the right, like "How much did you understand?".
+                    ChoiceRow(options: [("hard", "😬", "Hard"), ("ok", "🙂", "OK"), ("easy", "😎", "Easy")], selection: $tandemFeeling)
                 }
             }
             if kind.isTandemExchange {
