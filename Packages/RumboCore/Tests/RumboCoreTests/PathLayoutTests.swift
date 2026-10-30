@@ -114,4 +114,23 @@ import Testing
         #expect(path.units[0].isComplete)
         #expect(!path.units[1].isComplete)
     }
+
+    @Test func partlyDoneAndFrozenDaysStillMakeAWeekGold() {
+        var days = Dictionary(uniqueKeysWithValues: (0..<7).map { (day($0), finished) })
+        days[day(2)] = PathLayout.Day(minutes: 3, session: .unfinished)
+        days[day(4)] = nil
+        let path = PathLayout.map(start: start, today: TestCalendar.adding(days: 8, to: start), days: days, arrivals: [:],
+                                  frozen: [day(4)], calendar: calendar)
+        #expect(path.units[0].isComplete)
+        #expect(path.units[0].isPast)
+    }
+
+    @Test func aPastWeekWithAMissedDayIsOverButNotGold() {
+        var week = Dictionary(uniqueKeysWithValues: (0..<7).map { ($0, finished) })
+        week[3] = nil
+        let path = map(today: 8, week)
+        #expect(path.units[0].isPast)
+        #expect(!path.units[0].isComplete)
+        #expect(!path.units[1].isPast, "this week isn't over yet")
+    }
 }

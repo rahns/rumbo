@@ -60,9 +60,16 @@ public struct PathUnit: Equatable, Sendable, Identifiable {
     public let nodes: [PathNode]
 
     public var id: Int { number }
-    /// Every day done (days before the learner started don't count against it).
+    /// The week is over: every day is in the past (shown as "Semana completa").
+    public var isPast: Bool {
+        nodes.allSatisfy { $0.status != .current && $0.status != .upcoming }
+    }
+
+    /// Gold: every day had some practice or a streak freeze (done, partly done or frozen) and none was missed.
+    /// Days before the learner started don't count against it. Today counts once it's finished.
     public var isComplete: Bool {
-        nodes.contains { $0.status == .done } && nodes.allSatisfy { $0.status == .done || $0.status == .beforeStart }
+        nodes.contains { $0.status == .done || $0.status == .partial }
+            && nodes.allSatisfy { [.done, .partial, .frozen, .beforeStart].contains($0.status) }
     }
 }
 

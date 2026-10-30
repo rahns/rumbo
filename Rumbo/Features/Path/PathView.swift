@@ -306,8 +306,9 @@ private struct SelectedDay: Identifiable {
 
 // MARK: - Pieces
 
-/// A unit's header. A complete unit turns gold ("¡Semana completa!"); when it has just been
-/// completed (`celebrating`), the banner flips over to the gold side and the seal stamps down.
+/// A week's header. A week that's over says "Semana completa"; one where every day had practice or a
+/// freeze (none missed) turns gold ("¡Semana completa!"). When it has just turned gold (`celebrating`),
+/// the banner flips over to the gold side and the seal stamps down.
 struct UnitBanner: View {
     let unit: PathUnit
     let isFuture: Bool
@@ -330,6 +331,10 @@ struct UnitBanner: View {
                 if gold {
                     Text("¡Semana completa!")
                         .font(.rounded(.subheadline, weight: .black))
+                } else if unit.isPast && !showingOldSide {
+                    Text("Semana completa")
+                        .font(.rounded(.subheadline, weight: .bold))
+                        .opacity(0.85)
                 } else if let first = dates.first, let last = dates.last {
                     Text("\(first.formatted(.dateTime.day().month(.abbreviated))) – \(last.formatted(.dateTime.day().month(.abbreviated)))")
                         .font(.rounded(.subheadline, weight: .bold))
@@ -341,6 +346,8 @@ struct UnitBanner: View {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.title)
                     .scaleEffect(sealScale)
+            } else if unit.isPast && !showingOldSide {
+                Image(systemName: "checkmark.circle.fill").font(.title3)
             } else if isFuture {
                 Image(systemName: "lock.fill").font(.title3)
             }
