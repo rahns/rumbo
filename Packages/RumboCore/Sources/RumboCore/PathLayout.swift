@@ -1,7 +1,8 @@
 import Foundation
 
-/// The scrolling path: one node per calendar day since onboarding, in units of 7, running on into
-/// the future with projected level-ups. Future days stay locked.
+/// The scrolling path: one node per calendar day since onboarding, in weeks of 7 that start on the
+/// learner's week start (the calendar's `firstWeekday`), running on into the future with projected
+/// level-ups. Future days stay locked.
 /// See docs/03-experience.md §3.4 "Path".
 public struct PathNode: Equatable, Sendable, Identifiable {
     public enum Status: Equatable, Sendable {
@@ -15,6 +16,8 @@ public struct PathNode: Equatable, Sendable, Identifiable {
         /// Today, not finished yet.
         case current
         case upcoming
+        /// A day in the first week before the learner started.
+        case beforeStart
     }
 
     /// 1-based day number since onboarding.
@@ -57,7 +60,10 @@ public struct PathUnit: Equatable, Sendable, Identifiable {
     public let nodes: [PathNode]
 
     public var id: Int { number }
-    public var isComplete: Bool { nodes.allSatisfy { $0.status == .done } }
+    /// Every day done (days before the learner started don't count against it).
+    public var isComplete: Bool {
+        nodes.contains { $0.status == .done } && nodes.allSatisfy { $0.status == .done || $0.status == .beforeStart }
+    }
 }
 
 public struct PathMap: Equatable, Sendable {
@@ -114,7 +120,9 @@ public enum PathLayout {
     public static func map(start: Date, today: Date, days: [Date: Day], arrivals: [Band: Date],
                            frozen: Set<Date> = [], freezesEarned: [(day: Date, streak: Int)] = [], nextFreeze: (day: Date, daysLeft: Int)? = nil,
                            calendar: Calendar = .current) -> PathMap {
-        let first = calendar.startOfDay(for: min(start, today))
+        let startDay = calendar.startOfDay(for: min(start, today))
+        // The path starts on the first day of the week the learner started in, so each "Semana" is a goal week.
+        let first = calendar.dateInterval(of: .weekOfYear, for: startDay)?.start ?? startDay
         let todayStart = calendar.startOfDay(for: today)
         let todayIndex = calendar.dateComponents([.day], from: first, to: todayStart).day ?? 0
 
@@ -139,7 +147,9 @@ public enum PathLayout {
             let day = date(at: index)
             let info = days[day] ?? Day(minutes: 0, session: .none)
             let status: PathNode.Status
-            if info.session == .finished {
+            if day < startDay && info.minutes == 0 && info.session == .none {
+                status = .beforeStart
+            } else if info.session == .finished {
                 status = .done
             } else if index < todayIndex {
                 switch info.session {

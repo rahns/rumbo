@@ -220,7 +220,7 @@ struct PathView: View {
                 }
             }
             .buttonStyle(PathNodeButtonStyle())
-            .disabled(node.status == .upcoming)
+            .disabled(node.status == .upcoming || node.status == .beforeStart)
             .modifier(FocusSource(active: node.isToday, zoom: zoom))
             .overlay(alignment: .top) {
                 if let tag = bubble(for: node) {
@@ -397,7 +397,7 @@ struct PathNodeView: View {
         case .missed: return Palette.lilac
         case .frozen: return Palette.ice
         case .current: return Palette.coral
-        case .upcoming: return Palette.lilac
+        case .upcoming, .beforeStart: return Palette.lilac
         }
     }
 
@@ -410,6 +410,7 @@ struct PathNodeView: View {
         case .frozen: return "snowflake"
         case .current: return "star.fill"
         case .upcoming: return "lock.fill"
+        case .beforeStart: return "minus"
         }
     }
 
@@ -423,7 +424,7 @@ struct PathNodeView: View {
     private var finishedToday: Bool { isToday && status == .done }
 
     var body: some View {
-        let raised = status != .upcoming && status != .missed
+        let raised = status != .upcoming && status != .missed && status != .beforeStart
         ZStack {
             if finishedToday {
                 // A gold ring with sparkles: today is complete.
@@ -450,13 +451,13 @@ struct PathNodeView: View {
             }
             Image(systemName: symbol)
                 .font(.system(size: size * (finishedToday ? 0.44 : 0.36), weight: .black))
-                .foregroundStyle(status == .upcoming || status == .missed ? Palette.secondaryText : .white)
+                .foregroundStyle(status == .upcoming || status == .missed || status == .beforeStart ? Palette.secondaryText : .white)
                 .frame(width: size, height: size)
                 .background(Circle().fill(color))
                 .background(Circle().fill(color.edge()).offset(y: raised ? Self.edge : 0))
         }
         .padding(.bottom, Self.edge)
-        .opacity(status == .upcoming ? 0.55 : 1)
+        .opacity(status == .upcoming ? 0.55 : status == .beforeStart ? 0.35 : 1)
         .onAppear {
             guard !reduceMotion, pulses || finishedToday else { return }
             withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) { pulse = true }
@@ -480,6 +481,7 @@ struct PathNodeView: View {
         case .frozen: return "Missed day, saved by a streak freeze"
         case .current: return "Today"
         case .upcoming: return "Locked day"
+        case .beforeStart: return "Before you started"
         }
     }
 }

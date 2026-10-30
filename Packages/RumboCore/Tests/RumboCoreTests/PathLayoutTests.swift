@@ -37,6 +37,28 @@ import Testing
         #expect(path.allNodes.prefix(6).map(\.status) == [.done, .partial, .missed, .done, .current, .upcoming])
     }
 
+    @Test func weeksStartOnTheLearnersWeekStart() {
+        // Started on a Thursday: the first week runs from that Monday, with Mon–Wed before the start.
+        let thursday = TestCalendar.adding(days: 3, to: start)
+        let path = PathLayout.map(start: thursday, today: TestCalendar.adding(days: 5, to: start), days: [:], arrivals: [:], calendar: calendar)
+        #expect(path.allNodes.first?.date == day(0))
+        #expect(path.units[0].nodes.prefix(4).map(\.status) == [.beforeStart, .beforeStart, .beforeStart, .missed])
+        #expect(path.todayNode?.date == day(5))
+        // With Sunday as the week start, the first week begins the Sunday before.
+        var sundayFirst = calendar
+        sundayFirst.firstWeekday = 1
+        let sundayPath = PathLayout.map(start: thursday, today: thursday, days: [:], arrivals: [:], calendar: sundayFirst)
+        #expect(sundayPath.allNodes.first?.date == day(-1))
+    }
+
+    @Test func aWeekCanBeCompleteWithDaysBeforeTheStart() {
+        let thursday = TestCalendar.adding(days: 3, to: start)
+        let finished = PathLayout.Day(minutes: 30, session: .finished)
+        let days = Dictionary(uniqueKeysWithValues: (3...6).map { (day($0), finished) })
+        let path = PathLayout.map(start: thursday, today: TestCalendar.adding(days: 7, to: start), days: days, arrivals: [:], calendar: calendar)
+        #expect(path.units[0].isComplete)
+    }
+
     @Test func aFrozenDayShowsAsFrozenNotMissed() {
         let path = PathLayout.map(start: start, today: TestCalendar.adding(days: 3, to: start),
                                   days: [day(0): finished, day(2): finished], arrivals: [:],
