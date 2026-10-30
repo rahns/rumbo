@@ -20,6 +20,20 @@ struct PathView: View {
     @State private var freezeEarned = 0
     /// The unit whose banner is flipping to "¡Semana completa!".
     @State private var celebratingUnit: Int?
+    /// Where the current week's top (its banner) and bottom (its last row) are on screen, in the scroll
+    /// view's visible space. Lazy rows stop reporting once off screen, so the last value says which side it went.
+    @State private var weekTop: CGFloat?
+    @State private var weekBottom: CGFloat?
+    @State private var viewportHeight: CGFloat = 0
+
+    private enum ScrollBack { case up, down }
+
+    /// Which way back to today's week, if it's out of view. The margins leave room for the header and tab bar.
+    private var scrollBack: ScrollBack? {
+        if let weekBottom, weekBottom < 90 { return .up }
+        if let weekTop, viewportHeight > 0, weekTop > viewportHeight - 110 { return .down }
+        return nil
+    }
 
     var body: some View {
         let map = model.pathMap
@@ -30,10 +44,14 @@ struct PathView: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(map.units) { unit in
+                            let isCurrent = unit.nodes.contains(where: \.isToday)
                             UnitBanner(unit: unit, isFuture: unit.nodes.allSatisfy { $0.status == .upcoming },
                                        celebrating: celebratingUnit == unit.number)
                                 .padding(.top, unit.number == 1 ? 8 : 28)
                                 .padding(.bottom, 18)
+                                .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named("path")).minY } action: { top in
+                                    if isCurrent { weekTop = top }
+                                }
                             ForEach(unit.nodes) { node in
                                 nodeRow(node, todayDone: todayDone)
                                     .id(node.id)
@@ -47,8 +65,15 @@ struct PathView: View {
                                     MilestoneRow(milestone: milestone)
                                 }
                             }
-                            if let countdown, let last = unit.nodes.last {
-                                GoalCountdownLine(countdown: countdown, unitEnd: last.date)
+                            Group {
+                                if let countdown, let last = unit.nodes.last {
+                                    GoalCountdownLine(countdown: countdown, unitEnd: last.date)
+                                } else {
+                                    Color.clear.frame(height: 1)
+                                }
+                            }
+                            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named("path")).maxY } action: { bottom in
+                                if isCurrent { weekBottom = bottom }
                             }
                         }
                         if !map.laterMilestones.isEmpty {
@@ -59,6 +84,30 @@ struct PathView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 40)
                 }
+                .coordinateSpace(.named("path"))
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
+                // Out of sight of today's week: an arrow in the corner brings it back.
+                .overlay(alignment: .bottomTrailing) {
+                    if let direction = scrollBack, let today = map.todayNode {
+                        Button {
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { proxy.scrollTo(today.id, anchor: .center) }
+                        } label: {
+                            Image(systemName: direction == .up ? "arrow.up" : "arrow.down")
+                                .font(.system(size: 18, weight: .black))
+                                .foregroundStyle(.white)
+                                .frame(width: 48, height: 48)
+                                .background(Circle().fill(Palette.coral))
+                                .background(Circle().fill(Palette.coral.edge()).offset(y: 4))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Back to today")
+                        .padding(.trailing, 20)
+                        .padding(.bottom, 16)
+                        .transition(.scale(scale: 0.5).combined(with: .opacity))
+                    }
+                }
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: scrollBack)
+                .sensoryFeedback(.selection, trigger: scrollBack)
                 .onAppear {
                     if let today = map.todayNode { proxy.scrollTo(today.id, anchor: .center) }
                     playMoments(map)
