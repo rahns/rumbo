@@ -18,7 +18,7 @@ struct PathView: View {
     @State private var showingFreezeTip = false
     /// Bumped to bounce the freeze pill when one is earned.
     @State private var freezeEarned = 0
-    /// The unit whose banner is flipping to "¡Unidad completa!".
+    /// The unit whose banner is flipping to "¡Semana completa!".
     @State private var celebratingUnit: Int?
 
     var body: some View {
@@ -306,7 +306,7 @@ private struct SelectedDay: Identifiable {
 
 // MARK: - Pieces
 
-/// A unit's header. A complete unit turns gold ("¡Unidad completa!"); when it has just been
+/// A unit's header. A complete unit turns gold ("¡Semana completa!"); when it has just been
 /// completed (`celebrating`), the banner flips over to the gold side and the seal stamps down.
 struct UnitBanner: View {
     let unit: PathUnit
@@ -325,10 +325,10 @@ struct UnitBanner: View {
         let dates = unit.nodes.map(\.date)
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Unidad \(unit.number)")
+                Text("Semana \(unit.number)")
                     .font(.rounded(.title3, weight: .black))
                 if gold {
-                    Text("¡Unidad completa!")
+                    Text("¡Semana completa!")
                         .font(.rounded(.subheadline, weight: .black))
                 } else if let first = dates.first, let last = dates.last {
                     Text("\(first.formatted(.dateTime.day().month(.abbreviated))) – \(last.formatted(.dateTime.day().month(.abbreviated)))")
