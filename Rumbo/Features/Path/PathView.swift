@@ -22,17 +22,41 @@ struct PathView: View {
     @State private var celebratingUnit: Int?
     /// Where the current week's top (its banner) and bottom (its last row) are on screen, in the scroll
     /// view's visible space. Lazy rows stop reporting once off screen, so the last value says which side it went.
-    @State private var weekTop: CGFloat?
-    @State private var weekBottom: CGFloat?
-    @State private var viewportHeight: CGFloat = 0
+    /// Kept outside SwiftUI's state: positions change on every scroll frame, and updating state that often
+    /// re-renders the whole path (laggy). Only `scrollBack` is state, and it changes rarely.
+    @State private var weekEdges = WeekEdges()
+    @State private var scrollBack: ScrollBack?
+    /// Briefly on while jumping back, to stop any coasting scroll that would cancel the jump.
+    @State private var stoppingScroll = false
 
-    private enum ScrollBack { case up, down }
+    fileprivate enum ScrollBack { case up, down }
 
-    /// Which way back to today's week, if it's out of view. The margins leave room for the header and tab bar.
-    private var scrollBack: ScrollBack? {
-        if let weekBottom, weekBottom < 90 { return .up }
-        if let weekTop, viewportHeight > 0, weekTop > viewportHeight - 110 { return .down }
-        return nil
+    fileprivate final class WeekEdges {
+        var top: CGFloat?
+        var bottom: CGFloat?
+        var viewportHeight: CGFloat = 0
+
+        /// Which way back to today's week, if it's out of view. The margins leave room for the header and tab bar.
+        var direction: ScrollBack? {
+            if let bottom, bottom < 90 { return .up }
+            if let top, viewportHeight > 0, top > viewportHeight - 110 { return .down }
+            return nil
+        }
+    }
+
+    private func updateScrollBack() {
+        let direction = weekEdges.direction
+        if direction != scrollBack { scrollBack = direction }
+    }
+
+    private func scrollToToday(_ proxy: ScrollViewProxy, _ today: PathNode) {
+        // A scroll still coasting ignores scrollTo, so stop it for a moment first.
+        stoppingScroll = true
+        Task {
+            try? await Task.sleep(for: .milliseconds(30))
+            stoppingScroll = false
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { proxy.scrollTo(today.id, anchor: .center) }
+        }
     }
 
     var body: some View {
@@ -50,7 +74,7 @@ struct PathView: View {
                                 .padding(.top, unit.number == 1 ? 8 : 28)
                                 .padding(.bottom, 18)
                                 .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named("path")).minY } action: { top in
-                                    if isCurrent { weekTop = top }
+                                    if isCurrent { weekEdges.top = top; updateScrollBack() }
                                 }
                             ForEach(unit.nodes) { node in
                                 nodeRow(node, todayDone: todayDone)
@@ -73,7 +97,7 @@ struct PathView: View {
                                 }
                             }
                             .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named("path")).maxY } action: { bottom in
-                                if isCurrent { weekBottom = bottom }
+                                if isCurrent { weekEdges.bottom = bottom; updateScrollBack() }
                             }
                         }
                         if !map.laterMilestones.isEmpty {
@@ -85,12 +109,13 @@ struct PathView: View {
                     .padding(.bottom, 40)
                 }
                 .coordinateSpace(.named("path"))
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
+                .scrollDisabled(stoppingScroll)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { weekEdges.viewportHeight = $0; updateScrollBack() }
                 // Out of sight of today's week: an arrow in the corner brings it back.
                 .overlay(alignment: .bottomTrailing) {
                     if let direction = scrollBack, let today = map.todayNode {
                         Button {
-                            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { proxy.scrollTo(today.id, anchor: .center) }
+                            scrollToToday(proxy, today)
                         } label: {
                             Image(systemName: direction == .up ? "arrow.up" : "arrow.down")
                                 .font(.system(size: 18, weight: .black))
