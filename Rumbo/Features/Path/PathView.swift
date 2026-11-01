@@ -53,7 +53,7 @@ struct PathView: View {
         // A scroll still coasting ignores scrollTo, so stop it for a moment first.
         stoppingScroll = true
         Task {
-            try? await Task.sleep(for: .milliseconds(30))
+            try? await Task.sleep(for: .milliseconds(60))
             stoppingScroll = false
             withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { proxy.scrollTo(today.id, anchor: .center) }
         }
