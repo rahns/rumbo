@@ -50,12 +50,21 @@ struct PathView: View {
     }
 
     private func scrollToToday(_ proxy: ScrollViewProxy, _ today: PathNode) {
-        // A scroll still coasting ignores scrollTo, so stop it for a moment first.
-        stoppingScroll = true
         Task {
-            try? await Task.sleep(for: .milliseconds(60))
-            stoppingScroll = false
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { proxy.scrollTo(today.id, anchor: .center) }
+            // A scroll that's still coasting can swallow scrollTo, so: stop it for a moment, jump, and check
+            // that today's week arrived. If not, try again; the last try jumps without animation, which always lands.
+            for attempt in 0..<3 {
+                stoppingScroll = true
+                try? await Task.sleep(for: .milliseconds(60))
+                stoppingScroll = false
+                if attempt < 2 {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { proxy.scrollTo(today.id, anchor: .center) }
+                    try? await Task.sleep(for: .milliseconds(650))
+                } else {
+                    proxy.scrollTo(today.id, anchor: .center)
+                }
+                if scrollBack == nil { return }
+            }
         }
     }
 
