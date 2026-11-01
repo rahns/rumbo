@@ -26,8 +26,6 @@ struct PathView: View {
     /// re-renders the whole path (laggy). Only `scrollBack` is state, and it changes rarely.
     @State private var weekEdges = WeekEdges()
     @State private var scrollBack: ScrollBack?
-    /// Briefly on while jumping back, to stop any coasting scroll that would cancel the jump.
-    @State private var stoppingScroll = false
 
     fileprivate enum ScrollBack { case up, down }
 
@@ -35,6 +33,8 @@ struct PathView: View {
         var top: CGFloat?
         var bottom: CGFloat?
         var viewportHeight: CGFloat = 0
+        /// Being dragged, coasting or animating.
+        var isScrolling = false
 
         /// Which way back to today's week, if it's out of view. The margins leave room for the header and tab bar.
         var direction: ScrollBack? {
@@ -50,21 +50,13 @@ struct PathView: View {
     }
 
     private func scrollToToday(_ proxy: ScrollViewProxy, _ today: PathNode) {
-        Task {
-            // A scroll that's still coasting can swallow scrollTo, so: stop it for a moment, jump, and check
-            // that today's week arrived. If not, try again; the last try jumps without animation, which always lands.
-            for attempt in 0..<3 {
-                stoppingScroll = true
-                try? await Task.sleep(for: .milliseconds(60))
-                stoppingScroll = false
-                if attempt < 2 {
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { proxy.scrollTo(today.id, anchor: .center) }
-                    try? await Task.sleep(for: .milliseconds(650))
-                } else {
-                    proxy.scrollTo(today.id, anchor: .center)
-                }
-                if scrollBack == nil { return }
-            }
+        if weekEdges.isScrolling {
+            // Still moving: an animated scroll would fight the coasting and get cancelled, but a jump always lands.
+            var jump = Transaction()
+            jump.disablesAnimations = true
+            withTransaction(jump) { proxy.scrollTo(today.id, anchor: .center) }
+        } else {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { proxy.scrollTo(today.id, anchor: .center) }
         }
     }
 
@@ -118,7 +110,7 @@ struct PathView: View {
                     .padding(.bottom, 40)
                 }
                 .coordinateSpace(.named("path"))
-                .scrollDisabled(stoppingScroll)
+                .onScrollPhaseChange { _, phase in weekEdges.isScrolling = phase.isScrolling }
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { weekEdges.viewportHeight = $0; updateScrollBack() }
                 // Out of sight of today's week: an arrow in the corner brings it back.
                 .overlay(alignment: .bottomTrailing) {
