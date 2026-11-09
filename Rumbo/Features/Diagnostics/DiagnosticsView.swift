@@ -72,7 +72,7 @@ struct DiagnosticsView: View {
             } header: {
                 Text("Gemini")
             } footer: {
-                Text("Trace a full check runs a writing check exactly like a task: streaming or one piece, when the first event arrived, thinking updates, the longest silence, and any retry or fallback. Test streaming and one piece asks Gemini Flash-Lite both ways, directly (uses 2 free requests).")
+                Text("Trace a full check runs a writing check exactly like a task: streaming or one piece, when the first event arrived, thinking updates, the longest silence, and any retry or fallback. Test streaming and one piece asks the chosen Gemini model both ways, directly (uses 2 free requests).")
             }
 
             Section {

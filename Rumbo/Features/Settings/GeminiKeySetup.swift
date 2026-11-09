@@ -117,6 +117,7 @@ struct GeminiSettingsView: View {
 
     @State private var key = GeminiKey.current ?? ""
     @State private var thinking = GeminiKey.thinkingLevel
+    @State private var model = GeminiKey.model
 
     var body: some View {
         ScrollView {
@@ -125,6 +126,25 @@ struct GeminiSettingsView: View {
                     .font(.rounded(.subheadline, weight: .medium))
                     .foregroundStyle(Palette.secondaryText)
                 GeminiKeySetup(key: $key)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Model")
+                        .font(.rounded(.headline, weight: .black))
+                        .foregroundStyle(Palette.ink)
+                    Picker("Model", selection: $model) {
+                        ForEach(Gemini.Model.allCases, id: \.self) { Text($0.displayName).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    Label(model == .flashLite
+                          ? "Recommended. Quick, and plenty for checking short texts."
+                          : "Stronger, but often too busy to answer; when it is, the basic checker steps in.",
+                          systemImage: "info.circle")
+                        .font(.rounded(.caption, weight: .semibold))
+                        .foregroundStyle(Palette.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Both are free with the same key.")
+                        .font(.rounded(.caption, weight: .semibold))
+                        .foregroundStyle(Palette.secondaryText)
+                }
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Thinking")
                         .font(.rounded(.headline, weight: .black))
@@ -155,6 +175,7 @@ struct GeminiSettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         // Saved as it's typed or pasted; an empty field removes the key.
         .onChange(of: thinking) { _, new in GeminiKey.thinkingLevel = new }
+        .onChange(of: model) { _, new in GeminiKey.model = new }
         .onChange(of: key) { _, new in
             GeminiKey.save(new)
             onChange(GeminiKey.current != nil)

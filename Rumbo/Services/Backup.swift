@@ -22,6 +22,8 @@ struct BackupFile: Codable {
     struct GeminiData: Codable {
         var apiKey: String?
         var thinkingLevel: String?
+        /// Added later: which Gemini model.
+        var model: String?
     }
 
     struct ProfileData: Codable {

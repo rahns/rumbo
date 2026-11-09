@@ -223,7 +223,7 @@ final class DiagnosticsModel {
         defer { geminiRunning = false }
         var lines: [String] = []
         for stream in [true, false] {
-            let label = "\(Gemini.displayName) · \(stream ? "streaming" : "one piece")"
+            let label = "\(GeminiKey.model.displayName) · \(stream ? "streaming" : "one piece")"
             lines.append("— \(label): running…")
             geminiTrace = lines.joined(separator: "\n")
             let (ok, trace) = await GeminiClient.probe(stream: stream, key: key)

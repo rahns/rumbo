@@ -6,11 +6,18 @@ public enum Gemini {
     public static let endpoint = URL(string: "https://generativelanguage.googleapis.com/v1beta/interactions")!
     /// Where to create a free key.
     public static let keyPage = URL(string: "https://aistudio.google.com/apikey")!
-    /// Flash-Lite at medium thinking: plenty for short A2–B1 corrections. In testing it answered in about 3 s,
-    /// streamed or not, while Flash (`gemini-3.8-flash`) never started, so Flash isn't used.
-    public static let model = "gemini-3.5-flash-lite"
-    /// Shown under feedback: "Checked by Gemini Flash-Lite".
-    public static let displayName = "Gemini Flash-Lite"
+    /// The free models the learner can choose between (Settings → Writing feedback). Both use the same free key.
+    public enum Model: String, CaseIterable, Sendable {
+        /// The default: plenty for short A2–B1 corrections, and it answered in about 3 s in testing.
+        case flashLite = "gemini-3.5-flash-lite"
+        /// Stronger, but in testing it was busy almost every time (no answer at all).
+        case flash = "gemini-3.8-flash"
+
+        public static let standard = Model.flashLite
+
+        /// Shown under feedback: "Checked by Gemini Flash-Lite".
+        public var displayName: String { self == .flashLite ? "Gemini Flash-Lite" : "Gemini Flash" }
+    }
 
     /// How much the model reasons before answering. More catches subtler errors but takes longer.
     public enum ThinkingLevel: String, CaseIterable, Sendable {
