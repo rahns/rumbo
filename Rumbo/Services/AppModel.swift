@@ -785,10 +785,13 @@ final class AppModel {
         save()
     }
 
+    /// Travel mode: Pico carries his big backpack, whatever his mood.
+    var showsBackpack: Bool { profile?.travelMode == true }
+
     /// What Pico is up to on the home screens.
     var picoMood: PicoMood {
-        guard let profile else { return .hovering }
-        if profile.travelMode { return .backpacker }
+        guard profile != nil else { return .hovering }
+        // Travel mode doesn't change the mood: Pico wears his backpack on top of it (`showsBackpack`).
         let hour = calendar.component(.hour, from: .now)
         if hour >= 20 && minutesToday == 0 { return .sleepy }
         return .hovering
@@ -1033,10 +1036,12 @@ final class AppModel {
             tasks = preview.tasks
         }
         let status = streak
-        let mood: String = switch picoMood {
-        case .backpacker: "backpacker"
-        case .sleepy: "sleepy"
-        default: "hovering"
+        // Widgets have one look per mood, so travel mode shows the backpacker (pack and hat) there.
+        let mood: String
+        if profile.travelMode {
+            mood = "backpacker"
+        } else {
+            mood = picoMood == .sleepy ? "sleepy" : "hovering"
         }
         var snapshot = WidgetSnapshot(
             updated: .now, day: today, streak: status.streak, minutesThisWeek: status.minutesThisWeek,

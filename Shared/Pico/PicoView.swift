@@ -21,6 +21,8 @@ struct PicoView: View {
     var reactsToTaps = true
     /// Faces the other way. Only the bird is flipped, so a speech bubble stays readable.
     var mirrored = false
+    /// Travel mode: a big backpacking pack on his back, whatever his mood (sleepy, cheering…).
+    var backpack = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var taps = 0
@@ -35,7 +37,7 @@ struct PicoView: View {
         TimelineView(.animation(minimumInterval: 1.0 / 60, paused: reduceMotion)) { timeline in
             let time = timeline.date.timeIntervalSinceReferenceDate
             Canvas { context, canvasSize in
-                PicoDrawing.draw(in: &context, size: canvasSize, time: time, mood: mood, still: reduceMotion)
+                PicoDrawing.draw(in: &context, size: canvasSize, time: time, mood: mood, still: reduceMotion, backpack: backpack)
             }
         }
         .frame(width: size, height: size)
@@ -134,9 +136,10 @@ struct PicoBadge: View {
     var size: CGFloat = 56
     var mood: PicoMood = .hovering
     var celebrate: Int = 0
+    var backpack = false
 
     var body: some View {
-        PicoView(mood: mood, size: size, celebrate: celebrate)
+        PicoView(mood: mood, size: size, celebrate: celebrate, backpack: backpack)
     }
 }
 
@@ -173,7 +176,8 @@ enum PicoDrawing {
 
     static let wingPivot = CGPoint(x: 31, y: 48)
 
-    static func draw(in context: inout GraphicsContext, size: CGSize, time t: Double, mood: PicoMood, still: Bool) {
+    static func draw(in context: inout GraphicsContext, size: CGSize, time t: Double, mood: PicoMood, still: Bool, backpack: Bool = false) {
+        let wearsPack = backpack || mood == .backpacker
         context.scaleBy(x: size.width / 100, y: size.height / 100)
         let happy = mood == .cheering || mood == .proud
         let sleepy = mood == .sleepy
@@ -214,18 +218,29 @@ enum PicoDrawing {
         context.fill(body, with: .radialGradient(Gradient(stops: [.init(color: navyHigh, location: 0), .init(color: navy, location: 0.45), .init(color: navyLow, location: 1)]),
                                                  center: p(32, 38), startRadius: 0, endRadius: 52))
 
-        if mood == .backpacker {
-            let pack = shape(p(12, 50), .c(p(12, 44), p(16, 42), p(22, 42)), .l(p(26, 42)), .c(p(30, 42), p(31, 46), p(31, 50)), .l(p(31, 70)),
-                             .c(p(31, 74), p(28, 76), p(24, 76)), .l(p(16, 76)), .c(p(12, 76), p(11, 73), p(11, 70)), .l(p(12, 50)))
-            context.fill(pack, with: linear(p(12, 44), p(30, 76), [leather, leatherDark]))
+        if wearsPack {
+            // A big backpacking pack on his back, with a rolled sleeping mat on top.
+            let pack = Path(roundedRect: CGRect(x: 3, y: 34, width: 27, height: 51), cornerRadius: 8)
+            context.fill(pack, with: linear(p(4, 34), p(29, 85), [leather, leatherDark]))
             context.stroke(pack, with: .color(outline), style: line(2))
-            let flap = shape(p(11, 52), .c(p(16, 49), p(26, 49), p(31, 52)), .l(p(31, 58)), .c(p(26, 61), p(16, 61), p(11, 58)), .l(p(11, 52)))
+            let flap = Path(roundedRect: CGRect(x: 3, y: 34, width: 27, height: 16), cornerRadius: 8)
             context.fill(flap, with: .color(leatherDark))
             context.stroke(flap, with: .color(outline), style: line(1.6))
-            context.fill(ellipse(21, 59, 3, 3), with: .color(amber))
-            context.stroke(ellipse(21, 59, 3, 3), with: .color(outline), style: line(1))
-        } else {
-            // Crest: three tufts
+            let buckle = Path(roundedRect: CGRect(x: 14.5, y: 46, width: 5, height: 5), cornerRadius: 1.2)
+            context.fill(buckle, with: .color(amber))
+            context.stroke(buckle, with: .color(outline), style: line(1))
+            let pocket = Path(roundedRect: CGRect(x: 6.5, y: 61, width: 20, height: 17), cornerRadius: 4)
+            context.fill(pocket, with: .color(leatherDark))
+            context.stroke(pocket, with: .color(outline), style: line(1.4))
+            let mat = Path(roundedRect: CGRect(x: 0.5, y: 23, width: 32, height: 12), cornerRadius: 6)
+            context.fill(mat, with: linear(p(16, 23), p(16, 35), [khaki, khakiDark]))
+            context.stroke(mat, with: .color(outline), style: line(1.8))
+            for x in [9.0, 24.0] {
+                context.stroke(shape(p(x, 23), .l(p(x, 35))), with: .color(leatherDark), style: line(2.2))
+            }
+        }
+        if mood != .backpacker {
+            // Crest: three tufts (the backpacker's hat covers them)
             for (base, peak, end) in [(p(34, 26), p(30, 12), p(39, 24)), (p(38, 25), p(37, 9), p(44, 24)), (p(42, 25), p(46, 12), p(48, 26))] {
                 let tuft = shape(base, .c(p(base.x - 2, 18), p(peak.x - 2, peak.y + 2), peak), .c(p(peak.x + 3, peak.y + 3), p(end.x, 18), end))
                 context.fill(tuft, with: .color(navy))
@@ -287,10 +302,12 @@ enum PicoDrawing {
         context.stroke(shape(p(44, 23), .c(p(49, 20), p(56, 19.5), p(61, 22))), with: .color(outline), style: line(2.6))
         context.fill(ellipse(51, 49, 7, 3.8), with: .color(blush))
 
-        if mood == .backpacker {
+        if wearsPack {
             let strap = shape(p(40, 30), .c(p(46, 44), p(46, 60), p(40, 72)))
             context.stroke(strap, with: .color(leatherDark), style: line(3.2))
             context.stroke(strap, with: .color(outline), style: line(0.8))
+        }
+        if mood == .backpacker {
             context.fill(ellipse(40, 23, 40, 8), with: .color(khakiDark))
             context.stroke(ellipse(40, 23, 40, 8), with: .color(outline), style: line(1.8))
             let crown = shape(p(28, 22), .c(p(28, 12), p(34, 8), p(40, 8)), .c(p(46, 8), p(52, 12), p(52, 22)), .l(p(28, 22)))

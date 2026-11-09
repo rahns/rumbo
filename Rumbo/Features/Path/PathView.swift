@@ -85,7 +85,8 @@ struct PathView: View {
                             let isCurrent = unit.nodes.contains(where: \.isToday)
                             UnitBanner(unit: unit, isFuture: unit.nodes.allSatisfy { $0.status == .upcoming },
                                        celebrating: celebratingUnit == unit.number,
-                                       weekMinutes: isCurrent ? weekMinutes : nil)
+                                       weekMinutes: isCurrent ? weekMinutes : nil,
+                                       travelMode: isCurrent && model.showsBackpack)
                                 .padding(.top, unit.number == 1 ? 8 : 28)
                                 .padding(.bottom, 18)
                                 .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named("path")).minY } action: { top in
@@ -321,7 +322,7 @@ struct PathView: View {
             }
             if node.isToday {
                 // Pico faces the node from whichever side has room. Only the bird is mirrored, not its speech bubble.
-                PicoView(mood: todayDone ? .cheering : model.picoMood, size: 84, celebrate: model.celebrations, mirrored: offset <= 0)
+                PicoView(mood: todayDone ? .cheering : model.picoMood, size: 84, celebrate: model.celebrations, mirrored: offset <= 0, backpack: model.showsBackpack)
                     .offset(x: offset > 0 ? -118 : 118, y: -10)
             }
         }
@@ -406,6 +407,8 @@ struct UnitBanner: View {
     var celebrating = false
     /// The current week only: minutes so far against the weekly goal, as a thin bar under the dates.
     var weekMinutes: (done: Int, goal: Int)? = nil
+    /// The current week while travel mode is on: a small "Travel mode" tag.
+    var travelMode = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// During the flip: show the old (unfinished) side until it's edge-on.
@@ -444,6 +447,15 @@ struct UnitBanner: View {
                     Image(systemName: "checkmark.circle.fill").font(.title3)
                 } else if isFuture {
                     Image(systemName: "lock.fill").font(.title3)
+                }
+                if travelMode {
+                    Label("Travel mode", systemImage: "backpack.fill")
+                        .font(.rounded(.caption, weight: .heavy))
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 8)
+                        .background(Capsule().fill(.white.opacity(0.22)))
+                        .fixedSize()
+                        .accessibilityLabel("Travel mode is on")
                 }
             }
             if let weekMinutes {

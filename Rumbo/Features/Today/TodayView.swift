@@ -67,7 +67,7 @@ struct TodayView: View {
         let goal = model.profile?.weeklyGoalMinutes ?? 150
         return VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 12) {
-                PicoBadge(size: 60, mood: model.picoMood, celebrate: model.celebrations)
+                PicoBadge(size: 60, mood: model.picoMood, celebrate: model.celebrations, backpack: model.showsBackpack)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(greeting)
                         .font(.rounded(.title2, weight: .black))
