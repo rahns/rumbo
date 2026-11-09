@@ -242,7 +242,6 @@ struct SettingsView: View {
     }
 
     static func checkersText() -> String { WritingCheckers.summary }
-    }
 
     /// The last part seen: "Extra en Español: seen Ep 3 Part 2" (or "not started").
     private func extraProgressLabel(_ profile: LearnerProfile) -> String {
