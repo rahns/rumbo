@@ -59,7 +59,6 @@ struct BackupFile: Codable {
         var currentContentID: String?
         var alwaysIncludeDuolingo: Bool?
         var speakingStageCap: Int?
-        var noSignal: Bool?
         var lessonSchedule: LessonSchedule?
     }
 
@@ -147,7 +146,6 @@ extension BackupFile.ProfileData {
             currentContentID: profile.currentContentID,
             alwaysIncludeDuolingo: profile.alwaysIncludeDuolingo,
             speakingStageCap: profile.speakingStageCap,
-            noSignal: profile.noSignal,
             lessonSchedule: profile.lessonScheduleData == nil ? nil : profile.lessonSchedule
         )
     }
@@ -183,7 +181,6 @@ extension BackupFile.ProfileData {
         profile.currentContentID = currentContentID ?? ""
         profile.alwaysIncludeDuolingo = alwaysIncludeDuolingo ?? true
         profile.speakingStageCap = speakingStageCap ?? SpeakingStage.calls.rawValue
-        profile.noSignal = noSignal ?? false
         if let lessonSchedule { profile.lessonSchedule = lessonSchedule }
         return profile
     }

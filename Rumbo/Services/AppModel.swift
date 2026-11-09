@@ -144,8 +144,7 @@ final class AppModel {
             keepDuolingoInB2: profile.keepDuolingoInB2,
             dueReviewCards: dueCards.count,
             travelMode: profile.travelMode,
-            // "I have no signal" (travel mode) plans offline even when the phone thinks it's connected.
-            isOnline: isOnline && !(profile.travelMode && profile.noSignal),
+            isOnline: isOnline,
             dsDifficulty: profile.dsDifficulty,
             alwaysIncludeDuolingo: profile.alwaysIncludeDuolingo,
             lessons: profile.lessonSchedule
@@ -860,13 +859,7 @@ final class AppModel {
         replanTodayIfNotStarted()
     }
 
-    func setNoSignal(_ on: Bool) {
-        profile?.noSignal = on
-        save()
-        replanTodayIfNotStarted()
-    }
-
-    /// After a setting that shapes the plan changes (travel mode, no signal, Duolingo, lessons, speaking stage):
+    /// After a setting that shapes the plan changes (travel mode, Duolingo, lessons, speaking stage):
     /// today's plan is made again at the same time, as long as no task has been started. A started day keeps
     /// its plan, and the change applies from the next one.
     func replanTodayIfNotStarted() {

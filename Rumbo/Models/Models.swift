@@ -44,8 +44,6 @@ import SwiftData
     /// Settings → Speaking: the highest stage Rumbo may unlock by itself (3 = calls). Switching a stage off
     /// lowers it, so it stays off.
     var speakingStageCap: Int = SpeakingStage.calls.rawValue
-    /// Settings → Travel mode → I have no signal: plan only what works offline.
-    var noSignal: Bool = false
     /// Encoded `LessonSchedule` (Settings → Lessons); nil = no lessons.
     var lessonScheduleData: Data?
 

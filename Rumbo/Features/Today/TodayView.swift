@@ -125,27 +125,13 @@ struct TodayView: View {
                                 .font(.rounded(.headline, weight: .black))
                                 .foregroundStyle(Palette.ink)
                             Text(profile.travelMode
-                                 ? "On the road: Rumbo adds a real-world mission and, when you're offline, only plans what works offline."
-                                 : "Travelling? Turn this on for real-world Spanish missions and plans that cope with no signal.")
+                                 ? "On the road: Rumbo adds a real-world Spanish mission to every day."
+                                 : "Travelling? Turn this on for a real-world Spanish mission every day.")
                                 .font(.rounded(.caption, weight: .semibold))
                                 .foregroundStyle(Palette.secondaryText)
                         }
                     }
                     .tint(Palette.sun)
-                    if profile.travelMode {
-                        Divider()
-                        Toggle(isOn: Binding(get: { profile.noSignal }, set: { model.setNoSignal($0) })) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("I have no signal")
-                                    .font(.rounded(.subheadline, weight: .bold))
-                                    .foregroundStyle(Palette.ink)
-                                Text("Plans only what works offline.")
-                                    .font(.rounded(.caption, weight: .semibold))
-                                    .foregroundStyle(Palette.secondaryText)
-                            }
-                        }
-                        .tint(Palette.sun)
-                    }
                 }
             }
         }

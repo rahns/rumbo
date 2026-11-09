@@ -94,7 +94,7 @@ The learner can always unlock a stage early, or switch one off: Settings → Spe
 ### Inputs
 Band, today's budget `B` (10 / 15 / 20 / 30 / 45 / 60 min, plus 90 / 120 on a lesson day, chosen at the start of the day), today's lesson if any, the last 6 days of logged minutes per strand, source states, speaking stage, Travel/offline mode, weekly anchors still due, and the number of due mistake cards.
 
-Settings that shape the plan (travel mode, no signal, Always include Duolingo, lessons, speaking stage) re-plan today at the same budget as soon as they change, unless a task has already been started (`AppModel.replanTodayIfNotStarted`).
+Settings that shape the plan (travel mode, Always include Duolingo, lessons, speaking stage) re-plan today at the same budget as soon as they change, unless a task has already been started (`AppModel.replanTodayIfNotStarted`).
 
 ### Algorithm
 Implemented in `RumboCore/DayPlanner.swift`.

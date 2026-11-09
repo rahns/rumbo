@@ -449,11 +449,13 @@ struct UnitBanner: View {
                     Image(systemName: "lock.fill").font(.title3)
                 }
                 if travelMode {
+                    // Sun yellow on the blue banner so it stands out (white on a gold, finished week).
                     Label("Travel mode", systemImage: "backpack.fill")
                         .font(.rounded(.caption, weight: .heavy))
+                        .foregroundStyle(Palette.inkOnBright)
                         .padding(.vertical, 4)
                         .padding(.horizontal, 8)
-                        .background(Capsule().fill(.white.opacity(0.22)))
+                        .background(Capsule().fill(gold ? .white.opacity(0.7) : Palette.sun))
                         .fixedSize()
                         .accessibilityLabel("Travel mode is on")
                 }
