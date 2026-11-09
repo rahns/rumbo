@@ -15,8 +15,7 @@ import Testing
         #expect((object["generation_config"] as? [String: Any])?["thinking_level"] as? String == "medium")
         let lite = try #require(try JSONSerialization.jsonObject(with: Gemini.requestBody(model: "gemini-3.5-flash-lite", instructions: "", input: "")) as? [String: Any])
         #expect((lite["generation_config"] as? [String: Any])?["thinking_level"] as? String == "medium")
-        #expect(Gemini.Model.standard == .flashLite, "Flash-Lite by default")
-        #expect(Gemini.Model.flash.rawValue == "gemini-3.8-flash" && Gemini.Model.flash.displayName == "Gemini Flash")
+        #expect(Gemini.model == "gemini-3.5-flash-lite", "Flash-Lite only")
         let high = try #require(try JSONSerialization.jsonObject(with: Gemini.requestBody(model: "m", instructions: "", input: "", thinking: .high)) as? [String: Any])
         #expect((high["generation_config"] as? [String: Any])?["thinking_level"] as? String == "high")
         #expect(Gemini.ThinkingLevel.standard == .medium)
@@ -161,5 +160,17 @@ import Testing
         let qwen = try #require(try JSONSerialization.jsonObject(with: Groq.requestBody(model: "qwen/qwen3.8-27b", instructions: "", input: "")) as? [String: Any])
         #expect(qwen["reasoning_format"] as? String == "hidden" && qwen["include_reasoning"] == nil)
         #expect(Groq.failure(status: 400, body: Data(#"{"error":{"message":"The model `x` has been decommissioned","type":"invalid_request_error"}}"#.utf8)) == .modelUnavailable)
+    }
+}
+
+@Suite struct WritingCheckerTests {
+    @Test func theDefaultGoesFirstThenTheOthersWithKeys() {
+        #expect(WritingChecker.order(default: .gemini, available: [.gemini, .groq]) == [.gemini, .groq])
+        #expect(WritingChecker.order(default: .groq, available: [.gemini, .groq]) == [.groq, .gemini])
+        #expect(WritingChecker.order(default: .groq, available: [.gemini]) == [.gemini], "a default without a key is skipped")
+        #expect(WritingChecker.order(default: .gemini, available: []).isEmpty)
+        #expect(WritingChecker.summary(default: .groq, available: [.gemini, .groq]) == "Groq, then Gemini")
+        #expect(WritingChecker.summary(default: .gemini, available: []) == "Not set up")
+        #expect(WritingChecker.standardDefault == .gemini)
     }
 }

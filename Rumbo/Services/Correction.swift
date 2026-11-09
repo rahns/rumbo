@@ -3,7 +3,7 @@ import FoundationModels
 import RumboCore
 
 /// Writing correction (docs/05-architecture.md §5.3). With the learner's free Gemini key, Gemini checks the
-/// writing; with a free Groq key too, Groq steps in when Gemini can't. Without either, or when neither can
+/// writing; with a free Groq key too, the two are tried in the learner's chosen order. Without either, or when neither can
 /// answer (free limit used up, bad key, offline), the basic checker
 /// runs instead: LanguageTool finds errors when online and the on-device Apple model explains them; the result
 /// then carries a `notice` saying why. Apple's cloud model isn't used: it crashes sideloaded builds.
@@ -33,27 +33,23 @@ enum CorrectionService {
         return false
     }
 
-    /// Gemini first, then Groq (the free backup), then the basic checker with a warning saying why.
+    /// The default checker first (Settings → Writing feedback), then the other one if it has a key, then the
+    /// basic checker with a warning saying why.
     static func correct(_ text: String, band: Band, prompt: String) async throws -> Result {
-        var notice: String?
-        var geminiFailed = false
-        if let key = GeminiKey.current {
+        var failures: [(WritingChecker, Error)] = []
+        for checker in WritingCheckers.order {
             do {
-                return try await GeminiClient.correct(text, band: band, prompt: prompt, key: key)
+                // A second checker standing in isn't a downgrade, so no warning; "Checked by" shows which one.
+                switch checker {
+                case .gemini: return try await GeminiClient.correct(text, band: band, prompt: prompt, key: GeminiKey.current ?? "")
+                case .groq: return try await GroqClient.correct(text, band: band, prompt: prompt, key: GroqKey.current ?? "")
+                }
             } catch {
-                notice = GeminiClient.notice(for: error)
-                geminiFailed = true
-                GeminiTrace.log("Gemini couldn't answer\(GroqKey.current == nil ? "" : "; trying Groq")")
+                failures.append((checker, error))
+                GeminiTrace.log("\(checker.name) couldn't answer: \(error.localizedDescription)")
             }
         }
-        if let key = GroqKey.current {
-            do {
-                // Groq standing in for Gemini isn't a downgrade, so no warning; "Checked by" shows it.
-                return try await GroqClient.correct(text, band: band, prompt: prompt, key: key)
-            } catch {
-                notice = GroqClient.notice(for: error, geminiAlsoFailed: geminiFailed)
-            }
-        }
+        let notice = failures.isEmpty ? nil : WritingCheckers.notice(for: failures)
         var result = try await basicCheck(text, band: band, prompt: prompt, notice: notice)
         result.notice = notice
         return result
@@ -164,5 +160,44 @@ enum LanguageTool {
             throw URLError(.badServerResponse)
         }
         return try JSONDecoder().decode(Response.self, from: data).matches
+    }
+}
+
+/// Which checkers are set up and in what order (Settings → Writing feedback → Default checker).
+enum WritingCheckers {
+    static var defaultChecker: WritingChecker {
+        get { UserDefaults.standard.string(forKey: "checker.default").flatMap(WritingChecker.init(rawValue:)) ?? .standardDefault }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: "checker.default") }
+    }
+
+    static var available: Set<WritingChecker> {
+        var set: Set<WritingChecker> = []
+        if GeminiKey.current != nil { set.insert(.gemini) }
+        if GroqKey.current != nil { set.insert(.groq) }
+        return set
+    }
+
+    static var order: [WritingChecker] { WritingChecker.order(default: defaultChecker, available: available) }
+
+    /// "Gemini, then Groq", for the Settings row and Diagnostics.
+    static var summary: String { WritingChecker.summary(default: defaultChecker, available: available) }
+
+    /// The warning above the basic checker's feedback, when every checker that was set up failed.
+    static func notice(for failures: [(WritingChecker, Error)]) -> String {
+        guard failures.count > 1 else {
+            let (checker, error) = failures[0]
+            return checker == .gemini ? GeminiClient.notice(for: error) : GroqClient.notice(for: error, geminiAlsoFailed: false)
+        }
+        let names = failures.map(\.0.name).joined(separator: " and ")
+        if let refused = failures.first(where: { if case Gemini.Failure.invalidKey = $0.1 { true } else { false } }) {
+            return "\(refused.0.name) didn't accept your API key, so the basic checker did this one. Check it in Settings → Writing feedback."
+        }
+        if failures.allSatisfy({ if case Gemini.Failure.rateLimited = $0.1 { true } else { false } }) {
+            return "\(names) are both at their free limits for now, so the basic checker did this one. It's less accurate."
+        }
+        if failures.contains(where: { ($0.1 as? URLError)?.code == .notConnectedToInternet }) {
+            return "You're offline, so the basic checker did this one. It's less accurate."
+        }
+        return "\(names) couldn't answer right now (busy or unavailable), so the basic checker did this one. Try checking again in a minute."
     }
 }

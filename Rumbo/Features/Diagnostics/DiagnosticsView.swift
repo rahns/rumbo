@@ -60,8 +60,8 @@ struct DiagnosticsView: View {
                     Task { await model.traceGeminiCheck() }
                 }
                 .disabled(model.geminiRunning)
-                Button("Test streaming and one piece", systemImage: "square.split.2x1") {
-                    Task { await model.probeGeminiMethods() }
+                Button("Test each checker", systemImage: "square.split.2x1") {
+                    Task { await model.probeCheckers() }
                 }
                 .disabled(model.geminiRunning)
                 if let trace = model.geminiTrace {
@@ -70,9 +70,9 @@ struct DiagnosticsView: View {
                         .textSelection(.enabled)
                 }
             } header: {
-                Text("Gemini")
+                Text("Writing checkers")
             } footer: {
-                Text("Trace a full check runs a writing check exactly like a task (Gemini, then Groq if Gemini can't answer): streaming or one piece, when the first event arrived, thinking updates, the longest silence, and any retry or fallback. Test streaming and one piece asks the chosen Gemini model both ways, directly (uses 2 free requests).")
+                Text("Trace a full check runs a writing check exactly like a task, in your order (default checker, then the other, then the basic checker): which checker answered, streaming or one piece, when the first event arrived, thinking updates, the longest silence, Groq's model pick, and any retry or fallback. Test each checker asks every checker that has a key directly: Gemini streamed and in one piece, and Groq (up to 3 free requests).")
             }
 
             Section {

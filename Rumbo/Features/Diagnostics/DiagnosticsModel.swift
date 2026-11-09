@@ -37,7 +37,7 @@ enum CheckID: String, CaseIterable, Identifiable {
     case liveActivities = "Live Activities"
     case notifications = "Notifications"
     case gemini = "Gemini API key"
-    case groq = "Groq API key (backup)"
+    case groq = "Groq API key"
     case onDeviceModel = "Apple on-device model"
     case languageTool = "LanguageTool"
     case urlSchemes = "Source apps installed"
@@ -130,7 +130,7 @@ final class DiagnosticsModel {
 
     private func checkGroq() async -> CheckStatus {
         guard let key = GroqKey.current else {
-            return .warn("Not set up. When Gemini is busy, the basic checker steps in. Add a free key in Settings → Writing feedback.")
+            return .warn("Not set up. Add a free key in Settings → Writing feedback to have it check writing when Gemini can't (or first, if it's the default).")
         }
         let result = await GroqClient.test(key: key)
         return result.works ? .pass(result.message) : .fail(result.message)
@@ -203,7 +203,7 @@ final class DiagnosticsModel {
         }
     }
 
-    // MARK: - Gemini
+    // MARK: - Writing checkers
 
     /// A full writing check exactly as a task runs it, with every step: order, model, method, timings, fallback.
     func traceGeminiCheck() async {
@@ -211,7 +211,7 @@ final class DiagnosticsModel {
         defer { geminiRunning = false }
         geminiTrace = "Running a full check…"
         let (result, trace) = await GeminiClient.traced(Self.sampleText, band: .a2_1, prompt: "Write about yesterday.")
-        let setup = SettingsView.checkersText()
+        let setup = WritingCheckers.summary
         var lines = ["Full check · \(setup == "Not set up" ? "no keys: basic checker only" : setup)"] + trace
         switch result {
         case .success(let feedback):
@@ -224,24 +224,37 @@ final class DiagnosticsModel {
         geminiTrace = lines.joined(separator: "\n")
     }
 
-    /// Streaming and one piece, directly (no retry or fallback). Uses 2 of the free requests.
-    func probeGeminiMethods() async {
-        guard let key = GeminiKey.current else {
-            geminiTrace = "No Gemini key. Add one in Settings → Writing feedback."
+    /// Each checker that has a key, directly (no fallback): Gemini streamed and in one piece, then Groq.
+    /// Uses up to 3 free requests.
+    func probeCheckers() async {
+        let order = WritingCheckers.order
+        guard !order.isEmpty else {
+            geminiTrace = "No keys yet. Add Gemini and/or Groq in Settings → Writing feedback."
             return
         }
         geminiRunning = true
         defer { geminiRunning = false }
-        var lines: [String] = []
-        for stream in [true, false] {
-            let label = "\(GeminiKey.model.displayName) · \(stream ? "streaming" : "one piece")"
+        var lines: [String] = ["Order: \(WritingCheckers.summary)"]
+        func run(_ label: String, _ probe: () async -> (ok: Bool, trace: [String])) async {
             lines.append("— \(label): running…")
             geminiTrace = lines.joined(separator: "\n")
-            let (ok, trace) = await GeminiClient.probe(stream: stream, key: key)
+            let (ok, trace) = await probe()
             lines.removeLast()
             lines.append("— \(label): \(ok ? "✅ works" : "❌ failed")")
             lines += trace
             geminiTrace = lines.joined(separator: "\n")
+        }
+        for checker in order {
+            switch checker {
+            case .gemini:
+                guard let key = GeminiKey.current else { continue }
+                for stream in [true, false] {
+                    await run("\(Gemini.displayName) · \(stream ? "streaming" : "one piece")") { await GeminiClient.probe(stream: stream, key: key) }
+                }
+            case .groq:
+                guard let key = GroqKey.current else { continue }
+                await run("Groq · \(GroqKey.model)") { await GroqClient.probe(key: key) }
+            }
         }
     }
 
@@ -265,7 +278,7 @@ final class DiagnosticsModel {
             lines.append("\nWriting correction sample:\n\(modelSample)")
         }
         if let geminiTrace {
-            lines.append("\nGemini:\n\(geminiTrace)")
+            lines.append("\nWriting checkers (\(WritingCheckers.summary)):\n\(geminiTrace)")
         }
         return lines.joined(separator: "\n")
     }

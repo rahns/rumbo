@@ -9,7 +9,7 @@ struct SettingsView: View {
     @State private var importing = false
     @State private var pendingRestore: Data?
     @State private var message: String?
-    /// "Gemini + Groq", "Gemini", "Groq" or "Not set up".
+    /// "Gemini, then Groq", "Groq" or "Not set up".
     @State private var checkers = SettingsView.checkersText()
 
     var body: some View {
@@ -107,7 +107,7 @@ struct SettingsView: View {
         } header: {
             Text("Writing feedback")
         } footer: {
-            Text("Pico checks your writing with Gemini using your own free key, with Groq (also free) as a backup when Google is busy. Without either, a basic checker is used.")
+            Text("Pico checks your writing with Gemini and/or Groq, both free with your own keys: your default first, then the other. Without either, a basic checker is used.")
         }
 
         Section {
@@ -241,13 +241,7 @@ struct SettingsView: View {
         }
     }
 
-    static func checkersText() -> String {
-        switch (GeminiKey.current != nil, GroqKey.current != nil) {
-        case (true, true): "Gemini + Groq"
-        case (true, false): "Gemini"
-        case (false, true): "Groq"
-        case (false, false): "Not set up"
-        }
+    static func checkersText() -> String { WritingCheckers.summary }
     }
 
     /// The last part seen: "Extra en Español: seen Ep 3 Part 2" (or "not started").

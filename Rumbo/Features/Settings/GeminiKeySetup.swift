@@ -79,7 +79,7 @@ struct GeminiKeySetup: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 note("gift.fill", groq
-                     ? "Free: Groq gives about 1,000 requests a day. It's only used when Gemini can't answer."
+                     ? "Free: Groq gives about 1,000 requests a day, plenty for writing checks."
                      : "Free: Google gives a daily allowance, plenty for a few writing checks a day. If you run out, Rumbo tries Groq (if set up), then its basic checker, and shows a small warning.")
                 note("lock.fill", "Your key is kept in the phone's Keychain and saved in your backups, so restoring brings it back. Keep backup files private.")
                 if !groq {
@@ -125,7 +125,7 @@ struct GeminiKeySetup: View {
     }
 }
 
-/// Settings → Writing feedback.
+/// Settings → Writing feedback: which checker goes first, each checker's free key, and how hard they think.
 struct GeminiSettingsView: View {
     private var thinkingNote: String {
         switch thinking {
@@ -135,39 +135,47 @@ struct GeminiSettingsView: View {
         }
     }
 
-    /// Told whether a key is saved, so the Settings row can update.
+    /// Called after any change, so the Settings row can update.
     var onChange: (Bool) -> Void = { _ in }
 
     @State private var key = GeminiKey.current ?? ""
-    @State private var thinking = GeminiKey.thinkingLevel
-    @State private var model = GeminiKey.model
     @State private var groqKey = GroqKey.current ?? ""
+    @State private var thinking = GeminiKey.thinkingLevel
+    @State private var defaultChecker = WritingCheckers.defaultChecker
+
+    private var orderNote: String {
+        var available: Set<WritingChecker> = []
+        if !key.isEmpty { available.insert(.gemini) }
+        if !groqKey.isEmpty { available.insert(.groq) }
+        let order = WritingChecker.order(default: defaultChecker, available: available)
+        switch order.count {
+        case 0: return "No keys yet: the basic checker (LanguageTool and the on-device model) checks your writing. It misses more."
+        case 1 where order[0] != defaultChecker:
+            return "\(defaultChecker.name) has no key yet, so \(order[0].name) checks your writing, then the basic checker if it can't."
+        case 1: return "\(order[0].name) checks your writing. Add a \(order[0] == .gemini ? "Groq" : "Gemini") key too, and it's tried when \(order[0].name) can't answer."
+        default: return "\(order[0].name) checks your writing first. If it can't answer, \(order[1].name) does, then the basic checker."
+        }
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Text("Pico checks your writing with Google's Gemini, using your own free API key. Without one, Rumbo uses its basic checker (LanguageTool and the on-device model), which misses more.")
+                Text("Pico checks your writing with free AI checkers, using your own free API keys. Set up one or both.")
                     .font(.rounded(.subheadline, weight: .medium))
                     .foregroundStyle(Palette.secondaryText)
-                GeminiKeySetup(key: $key)
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Model")
+                    Text("Default checker")
                         .font(.rounded(.headline, weight: .black))
                         .foregroundStyle(Palette.ink)
-                    Picker("Model", selection: $model) {
-                        ForEach(Gemini.Model.allCases, id: \.self) { Text($0.displayName).tag($0) }
+                    Picker("Default checker", selection: $defaultChecker) {
+                        Text("Gemini Flash-Lite").tag(WritingChecker.gemini)
+                        Text("Groq").tag(WritingChecker.groq)
                     }
                     .pickerStyle(.segmented)
-                    Label(model == .flashLite
-                          ? "Recommended. Quick, and plenty for checking short texts."
-                          : "Stronger, but often too busy to answer; when it is, the basic checker steps in.",
-                          systemImage: "info.circle")
+                    Label(orderNote, systemImage: "arrow.triangle.branch")
                         .font(.rounded(.caption, weight: .semibold))
                         .foregroundStyle(Palette.secondaryText)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("Both are free with the same key.")
-                        .font(.rounded(.caption, weight: .semibold))
-                        .foregroundStyle(Palette.secondaryText)
                 }
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Thinking")
@@ -184,23 +192,13 @@ struct GeminiSettingsView: View {
                         .foregroundStyle(Palette.secondaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                if GeminiKey.current != nil {
-                    Button("Remove Gemini key", role: .destructive) {
-                        GeminiKey.remove()
-                        key = ""
-                    }
-                    .buttonStyle(ChunkySecondaryButtonStyle())
+                section("Gemini Flash-Lite", "Google's free model: quick, and plenty for checking short texts.")
+                GeminiKeySetup(key: $key)
+                if !key.isEmpty {
+                    Button("Remove Gemini key", role: .destructive) { key = "" }
+                        .buttonStyle(ChunkySecondaryButtonStyle())
                 }
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Backup checker: Groq")
-                        .font(.rounded(.title3, weight: .black))
-                        .foregroundStyle(Palette.ink)
-                    Text("When Google is too busy, Groq checks your writing instead (also free), before Rumbo falls back to the basic checker. Rumbo picks the best model Groq offers (GPT-OSS 120B for now) and switches by itself if Groq changes its models. Optional, but it makes checks much more reliable.")
-                        .font(.rounded(.subheadline, weight: .medium))
-                        .foregroundStyle(Palette.secondaryText)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(.top, 8)
+                section("Groq", "Also free and fast, and usually less busy than Google. Rumbo picks the best model Groq offers (GPT-OSS 120B for now) and switches by itself if Groq changes its models.")
                 GeminiKeySetup(key: $groqKey, groq: true)
                 if !groqKey.isEmpty {
                     Button("Remove Groq key", role: .destructive) { groqKey = "" }
@@ -212,16 +210,32 @@ struct GeminiSettingsView: View {
         .background(Palette.background.ignoresSafeArea())
         .navigationTitle("Writing feedback")
         .navigationBarTitleDisplayMode(.inline)
-        // Saved as it's typed or pasted; an empty field removes the key.
+        // Everything is saved as it changes; an empty key field removes that key.
         .onChange(of: thinking) { _, new in GeminiKey.thinkingLevel = new }
-        .onChange(of: model) { _, new in GeminiKey.model = new }
+        .onChange(of: defaultChecker) { _, new in
+            WritingCheckers.defaultChecker = new
+            onChange(true)
+        }
         .onChange(of: groqKey) { _, new in
             GroqKey.save(new)
-            onChange(GeminiKey.current != nil)
+            onChange(true)
         }
         .onChange(of: key) { _, new in
             GeminiKey.save(new)
-            onChange(GeminiKey.current != nil)
+            onChange(true)
         }
+    }
+
+    private func section(_ title: String, _ detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.rounded(.title3, weight: .black))
+                .foregroundStyle(Palette.ink)
+            Text(detail)
+                .font(.rounded(.subheadline, weight: .medium))
+                .foregroundStyle(Palette.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, 10)
     }
 }

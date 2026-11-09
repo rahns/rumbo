@@ -221,7 +221,7 @@ final class AppModel {
             },
             cards: allCards.map(BackupFile.CardData.init),
             gemini: BackupFile.GeminiData(apiKey: GeminiKey.current, thinkingLevel: GeminiKey.thinkingLevel.rawValue,
-                                          model: GeminiKey.model.rawValue, groqAPIKey: GroqKey.current)
+                                          groqAPIKey: GroqKey.current, defaultChecker: WritingCheckers.defaultChecker.rawValue)
         )
         return BackupDocument(data: try BackupFile.encoder().encode(file))
     }
@@ -241,7 +241,7 @@ final class AppModel {
         // A backup without Gemini settings (older, or saved before a key was added) leaves the phone's as they are.
         if let key = file.gemini?.apiKey, !key.isEmpty { GeminiKey.save(key) }
         if let level = file.gemini?.thinkingLevel.flatMap(Gemini.ThinkingLevel.init(rawValue:)) { GeminiKey.thinkingLevel = level }
-        if let model = file.gemini?.model.flatMap(Gemini.Model.init(rawValue:)) { GeminiKey.model = model }
+        if let checker = file.gemini?.defaultChecker.flatMap(WritingChecker.init(rawValue:)) { WritingCheckers.defaultChecker = checker }
         if let key = file.gemini?.groqAPIKey, !key.isEmpty { GroqKey.save(key) }
         let profile = file.profile.makeProfile()
         context.insert(profile)

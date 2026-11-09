@@ -22,9 +22,9 @@ struct BackupFile: Codable {
     struct GeminiData: Codable {
         var apiKey: String?
         var thinkingLevel: String?
-        /// Added later: which Gemini model, and the Groq key (the free backup checker).
-        var model: String?
+        /// Added later: the Groq key and which checker goes first ("gemini" or "groq").
         var groqAPIKey: String?
+        var defaultChecker: String?
     }
 
     struct ProfileData: Codable {

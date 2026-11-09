@@ -1,7 +1,7 @@
 import Foundation
 import RumboCore
 
-/// The learner's free Groq key, kept in the Keychain and saved in backups. Groq is the backup checker.
+/// The learner's free Groq key, kept in the Keychain and saved in backups.
 enum GroqKey {
     private static let account = "groq.apiKey"
 
@@ -54,7 +54,7 @@ enum GroqClient {
     static func test(key: String) async -> (works: Bool, message: String) {
         do {
             let reply = try await send(input: "Escribe: «Ayer fui a la playa.»", instructions: "Reply with the JSON asked for.", key: key)
-            return (true, "It works (using \(reply.model)). Groq will check your writing whenever Gemini can't.")
+            return (true, "It works (using \(reply.model)). Pico will use Groq to check your writing.")
         } catch Gemini.Failure.rateLimited {
             return (true, "Your key works, but its free limit is used up for now. It resets soon.")
         } catch Gemini.Failure.busy {
@@ -131,6 +131,23 @@ enum GroqClient {
             GeminiTrace.log("Groq failed: \(error.localizedDescription)")
             throw error
         }
+    }
+
+    /// One request directly (no fallback), with its trace, for Diagnostics.
+    static func probe(key: String) async -> (ok: Bool, trace: [String]) {
+        let trace = GeminiTrace()
+        let ok: Bool = await GeminiTrace.$current.withValue(trace) {
+            do {
+                let reply = try await send(input: "Writing task: Write about yesterday.\n\nLearner's text:\nAyer yo voy a la playa con mis amigo.",
+                                           instructions: CorrectionService.instructions(for: .a2_1), key: key)
+                let feedback = try Gemini.feedback(from: reply.text)
+                GeminiTrace.log("Parsed: \(feedback.errors.count) corrections, rewrite \"\(feedback.naturalRewrite)\"")
+                return true
+            } catch {
+                return false
+            }
+        }
+        return (ok, trace.lines)
     }
 
     /// The warning above feedback when the basic checker had to do it, after Groq (and maybe Gemini) failed.

@@ -23,12 +23,6 @@ enum GeminiKey {
 
     static func remove() { KeychainShare.delete(forKey: account) }
 
-    /// Which free Gemini model checks writing (Settings → Writing feedback).
-    static var model: Gemini.Model {
-        get { UserDefaults.standard.string(forKey: "gemini.model").flatMap(Gemini.Model.init(rawValue:)) ?? .standard }
-        set { UserDefaults.standard.set(newValue.rawValue, forKey: "gemini.model") }
-    }
-
     /// How hard Gemini thinks (Settings → Writing feedback).
     static var thinkingLevel: Gemini.ThinkingLevel {
         get { UserDefaults.standard.string(forKey: "gemini.thinkingLevel").flatMap(Gemini.ThinkingLevel.init(rawValue:)) ?? .standard }
@@ -46,7 +40,7 @@ enum GeminiClient {
             corrections: Mistakes.merge(model: feedback.corrections, languageTool: []),
             naturalRewrite: feedback.naturalRewrite,
             strengths: Array(feedback.strengths.prefix(2)),
-            engine: GeminiKey.model.displayName
+            engine: Gemini.displayName
         )
     }
 
@@ -68,14 +62,14 @@ enum GeminiClient {
         }
     }
 
-    /// Asks the chosen model. If Google is busy, waits 2 seconds and asks once more.
+    /// Asks Flash-Lite. If Google is busy, waits 2 seconds and asks once more.
     private static func send(input: String, instructions: String, key: String) async throws -> String {
         do {
-            return try await answer(model: GeminiKey.model.rawValue, input: input, instructions: instructions, key: key)
+            return try await answer(model: Gemini.model, input: input, instructions: instructions, key: key)
         } catch Gemini.Failure.busy {
             GeminiTrace.log("Busy: waiting 2 s, then trying once more")
             try await Task.sleep(for: .seconds(2))
-            return try await answer(model: GeminiKey.model.rawValue, input: input, instructions: instructions, key: key)
+            return try await answer(model: Gemini.model, input: input, instructions: instructions, key: key)
         }
     }
 
@@ -93,7 +87,7 @@ enum GeminiClient {
 
     /// One request to one model, streamed or in one piece, with every step traced.
     private static func attempt(model: String, input: String, instructions: String, key: String, stream: Bool) async throws -> String {
-        let name = GeminiKey.model.displayName
+        let name = Gemini.displayName
         let method = stream ? "streaming" : "one piece"
         GeminiTrace.log("\(name) · \(method) · \(GeminiKey.thinkingLevel.rawValue) thinking: sent")
         let started = Date.now
@@ -224,7 +218,7 @@ enum GeminiClient {
         let trace = GeminiTrace()
         let ok: Bool = await GeminiTrace.$current.withValue(trace) {
             do {
-                let text = try await attempt(model: GeminiKey.model.rawValue, input: "Writing task: Write about yesterday.\n\nLearner's text:\nAyer yo voy a la playa con mis amigo.",
+                let text = try await attempt(model: Gemini.model, input: "Writing task: Write about yesterday.\n\nLearner's text:\nAyer yo voy a la playa con mis amigo.",
                                              instructions: CorrectionService.instructions(for: .a2_1), key: key, stream: stream)
                 let feedback = try Gemini.feedback(from: text)
                 GeminiTrace.log("Parsed: \(feedback.errors.count) corrections, rewrite \"\(feedback.naturalRewrite)\"")
@@ -275,7 +269,7 @@ enum GeminiClient {
         case Gemini.Failure.busy, Gemini.Failure.timedOut:
             "Gemini is busy right now (high demand), so the basic checker did this one. Try checking again in a minute."
         case Gemini.Failure.modelUnavailable:
-            "\(GeminiKey.model.displayName) isn't available to your key right now, so the basic checker did this one."
+            "\(Gemini.displayName) isn't available to your key right now, so the basic checker did this one."
         case let urlError as URLError where urlError.code == .notConnectedToInternet:
             "You're offline, so the basic checker did this one. It's less accurate than Gemini."
         default:
