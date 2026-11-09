@@ -37,6 +37,7 @@ Every source can be turned off. The planner reallocates its time to whatever els
 5. [Architecture, AI correction, widgets, CI and install](docs/05-architecture.md)
 6. [Content catalog](docs/06-content-catalog.md)
 7. [Roadmap](docs/07-roadmap.md)
+8. [Monetisation ideas (parked, not built)](docs/08-monetisation.md)
 
 ## Install
 
