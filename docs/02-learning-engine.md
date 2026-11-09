@@ -87,17 +87,18 @@ Staged to reduce anxiety and add planning time (R5, R6):
 | 2. Planned voice notes | listening hours ≥ 250 **and** ≥ 8 text exchanges logged over ≥ 3 weeks **and** the learner rates text chats as "comfortable" | adds `tandem.voice`, `fluency.432` |
 | 3. Live calls | listening hours ≥ 400 **and** ≥ 6 voice notes logged | adds `tandem.call` |
 
-The learner can always unlock a stage early with "I feel ready". Autonomy matters more than the gate.
+The learner can always unlock a stage early, or switch one off: Settings → Speaking has toggles, "I'm ready for voice notes" and "I'm ready for live calls". Switching one off also stops Rumbo unlocking it (and the stages after it) by itself, until it's switched back on (`speakingStageCap` on the profile). Autonomy matters more than the gate.
 
 ## 2.5 Daily planner
 
 ### Inputs
-Band, today's budget `B` (10 / 15 / 20 / 30 / 45 / 60 min, chosen at the start of the day), the last 6 days of logged minutes per strand, source states, speaking stage, Travel/offline mode, weekly anchors still due, and the number of due mistake cards.
+Band, today's budget `B` (10 / 15 / 20 / 30 / 45 / 60 min, plus 90 / 120 on a lesson day, chosen at the start of the day), today's lesson if any, the last 6 days of logged minutes per strand, source states, speaking stage, Travel/offline mode, weekly anchors still due, and the number of due mistake cards.
 
 ### Algorithm
 Implemented in `RumboCore/DayPlanner.swift`.
 
-1. **Warm-up.** Every day the band uses Duolingo, plan `duo.lesson` first: one lesson, 3 min (it keeps the learner's Duolingo streak; never more than 5). If `B ≥ 20` and ≥ 5 cards are due, plan `review.mistakes` (3 min, or 5 from 30 min).
+0. **Lesson.** On a lesson day (Settings → Lessons: chosen weekdays, a usual length and type, and each day's own length and type when more than one day is chosen; `LessonSchedule`), the lesson is always planned, at that day's length, as `lesson.output` (speaking & writing), `lesson.input` (listening) or `lesson.study` (language study). It's **inside** the budget: it uses up part of `B`, and its minutes count in that strand's deficit, so the rest of the day leans to other strands. It doesn't take one of the 4 cards, never gets leftover minutes, and is never offered in Keep going. If it takes the whole budget, the plan is the lesson (plus Duolingo when that's always included). Lessons don't count toward the weekly Tandem or writing anchors.
+1. **Warm-up.** Every day the band uses Duolingo and Settings → Habit → **Always include Duolingo** is on (the default; "If you're keeping a streak going"), plan `duo.lesson` first: one lesson, 3 min (it keeps the learner's Duolingo streak; never more than 5). With it off, nothing reserves room for Duolingo: it's just one of the study options. If `B ≥ 20` and ≥ 5 cards are due, plan `review.mistakes` (3 min, or 5 from 30 min).
 2. **Deficits.** For each strand: `target = share × (logged last 6 days + B)`, then `deficit = target − logged last 6 days − planned today`.
 3. **Fill with new cards.** While there are fewer than 4 cards:
    - Pick the strand with the largest deficit.
@@ -105,9 +106,11 @@ Implemented in `RumboCore/DayPlanner.swift`.
    - Allocate `clamp(round5(deficit), min, max)`, but never more than what's left. If nothing in the strand fits, move to the next strand.
 4. **Leftover.** Minutes too few for a new card go to existing cards that have headroom: input first, then the strand with the largest deficit.
 5. **Limits.** At most 4 cards per day (to keep cognitive load low) **[design]**, and at most **one weekly anchor per day (two from 45 min)**, so a fresh week spreads its anchors out instead of crowding out progression **[design]**.
-6. **Order.** Warm-up → language-focused → input → output → fluency (R4, R7 **[design]**). The output card's prompt reuses that day's Language Transfer track or Extra episode (R4).
+6. **Order.** Warm-up → lesson → mistake review → language-focused → input → output → fluency (R4, R7 **[design]**). The output card's prompt reuses that day's Language Transfer track or Extra episode (R4).
 7. **Tiny days.** If `B = 10`: the 3-minute Duolingo lesson (when the band uses it), then one task for the other 7 minutes: the strand with the largest deficit, using its first task that fits, preferring one that fills the time. Once calls are unlocked, the week's call comes before writing in the output queue, so it isn't squeezed out by shorter tasks.
 8. **Keep going.** Once every planned card is done or skipped (with at least one done), Today offers every other eligible task not already in the plan, at its standard length and with its progression detail (next track, next Extra part). They're ordered by strand deficit over the last 7 days *including today*, so the most-behind strand comes first. An extra is added to the day as its own card when started; it counts like any other practice (minutes, strand balance, streak, training hours, course progress) but never changes whether the day is complete. (`DayPlanner.extraTasks`)
+
+**Goal advice on lesson days** (`BudgetAdvisor`): lesson minutes later this week come off what the days left need, and the recommended time is never less than today's lesson.
 
 ### Weekly anchors
 Planned on the first day the budget allows, so they don't depend on a fixed weekday (which wouldn't survive backpacking).

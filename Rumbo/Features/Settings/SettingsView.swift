@@ -111,9 +111,26 @@ struct SettingsView: View {
         }
 
         Section {
-            Toggle("Travel mode", isOn: binding(get: { profile.travelMode }, set: { profile.travelMode = $0 }))
+            NavigationLink {
+                LessonSettingsView()
+            } label: {
+                LabeledContent("Lessons", value: profile.lessonSchedule.summary(weekStartsOnSunday: profile.weekStartsOnSunday))
+            }
+        } header: {
+            Text("Lessons")
         } footer: {
-            Text("Adds real-world missions and copes with no signal.")
+            Text("A tutor or a class on set days: it's always in that day's plan, at its usual length.")
+        }
+
+        Section {
+            Toggle("Travel mode", isOn: binding(get: { profile.travelMode }, set: { profile.travelMode = $0 }))
+            if profile.travelMode {
+                Toggle("I have no signal", isOn: binding(get: { profile.noSignal }, set: { profile.noSignal = $0 }))
+            }
+        } footer: {
+            Text(profile.travelMode
+                 ? "Adds real-world missions. With no signal on, only offline tasks are planned (pick today's time again to use it today)."
+                 : "Adds real-world missions and copes with no signal.")
         }
 
         Section("Progress") {
@@ -151,20 +168,30 @@ struct SettingsView: View {
         }
 
         Section {
-            if profile.speakingStage < .calls {
-                Button(profile.speakingStage == .text ? "I'm ready for voice notes" : "I'm ready for live calls") {
-                    model.unlockNextSpeakingStage()
-                }
-            } else {
-                Text("Live calls unlocked")
-            }
+            Toggle("I'm ready for voice notes", isOn: binding(
+                get: { profile.speakingStage >= .voiceNotes },
+                set: { model.setSpeakingStage(.voiceNotes, on: $0) }
+            ))
+            Toggle("I'm ready for live calls", isOn: binding(
+                get: { profile.speakingStage >= .calls },
+                set: { model.setSpeakingStage(.calls, on: $0) }
+            ))
+            .disabled(profile.speakingStage < .voiceNotes)
         } header: {
             Text("Speaking")
         } footer: {
-            Text("Rumbo unlocks these automatically as your hours and Tandem exchanges grow. You can go early if you feel ready.")
+            Text("Rumbo switches these on by itself as your hours and Tandem exchanges grow, and you can go early if you feel ready. Switch one off and it stays off until you switch it back on.")
         }
 
         Section("Habit") {
+            Toggle(isOn: binding(get: { profile.alwaysIncludeDuolingo }, set: { profile.alwaysIncludeDuolingo = $0 })) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Always include Duolingo")
+                    Text("If you're keeping a streak going")
+                        .font(.rounded(.caption, weight: .medium))
+                        .foregroundStyle(Palette.secondaryText)
+                }
+            }
             Picker("Week starts on", selection: Binding(
                 get: { profile.weekStartsOnSunday },
                 set: { model.setWeekStartsOnSunday($0) }
@@ -229,8 +256,6 @@ struct SettingsView: View {
             }
         } header: {
             Text("Share")
-        } footer: {
-            Text("Friends get their own setup: Rumbo asks where they are in each source on first launch.")
         }
 
         Section {

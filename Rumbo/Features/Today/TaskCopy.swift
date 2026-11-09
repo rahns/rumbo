@@ -22,6 +22,7 @@ enum TaskCopy {
         case .otherStudy: "Other language study"
         case .otherOutput: "Other speaking & writing"
         case .otherFluency: "Other fluency practice"
+        case .lessonOutput, .lessonInput, .lessonStudy: "Lesson"
         }
     }
 
@@ -43,6 +44,7 @@ enum TaskCopy {
         case .otherStudy: "book.fill"
         case .otherOutput: "text.bubble.fill"
         case .otherFluency: "hare.fill"
+        case .lessonOutput, .lessonInput, .lessonStudy: "person.2.fill"
         }
     }
 
@@ -60,6 +62,9 @@ enum TaskCopy {
     /// A one-line "why", for tasks whose point isn't obvious from the name.
     static func purpose(for task: TaskKind) -> String? {
         switch task {
+        case .lessonOutput: "Speaking & writing · counts toward today's time"
+        case .lessonInput: "Listening · counts toward today's time"
+        case .lessonStudy: "Language study · counts toward today's time"
         case .dsEasy: "Below your level on purpose: easy listening makes what you know come faster."
         default: nil
         }
@@ -108,6 +113,8 @@ enum TaskCopy {
             "Do it for real, then come back and log it."
         case .otherStudy, .otherOutput, .otherFluency:
             "Logged with Log other."
+        case .lessonOutput, .lessonInput, .lessonStudy:
+            "Your lesson today. Log it once it's done."
         }
     }
 

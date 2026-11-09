@@ -57,6 +57,11 @@ public struct LearnerSnapshot: Sendable {
     public var isOnline: Bool
     /// Suggested Dreaming Spanish difficulty range.
     public var dsDifficulty: ClosedRange<Int>
+    /// Settings → Habit → Always include Duolingo: a short lesson every day, for the learner's Duolingo streak.
+    /// Off: Duolingo is just one of the study options.
+    public var alwaysIncludeDuolingo: Bool
+    /// Tutoring or classroom lessons (Settings → Lessons).
+    public var lessons: LessonSchedule
 
     public init(
         band: Band,
@@ -70,7 +75,9 @@ public struct LearnerSnapshot: Sendable {
         dueReviewCards: Int = 0,
         travelMode: Bool = false,
         isOnline: Bool = true,
-        dsDifficulty: ClosedRange<Int> = 40...48
+        dsDifficulty: ClosedRange<Int> = 40...48,
+        alwaysIncludeDuolingo: Bool = true,
+        lessons: LessonSchedule = LessonSchedule()
     ) {
         self.band = band
         self.enabledSources = enabledSources
@@ -84,6 +91,8 @@ public struct LearnerSnapshot: Sendable {
         self.travelMode = travelMode
         self.isOnline = isOnline
         self.dsDifficulty = dsDifficulty
+        self.alwaysIncludeDuolingo = alwaysIncludeDuolingo
+        self.lessons = lessons
     }
 
     public var languageTransferFinished: Bool {
@@ -136,6 +145,9 @@ public struct LearnerSnapshot: Sendable {
             return travelMode
         case .otherStudy, .otherOutput, .otherFluency:
             // Only ever logged by hand.
+            return false
+        case .lessonOutput, .lessonInput, .lessonStudy:
+            // Planned from the lesson schedule, never chosen by the planner.
             return false
         }
     }

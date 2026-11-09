@@ -22,6 +22,8 @@ Defined in `Rumbo/Models/Models.swift`. Enums are stored as raw strings/ints, wi
 | `WritingEntry` | Text written in a writing task, with its prompt, the correction (encoded `CorrectionService.Result`) and the learner's rewrite. |
 | `ReviewCard` | A mistake-deck card: front, back, explanation, origin (writing / tandem / manual), the writing entry it came from, and its FSRS state (due, stability, difficulty, reps, lapses, state, last review). |
 
+The profile also keeps the lesson schedule (`lessonScheduleData`, an encoded `LessonSchedule`), `alwaysIncludeDuolingo`, `speakingStageCap` and `noSignal`; all are in backups.
+
 Gate attempts are stored on the profile (`gatesPassed`, `lastFailedGate`) rather than as their own model.
 
 The budget can be changed until the first task is started; after that the day's plan is fixed.

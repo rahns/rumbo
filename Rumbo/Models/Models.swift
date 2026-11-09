@@ -39,6 +39,15 @@ import SwiftData
     var weekStartsOnSunday: Bool = false
     /// The catalog item the learner is watching now; "Watch or listen" tasks point at it.
     var currentContentID: String = ""
+    /// Settings → Habit: a short Duolingo lesson in every day's plan, for the learner's Duolingo streak.
+    var alwaysIncludeDuolingo: Bool = true
+    /// Settings → Speaking: the highest stage Rumbo may unlock by itself (3 = calls). Switching a stage off
+    /// lowers it, so it stays off.
+    var speakingStageCap: Int = SpeakingStage.calls.rawValue
+    /// Settings → Travel mode → I have no signal: plan only what works offline.
+    var noSignal: Bool = false
+    /// Encoded `LessonSchedule` (Settings → Lessons); nil = no lessons.
+    var lessonScheduleData: Data?
 
     init() {}
 
@@ -61,6 +70,11 @@ import SwiftData
     var enabledSources: Set<SourceKind> {
         get { Set(enabledSourcesRaw.compactMap(SourceKind.init(rawValue:))) }
         set { enabledSourcesRaw = newValue.map(\.rawValue).sorted() }
+    }
+
+    var lessonSchedule: LessonSchedule {
+        get { lessonScheduleData.flatMap { try? JSONDecoder().decode(LessonSchedule.self, from: $0) } ?? LessonSchedule() }
+        set { lessonScheduleData = try? JSONEncoder().encode(newValue) }
     }
 
     var dsDifficulty: ClosedRange<Int> {

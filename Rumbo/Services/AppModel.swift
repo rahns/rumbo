@@ -144,8 +144,11 @@ final class AppModel {
             keepDuolingoInB2: profile.keepDuolingoInB2,
             dueReviewCards: dueCards.count,
             travelMode: profile.travelMode,
-            isOnline: isOnline,
-            dsDifficulty: profile.dsDifficulty
+            // "I have no signal" (travel mode) plans offline even when the phone thinks it's connected.
+            isOnline: isOnline && !(profile.travelMode && profile.noSignal),
+            dsDifficulty: profile.dsDifficulty,
+            alwaysIncludeDuolingo: profile.alwaysIncludeDuolingo,
+            lessons: profile.lessonSchedule
         )
     }
 
@@ -154,9 +157,18 @@ final class AppModel {
             .status(history: history, today: .now)
     }
 
+    /// Today's lesson length, if today is a lesson day (Settings → Lessons).
+    var todaysLessonMinutes: Int? {
+        profile?.lessonSchedule.lesson(on: .now, calendar: calendar)?.minutes
+    }
+
+    /// The time chips for today: longer ones on a lesson day, since the lesson is part of the day's time.
+    var budgetChoices: [Int] { DayPlanner.budgetChoices(lessonMinutes: todaysLessonMinutes) }
+
     /// Which budget keeps the learner on track for this week's goal.
     var budgetAdvice: BudgetAdvisor.Advice {
-        BudgetAdvisor.advice(weeklyGoal: profile?.weeklyGoalMinutes ?? 150, minutesThisWeek: streak.minutesThisWeek, today: .now, calendar: calendar)
+        BudgetAdvisor.advice(weeklyGoal: profile?.weeklyGoalMinutes ?? 150, minutesThisWeek: streak.minutesThisWeek, today: .now,
+                             lessons: profile?.lessonSchedule ?? LessonSchedule(), calendar: calendar)
     }
 
     /// Dreaming Spanish sessions with the level watched, for the Progress chart.
@@ -325,6 +337,8 @@ final class AppModel {
         task.pausedAt = nil
         task.pausedSeconds = 0
         save()
+        // A lesson happens outside the app: it goes straight to logging, with no timer.
+        guard !task.task.isLesson else { return }
         LiveActivities.start(task: task)
     }
 
@@ -381,7 +395,7 @@ final class AppModel {
             showToday()
             let minutes = URLComponents(url: url, resolvingAgainstBaseURL: false)?
                 .queryItems?.first { $0.name == "minutes" }?.value.flatMap(Int.init)
-            if todayPlan == nil, let minutes, DayPlanner.budgetChoices.contains(minutes) {
+            if todayPlan == nil, let minutes, budgetChoices.contains(minutes) {
                 makeTodayPlan(budget: minutes)
             }
             todayRequests += 1
@@ -409,6 +423,8 @@ final class AppModel {
         var duolingoPosition: (section: Int, unit: Int)?
         /// After a Language Transfer task: the track the learner is up to now (91 = course finished).
         var languageTransferNextTrack: Int? = nil
+        /// After a lesson: what kind it turned out to be, if different from the schedule (this lesson only).
+        var lessonKind: TaskKind? = nil
         /// After a Dreaming Spanish task: the difficulty watched (0–100).
         var levelWatched: Int? = nil
     }
@@ -416,6 +432,8 @@ final class AppModel {
     func complete(_ task: PlannedTaskRecord, with completion: Completion) {
         guard let profile else { return }
         let before = streak
+        // A one-off change of lesson type is logged (and shown) as that type.
+        if let lessonKind = completion.lessonKind, task.task.isLesson { task.taskRaw = lessonKind.rawValue }
         let log = ActivityLog(date: .now, task: task.task, minutes: completion.minutes)
         log.comprehension = completion.comprehension?.rawValue
         log.rating = completion.trackRating?.rawValue ?? completion.tandemFeeling
@@ -828,6 +846,11 @@ final class AppModel {
         save()
     }
 
+    func setNoSignal(_ on: Bool) {
+        profile?.noSignal = on
+        save()
+    }
+
     // MARK: - Stats
 
     /// Minutes per strand over the last 7 days.
@@ -945,17 +968,27 @@ final class AppModel {
             voiceNotes: tandemLogs.filter { $0.task == .tandemVoice }.count
         )
         let stage = SpeakingProgress.stage(for: evidence, current: profile.speakingStage)
-        guard stage > profile.speakingStage else { return }
-        profile.speakingStage = stage
+        let capped = SpeakingStage(rawValue: min(stage.rawValue, profile.speakingStageCap)) ?? .text
+        guard capped > profile.speakingStage else { return }
+        profile.speakingStage = capped
         save()
-        banner = stage == .calls
+        banner = capped == .calls
             ? Banner(title: "Live calls unlocked", message: "Once a week Rumbo will plan a short call with your Tandem partner.")
             : Banner(title: "Voice notes unlocked", message: "Plan a few bullet points, then record a 1–2 minute voice note. Planning first makes speaking easier.")
     }
 
-    func unlockNextSpeakingStage() {
-        guard let profile, let next = SpeakingStage(rawValue: profile.speakingStage.rawValue + 1) else { return }
-        profile.speakingStage = next
+    /// Settings → Speaking: switch voice notes or live calls on or off by hand. On also lets Rumbo unlock the
+    /// next stage by itself again; off keeps that stage (and the ones after it) off until switched back on.
+    func setSpeakingStage(_ stage: SpeakingStage, on: Bool) {
+        guard let profile else { return }
+        if on {
+            profile.speakingStage = max(profile.speakingStage, stage)
+            profile.speakingStageCap = SpeakingStage.calls.rawValue
+        } else {
+            let below = SpeakingStage(rawValue: stage.rawValue - 1) ?? .text
+            profile.speakingStage = min(profile.speakingStage, below)
+            profile.speakingStageCap = below.rawValue
+        }
         save()
     }
 
@@ -1013,7 +1046,8 @@ final class AppModel {
     /// The plan the gold-starred budget would give on `day`, as widget lines.
     private func suggestedPreview(for day: Date, profile: LearnerProfile) -> (minutes: Int, tasks: [WidgetSnapshot.TaskLine]) {
         let status = StreakCalculator(weeklyGoalMinutes: profile.weeklyGoalMinutes, calendar: calendar).status(history: history, today: day)
-        let budget = BudgetAdvisor.advice(weeklyGoal: profile.weeklyGoalMinutes, minutesThisWeek: status.minutesThisWeek, today: day, calendar: calendar).recommended
+        let budget = BudgetAdvisor.advice(weeklyGoal: profile.weeklyGoalMinutes, minutesThisWeek: status.minutesThisWeek, today: day,
+                                          lessons: profile.lessonSchedule, calendar: calendar).recommended
         let preview = DayPlanner(calendar: calendar).plan(budget: budget, learner: snapshot(for: profile), history: history, today: day)
         return (budget, preview.tasks.map {
             WidgetSnapshot.TaskLine(title: TaskCopy.title(for: $0.kind), symbol: TaskCopy.symbol(for: $0.kind),

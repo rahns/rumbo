@@ -127,7 +127,10 @@ struct OnboardingView: View {
 
     private var welcome: some View {
         VStack(spacing: 24) {
-            Spacer(minLength: 80)
+            Spacer(minLength: 40)
+            // Pico introduces himself, so new learners know who the toucan is.
+            PicoSpeechBubble(text: "¡Hola! I'm Pico 👋 I'll turn the Spanish you already do into one simple plan each day, and cheer you on.")
+                .padding(.horizontal, 12)
             PicoBadge(size: 110)
             Text("¿Rumbo a dónde?")
                 .font(.rounded(.largeTitle, weight: .black))
@@ -136,7 +139,7 @@ struct OnboardingView: View {
                 .font(.rounded(.title3, weight: .medium))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Palette.secondaryText)
-            Text("Hi, I'm Pico. This takes about two minutes.")
+            Text("Setting up takes about two minutes.")
                 .font(.rounded(.subheadline, weight: .semibold))
                 .foregroundStyle(Palette.coral)
             Button("Restore from a backup") { importing = true }
@@ -489,5 +492,29 @@ enum SourceCopy {
         case .tandem: "bubble.left.and.bubble.right.fill"
         case .suggestedContent: "sparkles.tv.fill"
         }
+    }
+}
+
+/// A big speech bubble with its tail pointing down at Pico, in a fixed dark ink on white so it reads in both modes.
+struct PicoSpeechBubble: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(.rounded(.headline, weight: .bold))
+            .foregroundStyle(Palette.inkOnBright)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.vertical, 14)
+            .padding(.horizontal, 18)
+            .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.white))
+            .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Palette.cardEdge).offset(y: 4))
+            .overlay(alignment: .bottom) {
+                Triangle()
+                    .fill(.white)
+                    .frame(width: 22, height: 12)
+                    .offset(y: 11)
+            }
+            .padding(.bottom, 10)
     }
 }

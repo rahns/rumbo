@@ -37,6 +37,21 @@ public enum TaskKind: String, CaseIterable, Codable, Sendable {
     case otherStudy = "other.study"
     case otherOutput = "other.output"
     case otherFluency = "other.fluency"
+    /// A tutoring or classroom lesson (Settings → Lessons), one per type. Planned only from the lesson schedule.
+    case lessonOutput = "lesson.output"
+    case lessonInput = "lesson.input"
+    case lessonStudy = "lesson.study"
+
+    /// The lesson kind for a lesson of this type (speaking & writing, listening or language study).
+    public static func lesson(for strand: Strand) -> TaskKind {
+        switch strand {
+        case .input: .lessonInput
+        case .languageFocused: .lessonStudy
+        case .output, .fluency: .lessonOutput
+        }
+    }
+
+    public var isLesson: Bool { self == .lessonOutput || self == .lessonInput || self == .lessonStudy }
 
     /// The kind "Log other" records for practice in `strand`.
     public static func other(for strand: Strand) -> TaskKind {
@@ -51,9 +66,9 @@ public enum TaskKind: String, CaseIterable, Codable, Sendable {
     public var strand: Strand {
         switch self {
         // Intensive Extra viewing is captioned input with a short shadowing step, so it sits in input.
-        case .dsWatch, .extraIntensive, .extraExtensive, .contentWatch: .input
-        case .writeGuided, .tandemText, .tandemVoice, .tandemCall, .missionTravel, .otherOutput: .output
-        case .duoLesson, .ltTrack, .reviewMistakes, .otherStudy: .languageFocused
+        case .dsWatch, .extraIntensive, .extraExtensive, .contentWatch, .lessonInput: .input
+        case .writeGuided, .tandemText, .tandemVoice, .tandemCall, .missionTravel, .otherOutput, .lessonOutput: .output
+        case .duoLesson, .ltTrack, .reviewMistakes, .otherStudy, .lessonStudy: .languageFocused
         case .dsEasy, .writeQuick, .fluency432, .otherFluency: .fluency
         }
     }
@@ -78,6 +93,7 @@ public enum TaskKind: String, CaseIterable, Codable, Sendable {
         case .reviewMistakes: MinuteRange(min: 3, standard: 5, max: 10)
         case .missionTravel: MinuteRange(min: 5, standard: 10, max: 20)
         case .otherStudy, .otherOutput, .otherFluency: MinuteRange(min: 1, standard: 20, max: 600)
+        case .lessonOutput, .lessonInput, .lessonStudy: MinuteRange(min: 5, standard: 60, max: 240)
         }
     }
 
@@ -91,7 +107,8 @@ public enum TaskKind: String, CaseIterable, Codable, Sendable {
         case .contentWatch: .suggestedContent
         case .writeGuided, .writeQuick: .writing
         case .tandemText, .tandemVoice, .tandemCall: .tandem
-        case .fluency432, .reviewMistakes, .missionTravel, .otherStudy, .otherOutput, .otherFluency: nil
+        case .fluency432, .reviewMistakes, .missionTravel, .otherStudy, .otherOutput, .otherFluency,
+             .lessonOutput, .lessonInput, .lessonStudy: nil
         }
     }
 
@@ -106,7 +123,7 @@ public enum TaskKind: String, CaseIterable, Codable, Sendable {
     /// Whether logged minutes add to the learner's input hours.
     public var countsAsInput: Bool {
         switch self {
-        case .dsWatch, .dsEasy, .extraIntensive, .extraExtensive, .contentWatch: true
+        case .dsWatch, .dsEasy, .extraIntensive, .extraExtensive, .contentWatch, .lessonInput: true
         default: false
         }
     }

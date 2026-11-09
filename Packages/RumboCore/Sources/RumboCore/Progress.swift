@@ -209,19 +209,26 @@ public enum BudgetAdvisor {
         weeklyGoal: Int,
         minutesThisWeek: Int,
         today: Date,
-        choices: [Int] = DayPlanner.budgetChoices,
+        choices: [Int]? = nil,
+        lessons: LessonSchedule = LessonSchedule(),
         calendar: Calendar = .current
     ) -> Advice {
+        let todaysLesson = lessons.lesson(on: today, calendar: calendar)?.minutes
+        let choices = choices ?? DayPlanner.budgetChoices(lessonMinutes: todaysLesson)
         let todayStart = calendar.startOfDay(for: today)
         let weekEnd = calendar.dateInterval(of: .weekOfYear, for: today)?.end ?? todayStart
         let daysLeft = max(1, calendar.dateComponents([.day], from: todayStart, to: weekEnd).day ?? 1)
         let remaining = weeklyGoal - minutesThisWeek
-        let smallest = choices.min() ?? 10
+        // Today's lesson is part of today's time, so the advice never asks for less than it.
+        let smallest = choices.sorted().first { $0 >= (todaysLesson ?? 0) } ?? (choices.min() ?? 10)
         guard remaining > 0 else {
             return Advice(minutesPerDay: 0, recommended: smallest, daysLeft: daysLeft, goalAlreadyMet: true)
         }
-        let perDay = Int((Double(remaining) / Double(daysLeft)).rounded(.up))
-        let recommended = choices.sorted().first { $0 >= perDay } ?? (choices.max() ?? perDay)
+        // Lessons later this week will cover part of the goal, so they come off what the days left need.
+        let upcoming = lessons.minutesLaterThisWeek(after: today, calendar: calendar)
+        let perDay = max(0, Int((Double(remaining - upcoming) / Double(daysLeft)).rounded(.up)))
+        let wanted = max(perDay, todaysLesson ?? 0)
+        let recommended = choices.sorted().first { $0 >= wanted } ?? (choices.max() ?? wanted)
         return Advice(minutesPerDay: perDay, recommended: recommended, daysLeft: daysLeft, goalAlreadyMet: false)
     }
 }

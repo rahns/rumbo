@@ -40,6 +40,12 @@ public struct DayPlanner: Sendable {
     public static let maxCards = 4
     public static let budgetChoices = [10, 15, 20, 30, 45, 60]
 
+    /// The time chips for a day: on a lesson day, longer ones too, since the lesson is part of the day's time.
+    public static func budgetChoices(lessonMinutes: Int?) -> [Int] {
+        guard let lessonMinutes, lessonMinutes > 0 else { return budgetChoices }
+        return budgetChoices + [90, 120].filter { $0 > (budgetChoices.last ?? 60) }
+    }
+
     public var calendar: Calendar
 
     public init(calendar: Calendar = .current) {
@@ -50,6 +56,10 @@ public struct DayPlanner: Sendable {
         let window = recentRecords(history, before: today)
         var builder = PlanBuilder(budget: budget, learner: learner, window: window)
 
+        // A lesson day: the lesson is always in the plan, at its length, and uses up part of the day's time.
+        if let lesson = learner.lessons.lesson(on: today, calendar: calendar) {
+            builder.addLesson(lesson)
+        }
         if budget <= 10 {
             // Busy day: a 3-minute Duolingo lesson keeps that streak alive, then one task for the rest.
             builder.planBusyDayWarmUp()
@@ -137,8 +147,12 @@ private struct PlanBuilder {
 
     var remaining: Int { budget - tasks.reduce(0) { $0 + $1.minutes } }
 
+    mutating func addLesson(_ lesson: PlannedTask) {
+        tasks.append(lesson)
+    }
+
     mutating func planBusyDayWarmUp() {
-        if learner.isEligible(.duoLesson) {
+        if learner.alwaysIncludeDuolingo, learner.isEligible(.duoLesson) {
             add(.duoLesson, minutes: TaskKind.duoLesson.minutes.min)
         }
     }
@@ -146,7 +160,7 @@ private struct PlanBuilder {
     // Step 1
     mutating func planWarmUp() {
         // Every day, so the Duolingo streak survives; one 3-minute lesson leaves study time for Language Transfer.
-        if budget >= 15, learner.isEligible(.duoLesson) {
+        if budget >= 15, learner.alwaysIncludeDuolingo, learner.isEligible(.duoLesson) {
             add(.duoLesson, minutes: TaskKind.duoLesson.minutes.standard)
         }
         if budget >= 20, learner.dueReviewCards >= 5, learner.isEligible(.reviewMistakes) {
@@ -157,7 +171,8 @@ private struct PlanBuilder {
     // Step 3: new cards, strand with the largest deficit first.
     mutating func fill() {
         var exhausted: Set<Strand> = []
-        while tasks.count < DayPlanner.maxCards {
+        // A lesson doesn't take one of the cards.
+        while tasks.filter({ !$0.kind.isLesson }).count < DayPlanner.maxCards && remaining > 0 {
             let strands = Strand.allCases
                 .filter { !exhausted.contains($0) }
                 .sorted { deficit($0) > deficit($1) }
@@ -196,6 +211,7 @@ private struct PlanBuilder {
     // Step 7: one task for what's left of a 10-minute day, preferring one that fills it.
     mutating func planSingleTask() {
         let left = remaining
+        guard left > 0 else { return }
         for strand in Strand.allCases.sorted(by: { deficit($0) > deficit($1) }) {
             let fitting = candidates(for: strand).filter { kind in
                 (fixedMinutes(for: kind) ?? kind.minutes.min) <= left && !tasks.contains { $0.kind == kind }
@@ -214,7 +230,7 @@ private struct PlanBuilder {
             if (left == .input) != (right == .input) { return left == .input }
             return deficit(left) > deficit(right)
         }
-        for index in order where remaining > 0 && fixedMinutes(for: tasks[index].kind) == nil {
+        for index in order where remaining > 0 && fixedMinutes(for: tasks[index].kind) == nil && !tasks[index].kind.isLesson {
             let headroom = tasks[index].kind.minutes.max - tasks[index].minutes
             tasks[index].minutes += min(headroom, remaining)
         }
@@ -225,13 +241,14 @@ private struct PlanBuilder {
         func rank(_ task: PlannedTask) -> Int {
             switch task.kind {
             case .duoLesson: 0
-            case .reviewMistakes: 1
+            case .lessonOutput, .lessonInput, .lessonStudy: 1
+            case .reviewMistakes: 2
             default:
                 switch task.kind.strand {
-                case .languageFocused: 2
-                case .input: 3
-                case .output: 4
-                case .fluency: 5
+                case .languageFocused: 3
+                case .input: 4
+                case .output: 5
+                case .fluency: 6
                 }
             }
         }

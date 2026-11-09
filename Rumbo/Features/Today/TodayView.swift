@@ -115,19 +115,35 @@ struct TodayView: View {
     private var travelToggle: some View {
         if let profile = model.profile {
             RaisedCard(accent: profile.travelMode ? Palette.sun : nil) {
-                Toggle(isOn: Binding(get: { profile.travelMode }, set: { model.setTravelMode($0) })) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Label("Travel mode", systemImage: "backpack.fill")
-                            .font(.rounded(.headline, weight: .black))
-                            .foregroundStyle(Palette.ink)
-                        Text(profile.travelMode
-                             ? "On the road: Rumbo adds a real-world mission and, when you're offline, only plans what works offline. Pick today's time again to use it today."
-                             : "Travelling? Turn this on for real-world Spanish missions and plans that cope with no signal.")
-                            .font(.rounded(.caption, weight: .semibold))
-                            .foregroundStyle(Palette.secondaryText)
+                VStack(alignment: .leading, spacing: 12) {
+                    Toggle(isOn: Binding(get: { profile.travelMode }, set: { model.setTravelMode($0) })) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Label("Travel mode", systemImage: "backpack.fill")
+                                .font(.rounded(.headline, weight: .black))
+                                .foregroundStyle(Palette.ink)
+                            Text(profile.travelMode
+                                 ? "On the road: Rumbo adds a real-world mission and, when you're offline, only plans what works offline. Pick today's time again to use it today."
+                                 : "Travelling? Turn this on for real-world Spanish missions and plans that cope with no signal.")
+                                .font(.rounded(.caption, weight: .semibold))
+                                .foregroundStyle(Palette.secondaryText)
+                        }
+                    }
+                    .tint(Palette.sun)
+                    if profile.travelMode {
+                        Divider()
+                        Toggle(isOn: Binding(get: { profile.noSignal }, set: { model.setNoSignal($0) })) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("I have no signal")
+                                    .font(.rounded(.subheadline, weight: .bold))
+                                    .foregroundStyle(Palette.ink)
+                                Text("Plans only what works offline.")
+                                    .font(.rounded(.caption, weight: .semibold))
+                                    .foregroundStyle(Palette.secondaryText)
+                            }
+                        }
+                        .tint(Palette.sun)
                     }
                 }
-                .tint(Palette.sun)
             }
         }
     }
@@ -187,14 +203,15 @@ struct TodayView: View {
         let advice = model.budgetAdvice
         let goal = model.profile?.weeklyGoalMinutes ?? 150
         let days = advice.daysLeft == 1 ? "today, the last day of the week" : "each of the \(advice.daysLeft) days left this week"
+        let lesson = model.todaysLessonMinutes.map { " That includes today's \($0)-minute lesson." } ?? ""
         return HStack(alignment: .top, spacing: 10) {
             Image(systemName: advice.goalAlreadyMet ? "checkmark.seal.fill" : "target")
                 .font(.title3.weight(.bold))
                 .foregroundStyle(advice.goalAlreadyMet ? Palette.leaf : Palette.sun)
             // LocalizedStringKey so the **bold** recommendation renders as Markdown.
-            Text(LocalizedStringKey(advice.goalAlreadyMet
-                 ? "You've met your \(goal)-minute goal this week. Any time today is a bonus; 10 minutes keeps the streak."
-                 : "To reach your \(goal)-minute goal: about \(advice.minutesPerDay) min \(days). **\(advice.recommended) min** keeps you on track."))
+            Text(LocalizedStringKey((advice.goalAlreadyMet
+                 ? "You've met your \(goal)-minute goal this week. Any time today is a bonus; a few minutes keeps the streak."
+                 : "To reach your \(goal)-minute goal: about \(advice.minutesPerDay) min \(days). **\(advice.recommended) min** keeps you on track.") + lesson))
                 .font(.rounded(.subheadline, weight: .semibold))
                 .foregroundStyle(Palette.ink)
         }
@@ -206,7 +223,7 @@ struct TodayView: View {
     private func budgetChips(selected: Int?) -> some View {
         let recommended = model.budgetAdvice.recommended
         return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 14) {
-            ForEach(DayPlanner.budgetChoices, id: \.self) { minutes in
+            ForEach(model.budgetChoices, id: \.self) { minutes in
                 ChipButton(title: minutes == 10 ? "10 · busy" : "\(minutes) min", isSelected: selected == minutes) {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                         model.makeTodayPlan(budget: minutes)
@@ -552,7 +569,7 @@ struct TaskCardView: View {
                 }
                 if !finished {
                     HStack(spacing: 10) {
-                        Button(task.status == .active ? "Continue" : "Start", action: onStart)
+                        Button(task.task.isLesson ? "Log it" : task.status == .active ? "Continue" : "Start", action: onStart)
                             .buttonStyle(ChunkyButtonStyle(color: color))
                         if task.status == .planned {
                             Button(action: onSkip) {

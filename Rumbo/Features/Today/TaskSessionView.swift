@@ -23,6 +23,8 @@ struct TaskSessionView: View {
     @State private var addingCorrection = false
     @State private var ltNextTrack = 1
     @State private var levelWatched = 40
+    /// A lesson's type, pre-set from the schedule; changing it applies to this lesson only.
+    @State private var lessonStrand = Strand.output
     @State private var duolingoSection = 1
     @State private var duolingoUnit = 1
     @State private var keyboardVisible = false
@@ -54,7 +56,8 @@ struct TaskSessionView: View {
         .background(Palette.background.ignoresSafeArea())
         .onAppear {
             restoreDraft()
-            if startLogging && !logging { beginLogging() }
+            // Lessons happen outside the app, so they open straight on the log form.
+            if (startLogging || kind.isLesson) && !logging { beginLogging() }
         }
         // Writing is kept on the task as it's typed, so closing the screen never loses it.
         .onChange(of: writing) { _, text in task.draftText = text }
@@ -241,6 +244,16 @@ struct TaskSessionView: View {
                     }
                 }
             }
+            if kind.isLesson {
+                question("What kind of lesson was it?",
+                         explanation: "Pre-set from Settings → Lessons. Change it if this one was different; it only changes this lesson.") {
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 10) {
+                        ForEach(LessonSchedule.strands, id: \.self) { strand in
+                            ChipButton(title: TaskCopy.otherName(strand), isSelected: lessonStrand == strand, color: strand.color) { lessonStrand = strand }
+                        }
+                    }
+                }
+            }
             if kind == .ltTrack {
                 question("Which track are you up to now?",
                          explanation: "Rumbo plans this track next. Did more than one? Move it on. Want to repeat one? Set it back.") {
@@ -330,12 +343,15 @@ struct TaskSessionView: View {
             Group {
                 if logging {
                     HStack(spacing: 10) {
-                        Button {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { logging = false }
-                        } label: {
-                            Label("Back", systemImage: "chevron.left")
+                        // A lesson has nothing to go back to (no timer or instructions to return to).
+                        if !kind.isLesson {
+                            Button {
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { logging = false }
+                            } label: {
+                                Label("Back", systemImage: "chevron.left")
+                            }
+                            .buttonStyle(ChunkySecondaryButtonStyle(fullWidth: false))
                         }
-                        .buttonStyle(ChunkySecondaryButtonStyle(fullWidth: false))
                         Button("Save") { save() }
                             .buttonStyle(ChunkyButtonStyle(color: Palette.leaf))
                             .disabled(!canSave)
@@ -383,6 +399,8 @@ struct TaskSessionView: View {
         let elapsed = task.elapsed() / 60
         minutes = max(1, Int(elapsed.rounded()))
         if elapsed < 1 { minutes = task.minutesPlanned }
+        // A lesson isn't timed in the app: start from its usual length.
+        if kind.isLesson { minutes = task.minutesPlanned }
         duolingoSection = model.profile?.duolingoSection ?? 1
         duolingoUnit = model.profile?.duolingoUnit ?? 1
         // The track just done, plus one: finishing 13 suggests 14.
@@ -394,6 +412,7 @@ struct TaskSessionView: View {
         // The middle of the planned range: 40–45 suggests 43.
         let range: ClosedRange<Int> = if case .dreamingDifficulty(let planned) = task.detail { planned } else { model.profile?.dsDifficulty ?? 40...45 }
         levelWatched = (range.lowerBound + range.upperBound + 1) / 2
+        lessonStrand = kind.strand
         withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { logging = true }
     }
 
@@ -408,6 +427,7 @@ struct TaskSessionView: View {
             rewrite: kind == .writeGuided ? rewrite : nil,
             duolingoPosition: kind == .duoLesson ? (section: duolingoSection, unit: duolingoUnit) : nil,
             languageTransferNextTrack: kind == .ltTrack ? ltNextTrack : nil,
+            lessonKind: kind.isLesson ? TaskKind.lesson(for: lessonStrand) : nil,
             levelWatched: isDreaming ? levelWatched : nil
         ))
         UINotificationFeedbackGenerator().notificationOccurred(.success)
