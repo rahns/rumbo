@@ -9,7 +9,8 @@ struct SettingsView: View {
     @State private var importing = false
     @State private var pendingRestore: Data?
     @State private var message: String?
-    @State private var geminiConnected = GeminiKey.current != nil
+    /// "Gemini + Groq", "Gemini", "Groq" or "Not set up".
+    @State private var checkers = SettingsView.checkersText()
 
     var body: some View {
         NavigationStack {
@@ -49,7 +50,7 @@ struct SettingsView: View {
                     pendingRestore = nil
                     do {
                         try model.restore(from: data)
-                        geminiConnected = GeminiKey.current != nil
+                        checkers = SettingsView.checkersText()
                         message = "Backup restored."
                     } catch {
                         message = error.localizedDescription
@@ -99,14 +100,14 @@ struct SettingsView: View {
 
         Section {
             NavigationLink {
-                GeminiSettingsView { geminiConnected = $0 }
+                GeminiSettingsView { _ in checkers = SettingsView.checkersText() }
             } label: {
-                LabeledContent("Gemini API key", value: geminiConnected ? "Connected" : "Not set up")
+                LabeledContent("AI checkers", value: checkers)
             }
         } header: {
             Text("Writing feedback")
         } footer: {
-            Text("Pico checks your writing with Gemini using your own free key. Without one, a basic checker is used.")
+            Text("Pico checks your writing with Gemini using your own free key, with Groq (also free) as a backup when Google is busy. Without either, a basic checker is used.")
         }
 
         Section {
@@ -237,6 +238,15 @@ struct SettingsView: View {
             Button("Start over", role: .destructive) { confirmingReset = true }
         } footer: {
             Text("Rumbo \(DiagnosticsModel.appVersion)")
+        }
+    }
+
+    static func checkersText() -> String {
+        switch (GeminiKey.current != nil, GroqKey.current != nil) {
+        case (true, true): "Gemini + Groq"
+        case (true, false): "Gemini"
+        case (false, true): "Groq"
+        case (false, false): "Not set up"
         }
     }
 

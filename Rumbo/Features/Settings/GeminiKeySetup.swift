@@ -5,6 +5,8 @@ import UIKit
 /// How to get a free Gemini API key, a field to paste it and a test. Used in onboarding and in Settings.
 struct GeminiKeySetup: View {
     @Binding var key: String
+    /// Shows the setup for the free Groq key (the backup checker) instead of Gemini's.
+    var groq = false
 
     @State private var testing = false
     @State private var testResult: String?
@@ -17,14 +19,25 @@ struct GeminiKeySetup: View {
                     Text("Get a free key in 2 minutes")
                         .font(.rounded(.headline, weight: .black))
                         .foregroundStyle(Palette.ink)
-                    step(1, "Open Google AI Studio and sign in with any Google account.")
-                    Link(destination: Gemini.keyPage) {
-                        Label("Open Google AI Studio", systemImage: "arrow.up.right.square.fill")
+                    if groq {
+                        step(1, "Open the GroqCloud console and sign up with an email or Google account.")
+                        Link(destination: Groq.keyPage) {
+                            Label("Open GroqCloud", systemImage: "arrow.up.right.square.fill")
+                        }
+                        .buttonStyle(ChunkySecondaryButtonStyle())
+                        step(2, "Tap **Create API Key** and give it any name. The free plan needs no card.")
+                        step(3, "Copy the key. It's only shown once.")
+                        step(4, "Come back here and tap **Paste**.")
+                    } else {
+                        step(1, "Open Google AI Studio and sign in with any Google account.")
+                        Link(destination: Gemini.keyPage) {
+                            Label("Open Google AI Studio", systemImage: "arrow.up.right.square.fill")
+                        }
+                        .buttonStyle(ChunkySecondaryButtonStyle())
+                        step(2, "Tap **Create API key**. If it asks for a project, pick the default one. No card or billing needed.")
+                        step(3, "Tap the copy button next to your new key.")
+                        step(4, "Come back here and tap **Paste**.")
                     }
-                    .buttonStyle(ChunkySecondaryButtonStyle())
-                    step(2, "Tap **Create API key**. If it asks for a project, pick the default one. No card or billing needed.")
-                    step(3, "Tap the copy button next to your new key.")
-                    step(4, "Come back here and tap **Paste**.")
                 }
             }
 
@@ -65,9 +78,13 @@ struct GeminiKeySetup: View {
             .onChange(of: key) { testResult = nil }
 
             VStack(alignment: .leading, spacing: 6) {
-                note("gift.fill", "Free: Google gives a daily allowance, plenty for a few writing checks a day. If you run out, Rumbo uses its basic checker and shows a small warning.")
+                note("gift.fill", groq
+                     ? "Free: Groq gives about 1,000 requests a day. It's only used when Gemini can't answer."
+                     : "Free: Google gives a daily allowance, plenty for a few writing checks a day. If you run out, Rumbo tries Groq (if set up), then its basic checker, and shows a small warning.")
                 note("lock.fill", "Your key is kept in the phone's Keychain and saved in your backups, so restoring brings it back. Keep backup files private.")
-                note("eye.fill", "On the free tier Google may use what you send to improve its products, so don't write anything private.")
+                if !groq {
+                    note("eye.fill", "On the free tier Google may use what you send to improve its products, so don't write anything private.")
+                }
             }
         }
     }
@@ -96,7 +113,13 @@ struct GeminiKeySetup: View {
     private func test() async {
         testing = true
         defer { testing = false }
-        let result = await GeminiClient.test(key: key.trimmingCharacters(in: .whitespacesAndNewlines))
+        let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        let result: (works: Bool, message: String)
+        if groq {
+            result = await GroqClient.test(key: trimmed)
+        } else {
+            result = await GeminiClient.test(key: trimmed)
+        }
         testPassed = result.works
         testResult = result.message
     }
@@ -118,6 +141,7 @@ struct GeminiSettingsView: View {
     @State private var key = GeminiKey.current ?? ""
     @State private var thinking = GeminiKey.thinkingLevel
     @State private var model = GeminiKey.model
+    @State private var groqKey = GroqKey.current ?? ""
 
     var body: some View {
         ScrollView {
@@ -161,11 +185,26 @@ struct GeminiSettingsView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if GeminiKey.current != nil {
-                    Button("Remove key", role: .destructive) {
+                    Button("Remove Gemini key", role: .destructive) {
                         GeminiKey.remove()
                         key = ""
                     }
                     .buttonStyle(ChunkySecondaryButtonStyle())
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Backup checker: Groq")
+                        .font(.rounded(.title3, weight: .black))
+                        .foregroundStyle(Palette.ink)
+                    Text("When Google is too busy, Groq checks your writing instead (GPT-OSS 120B, also free), before Rumbo falls back to the basic checker. Optional, but it makes checks much more reliable.")
+                        .font(.rounded(.subheadline, weight: .medium))
+                        .foregroundStyle(Palette.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.top, 8)
+                GeminiKeySetup(key: $groqKey, groq: true)
+                if !groqKey.isEmpty {
+                    Button("Remove Groq key", role: .destructive) { groqKey = "" }
+                        .buttonStyle(ChunkySecondaryButtonStyle())
                 }
             }
             .padding(20)
@@ -176,6 +215,10 @@ struct GeminiSettingsView: View {
         // Saved as it's typed or pasted; an empty field removes the key.
         .onChange(of: thinking) { _, new in GeminiKey.thinkingLevel = new }
         .onChange(of: model) { _, new in GeminiKey.model = new }
+        .onChange(of: groqKey) { _, new in
+            GroqKey.save(new)
+            onChange(GeminiKey.current != nil)
+        }
         .onChange(of: key) { _, new in
             GeminiKey.save(new)
             onChange(GeminiKey.current != nil)

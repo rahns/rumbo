@@ -105,3 +105,36 @@ import Testing
         #expect(limits.stall(started: start, firstEvent: at(1), lastEvent: at(90), now: at(91)) == .tooLong)
     }
 }
+
+@Suite struct GroqTests {
+    @Test func requestUsesStrictSchemaAndReasoningEffort() throws {
+        let body = try #require(try JSONSerialization.jsonObject(with: Groq.requestBody(instructions: "Be kind.", input: "Ayer yo voy.", thinking: .high)) as? [String: Any])
+        #expect(body["model"] as? String == "openai/gpt-oss-120b")
+        #expect(body["stream"] == nil, "structured outputs don't stream on Groq")
+        #expect(body["reasoning_effort"] as? String == "high")
+        #expect(body["include_reasoning"] as? Bool == false)
+        let messages = try #require(body["messages"] as? [[String: Any]])
+        #expect(messages.map { $0["role"] as? String } == ["system", "user"])
+        let format = try #require(body["response_format"] as? [String: Any])
+        #expect(format["type"] as? String == "json_schema")
+        let schema = try #require(format["json_schema"] as? [String: Any])
+        #expect(schema["strict"] as? Bool == true)
+        let root = try #require(schema["schema"] as? [String: Any])
+        #expect(root["additionalProperties"] as? Bool == false)
+        let items = ((root["properties"] as? [String: Any])?["errors"] as? [String: Any])?["items"] as? [String: Any]
+        #expect(items?["additionalProperties"] as? Bool == false)
+    }
+
+    @Test func readsTheAnswerAndClassifiesErrors() throws {
+        let reply = #"{"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"{\"errors\":[],\"naturalRewrite\":\"Hola\",\"strengths\":[]}"}}]}"#
+        #expect(try Gemini.feedback(from: Groq.outputText(from: Data(reply.utf8))).naturalRewrite == "Hola")
+        #expect(throws: Gemini.Failure.self) { try Groq.outputText(from: Data(#"{"choices":[{"finish_reason":"length","message":{"content":"{"}}]}"#.utf8)) }
+        #expect(Groq.failure(status: 200, body: Data()) == nil)
+        #expect(Groq.failure(status: 401, body: Data()) == .invalidKey)
+        #expect(Groq.failure(status: 429, body: Data()) == .rateLimited)
+        #expect(Groq.failure(status: 498, body: Data()) == .busy)
+        #expect(Groq.failure(status: 400, body: Data(#"{"error":{"message":"Bad schema","type":"invalid_request_error"}}"#.utf8)) == .other("Bad schema"))
+        // Gemini's schema stays open (it doesn't need additionalProperties).
+        #expect(Gemini.feedbackSchema(closed: false)["additionalProperties"] == nil)
+    }
+}

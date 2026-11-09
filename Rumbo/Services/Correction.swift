@@ -3,7 +3,8 @@ import FoundationModels
 import RumboCore
 
 /// Writing correction (docs/05-architecture.md §5.3). With the learner's free Gemini key, Gemini checks the
-/// writing. Without one, or when Gemini can't answer (free limit used up, bad key, offline), the basic checker
+/// writing; with a free Groq key too, Groq steps in when Gemini can't. Without either, or when neither can
+/// answer (free limit used up, bad key, offline), the basic checker
 /// runs instead: LanguageTool finds errors when online and the on-device Apple model explains them; the result
 /// then carries a `notice` saying why. Apple's cloud model isn't used: it crashes sideloaded builds.
 enum CorrectionService {
@@ -32,13 +33,25 @@ enum CorrectionService {
         return false
     }
 
+    /// Gemini first, then Groq (the free backup), then the basic checker with a warning saying why.
     static func correct(_ text: String, band: Band, prompt: String) async throws -> Result {
         var notice: String?
+        var geminiFailed = false
         if let key = GeminiKey.current {
             do {
                 return try await GeminiClient.correct(text, band: band, prompt: prompt, key: key)
             } catch {
                 notice = GeminiClient.notice(for: error)
+                geminiFailed = true
+                GeminiTrace.log("Gemini couldn't answer\(GroqKey.current == nil ? "" : "; trying Groq")")
+            }
+        }
+        if let key = GroqKey.current {
+            do {
+                // Groq standing in for Gemini isn't a downgrade, so no warning; "Checked by" shows it.
+                return try await GroqClient.correct(text, band: band, prompt: prompt, key: key)
+            } catch {
+                notice = GroqClient.notice(for: error, geminiAlsoFailed: geminiFailed)
             }
         }
         var result = try await basicCheck(text, band: band, prompt: prompt, notice: notice)

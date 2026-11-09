@@ -37,6 +37,7 @@ enum CheckID: String, CaseIterable, Identifiable {
     case liveActivities = "Live Activities"
     case notifications = "Notifications"
     case gemini = "Gemini API key"
+    case groq = "Groq API key (backup)"
     case onDeviceModel = "Apple on-device model"
     case languageTool = "LanguageTool"
     case urlSchemes = "Source apps installed"
@@ -71,6 +72,7 @@ final class DiagnosticsModel {
         results[.liveActivities] = checkLiveActivities()
         results[.notifications] = await checkNotifications()
         results[.gemini] = await checkGemini()
+        results[.groq] = await checkGroq()
         results[.onDeviceModel] = checkOnDeviceModel()
         results[.languageTool] = await checkLanguageTool()
         results[.urlSchemes] = checkURLSchemes()
@@ -124,6 +126,14 @@ final class DiagnosticsModel {
         }
         let result = await GeminiClient.test(key: key)
         return result.works ? .pass("\(result.message) Use \"Test writing correction\" for a sample.") : .fail(result.message)
+    }
+
+    private func checkGroq() async -> CheckStatus {
+        guard let key = GroqKey.current else {
+            return .warn("Not set up. When Gemini is busy, the basic checker steps in. Add a free key in Settings → Writing feedback.")
+        }
+        let result = await GroqClient.test(key: key)
+        return result.works ? .pass(result.message) : .fail(result.message)
     }
 
     private func checkOnDeviceModel() -> CheckStatus {
@@ -201,7 +211,8 @@ final class DiagnosticsModel {
         defer { geminiRunning = false }
         geminiTrace = "Running a full check…"
         let (result, trace) = await GeminiClient.traced(Self.sampleText, band: .a2_1, prompt: "Write about yesterday.")
-        var lines = ["Full check" + (GeminiKey.current == nil ? " (no Gemini key: basic checker only)" : "")] + trace
+        let setup = SettingsView.checkersText()
+        var lines = ["Full check · \(setup == "Not set up" ? "no keys: basic checker only" : setup)"] + trace
         switch result {
         case .success(let feedback):
             lines.append("Checked by: \(feedback.engine)")

@@ -221,7 +221,7 @@ final class AppModel {
             },
             cards: allCards.map(BackupFile.CardData.init),
             gemini: BackupFile.GeminiData(apiKey: GeminiKey.current, thinkingLevel: GeminiKey.thinkingLevel.rawValue,
-                                          model: GeminiKey.model.rawValue)
+                                          model: GeminiKey.model.rawValue, groqAPIKey: GroqKey.current)
         )
         return BackupDocument(data: try BackupFile.encoder().encode(file))
     }
@@ -242,6 +242,7 @@ final class AppModel {
         if let key = file.gemini?.apiKey, !key.isEmpty { GeminiKey.save(key) }
         if let level = file.gemini?.thinkingLevel.flatMap(Gemini.ThinkingLevel.init(rawValue:)) { GeminiKey.thinkingLevel = level }
         if let model = file.gemini?.model.flatMap(Gemini.Model.init(rawValue:)) { GeminiKey.model = model }
+        if let key = file.gemini?.groqAPIKey, !key.isEmpty { GroqKey.save(key) }
         let profile = file.profile.makeProfile()
         context.insert(profile)
         weekStartsOnSunday = profile.weekStartsOnSunday
