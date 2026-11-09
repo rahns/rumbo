@@ -123,14 +123,15 @@ struct SettingsView: View {
         }
 
         Section {
-            Toggle("Travel mode", isOn: binding(get: { profile.travelMode }, set: { profile.travelMode = $0 }))
+            Toggle("Travel mode", isOn: Binding(get: { profile.travelMode }, set: { model.setTravelMode($0) }))
             if profile.travelMode {
-                Toggle("I have no signal", isOn: binding(get: { profile.noSignal }, set: { profile.noSignal = $0 }))
+                Toggle("I have no signal", isOn: Binding(get: { profile.noSignal }, set: { model.setNoSignal($0) }))
             }
         } footer: {
-            Text(profile.travelMode
-                 ? "Adds real-world missions. With no signal on, only offline tasks are planned (pick today's time again to use it today)."
-                 : "Adds real-world missions and copes with no signal.")
+            Text((profile.travelMode
+                  ? "Adds real-world missions. With no signal on, only offline tasks are planned."
+                  : "Adds real-world missions and copes with no signal.")
+                 + (model.canChangeBudget ? "" : " Today's plan has started, so this applies from tomorrow."))
         }
 
         Section("Progress") {
@@ -184,7 +185,7 @@ struct SettingsView: View {
         }
 
         Section("Habit") {
-            Toggle(isOn: binding(get: { profile.alwaysIncludeDuolingo }, set: { profile.alwaysIncludeDuolingo = $0 })) {
+            Toggle(isOn: binding(get: { profile.alwaysIncludeDuolingo }, set: { profile.alwaysIncludeDuolingo = $0; model.replanTodayIfNotStarted() })) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Always include Duolingo")
                     Text("If you're keeping a streak going")

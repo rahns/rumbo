@@ -29,7 +29,10 @@ struct TodayView: View {
                     }
                     .buttonStyle(ChunkySecondaryButtonStyle())
                     // At the bottom: most days it isn't needed.
-                    travelToggle
+                    // Only while today's plan can still change: switching it re-plans today by itself.
+                    if model.canChangeBudget {
+                        travelToggle
+                    }
                         .padding(.top, 8)
                 }
                 .padding(20)
@@ -122,7 +125,7 @@ struct TodayView: View {
                                 .font(.rounded(.headline, weight: .black))
                                 .foregroundStyle(Palette.ink)
                             Text(profile.travelMode
-                                 ? "On the road: Rumbo adds a real-world mission and, when you're offline, only plans what works offline. Pick today's time again to use it today."
+                                 ? "On the road: Rumbo adds a real-world mission and, when you're offline, only plans what works offline."
                                  : "Travelling? Turn this on for real-world Spanish missions and plans that cope with no signal.")
                                 .font(.rounded(.caption, weight: .semibold))
                                 .foregroundStyle(Palette.secondaryText)

@@ -844,11 +844,21 @@ final class AppModel {
     func setTravelMode(_ on: Bool) {
         profile?.travelMode = on
         save()
+        replanTodayIfNotStarted()
     }
 
     func setNoSignal(_ on: Bool) {
         profile?.noSignal = on
         save()
+        replanTodayIfNotStarted()
+    }
+
+    /// After a setting that shapes the plan changes (travel mode, no signal, Duolingo, lessons, speaking stage):
+    /// today's plan is made again at the same time, as long as no task has been started. A started day keeps
+    /// its plan, and the change applies from the next one.
+    func replanTodayIfNotStarted() {
+        guard let plan = todayPlan, canChangeBudget else { return }
+        makeTodayPlan(budget: plan.budgetMinutes)
     }
 
     // MARK: - Stats
@@ -990,6 +1000,7 @@ final class AppModel {
             profile.speakingStageCap = below.rawValue
         }
         save()
+        replanTodayIfNotStarted()
     }
 
     func save() {

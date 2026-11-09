@@ -121,6 +121,7 @@ struct LessonSettingsView: View {
         change(&schedule)
         profile.lessonSchedule = schedule
         model.save()
+        model.replanTodayIfNotStarted()
     }
 }
 
