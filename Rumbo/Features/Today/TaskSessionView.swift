@@ -247,7 +247,7 @@ struct TaskSessionView: View {
             if kind.isLesson {
                 question("What kind of lesson was it?",
                          explanation: lessonType == .allInOne
-                            ? "All-in-one splits the time evenly between speaking & writing, listening and grammar & vocabulary. Pre-set from Settings → Lessons; changing it only changes this lesson."
+                            ? "All-in-one splits the time evenly between speaking & writing, listening and grammar & vocab. Pre-set from Settings → Lessons; changing it only changes this lesson."
                             : "Pre-set from Settings → Lessons. Change it if this one was different; it only changes this lesson.") {
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 10) {
                         ForEach(LessonType.allCases, id: \.self) { type in

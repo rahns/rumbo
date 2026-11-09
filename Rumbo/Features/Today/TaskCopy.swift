@@ -19,7 +19,7 @@ enum TaskCopy {
         case .fluency432: "4 · 3 · 2 story"
         case .reviewMistakes: "Mistake review"
         case .missionTravel: "Travel mission"
-        case .otherStudy: "Other grammar & vocabulary"
+        case .otherStudy: "Other grammar & vocab"
         case .otherOutput: "Other speaking & writing"
         case .otherFluency: "Other fluency practice"
         case .lessonOutput, .lessonInput, .lessonStudy, .lessonMixed: "Lesson"
@@ -64,7 +64,7 @@ enum TaskCopy {
         switch task {
         case .lessonOutput: "Speaking & writing · counts toward today's time"
         case .lessonInput: "Listening · counts toward today's time"
-        case .lessonStudy: "Grammar & vocabulary · counts toward today's time"
+        case .lessonStudy: "Grammar & vocab · counts toward today's time"
         case .lessonMixed: "All-in-one · split across speaking, listening and grammar"
         case .dsEasy: "Below your level on purpose: easy listening makes what you know come faster."
         default: nil
@@ -132,7 +132,7 @@ enum TaskCopy {
     static func otherName(_ strand: Strand) -> String {
         switch strand {
         case .input: "Listening"
-        case .languageFocused: "Grammar & vocabulary"
+        case .languageFocused: "Grammar & vocab"
         case .output: "Speaking & writing"
         case .fluency: "Fluency practice"
         }

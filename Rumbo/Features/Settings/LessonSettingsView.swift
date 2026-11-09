@@ -60,7 +60,7 @@ struct LessonSettingsView: View {
         } header: {
             Text("Usual lesson")
         } footer: {
-            Text("The type decides which part of your practice the lesson counts toward, so the rest of the day's plan balances it. All-in-one splits the lesson's time evenly between speaking & writing, listening and grammar & vocabulary. You can change the type for a one-off lesson when you log it.")
+            Text("The type decides which part of your practice the lesson counts toward, so the rest of the day's plan balances it. All-in-one splits the lesson's time evenly between speaking & writing, listening and grammar & vocab. You can change the type for a one-off lesson when you log it.")
         }
 
         let chosen = weekdays(profile).filter { schedule.days[$0] != nil }

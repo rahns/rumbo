@@ -16,7 +16,7 @@ public enum LessonType: String, CaseIterable, Codable, Sendable {
         }
     }
 
-    /// An all-in-one lesson's minutes as three logs: speaking & writing, listening, grammar & vocabulary.
+    /// An all-in-one lesson's minutes as three logs: speaking & writing, listening, grammar & vocab.
     /// Spread evenly; any extra minute goes to the first parts (50 → 17, 17, 16).
     public static func split(minutes: Int) -> [(kind: TaskKind, minutes: Int)] {
         let kinds: [TaskKind] = [.lessonOutput, .lessonInput, .lessonStudy]
@@ -47,7 +47,7 @@ public struct LessonSchedule: Codable, Equatable, Sendable {
     /// Lesson days by weekday number (1 = Sunday … 7 = Saturday, as `Calendar` counts them).
     public var days: [Int: Day]
     public var usualMinutes: Int
-    /// Speaking & writing, listening, grammar & vocabulary, or all-in-one.
+    /// Speaking & writing, listening, grammar & vocab, or all-in-one.
     public var usualType: LessonType
 
     enum CodingKeys: String, CodingKey { case days, usualMinutes, usualType = "usualStrand" }

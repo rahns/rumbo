@@ -88,7 +88,7 @@ extension Strand {
         switch self {
         case .input: "Listening"
         case .output: "Speaking & writing"
-        case .languageFocused: "Grammar & vocabulary"
+        case .languageFocused: "Grammar & vocab"
         case .fluency: "Fluency practice"
         }
     }
