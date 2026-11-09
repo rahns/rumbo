@@ -203,6 +203,8 @@ import SwiftData
 
     // Set when the task is completed, so the completion can be undone.
     var logID: UUID?
+    /// An all-in-one lesson is logged as three parts: `logID` is the first, these are the others.
+    var splitLogIDs: [UUID] = []
     var writingID: UUID?
     var progressBefore: Data?
     var duolingoSectionBefore: Int?
@@ -224,6 +226,9 @@ import SwiftData
     var detail: TaskDetail { TaskDetailCoding.decode(detailRaw) }
 
     var isPaused: Bool { pausedAt != nil }
+
+    /// Every log this task made: one, or three for an all-in-one lesson.
+    var allLogIDs: [UUID] { (logID.map { [$0] } ?? []) + splitLogIDs }
 
     /// Seconds on the clock, not counting pauses.
     func elapsed(at now: Date = .now) -> TimeInterval {

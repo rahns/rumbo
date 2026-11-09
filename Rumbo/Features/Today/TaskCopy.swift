@@ -19,10 +19,10 @@ enum TaskCopy {
         case .fluency432: "4 · 3 · 2 story"
         case .reviewMistakes: "Mistake review"
         case .missionTravel: "Travel mission"
-        case .otherStudy: "Other language study"
+        case .otherStudy: "Other grammar & vocabulary"
         case .otherOutput: "Other speaking & writing"
         case .otherFluency: "Other fluency practice"
-        case .lessonOutput, .lessonInput, .lessonStudy: "Lesson"
+        case .lessonOutput, .lessonInput, .lessonStudy, .lessonMixed: "Lesson"
         }
     }
 
@@ -44,7 +44,7 @@ enum TaskCopy {
         case .otherStudy: "book.fill"
         case .otherOutput: "text.bubble.fill"
         case .otherFluency: "hare.fill"
-        case .lessonOutput, .lessonInput, .lessonStudy: "person.2.fill"
+        case .lessonOutput, .lessonInput, .lessonStudy, .lessonMixed: "person.2.fill"
         }
     }
 
@@ -64,7 +64,8 @@ enum TaskCopy {
         switch task {
         case .lessonOutput: "Speaking & writing · counts toward today's time"
         case .lessonInput: "Listening · counts toward today's time"
-        case .lessonStudy: "Language study · counts toward today's time"
+        case .lessonStudy: "Grammar & vocabulary · counts toward today's time"
+        case .lessonMixed: "All-in-one · split across speaking, listening and grammar"
         case .dsEasy: "Below your level on purpose: easy listening makes what you know come faster."
         default: nil
         }
@@ -113,7 +114,7 @@ enum TaskCopy {
             "Do it for real, then come back and log it."
         case .otherStudy, .otherOutput, .otherFluency:
             "Logged with Log other."
-        case .lessonOutput, .lessonInput, .lessonStudy:
+        case .lessonOutput, .lessonInput, .lessonStudy, .lessonMixed:
             "Your lesson today. Log it once it's done."
         }
     }
@@ -131,10 +132,15 @@ enum TaskCopy {
     static func otherName(_ strand: Strand) -> String {
         switch strand {
         case .input: "Listening"
-        case .languageFocused: "Language study"
+        case .languageFocused: "Grammar & vocabulary"
         case .output: "Speaking & writing"
         case .fluency: "Fluency practice"
         }
+    }
+
+    /// A lesson type's name: the strand's, or "All-in-one".
+    static func lessonTypeName(_ type: LessonType) -> String {
+        type.strand.map(otherName) ?? "All-in-one"
     }
 
     static func otherExamples(_ strand: Strand) -> String {

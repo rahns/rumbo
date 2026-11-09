@@ -424,7 +424,7 @@ final class AppModel {
         /// After a Language Transfer task: the track the learner is up to now (91 = course finished).
         var languageTransferNextTrack: Int? = nil
         /// After a lesson: what kind it turned out to be, if different from the schedule (this lesson only).
-        var lessonKind: TaskKind? = nil
+        var lessonType: LessonType? = nil
         /// After a Dreaming Spanish task: the difficulty watched (0–100).
         var levelWatched: Int? = nil
     }
@@ -433,8 +433,11 @@ final class AppModel {
         guard let profile else { return }
         let before = streak
         // A one-off change of lesson type is logged (and shown) as that type.
-        if let lessonKind = completion.lessonKind, task.task.isLesson { task.taskRaw = lessonKind.rawValue }
-        let log = ActivityLog(date: .now, task: task.task, minutes: completion.minutes)
+        if let lessonType = completion.lessonType, task.task.isLesson { task.taskRaw = TaskKind.lesson(for: lessonType).rawValue }
+        // An all-in-one lesson is logged as three equal parts, one per strand it covers.
+        let parts = task.task == .lessonMixed ? LessonType.split(minutes: completion.minutes) : []
+        let loggedAt = Date.now
+        let log = ActivityLog(date: loggedAt, task: parts.first?.kind ?? task.task, minutes: parts.first?.minutes ?? completion.minutes)
         log.comprehension = completion.comprehension?.rawValue
         log.rating = completion.trackRating?.rawValue ?? completion.tandemFeeling
         if task.task == .dsWatch {
@@ -447,6 +450,11 @@ final class AppModel {
         context.insert(log)
         task.status = .done
         task.logID = log.id
+        task.splitLogIDs = parts.dropFirst().map { part in
+            let extra = ActivityLog(date: loggedAt, task: part.kind, minutes: part.minutes)
+            context.insert(extra)
+            return extra.id
+        }
 
         if let text = completion.writing?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty {
             let entry = WritingEntry(date: .now, task: task.task, prompt: task.prompt, text: text)
@@ -499,8 +507,8 @@ final class AppModel {
     func undo(_ task: PlannedTaskRecord) {
         guard let profile else { return }
         if task.status == .done {
-            if let id = task.logID, let log = logs.first(where: { $0.id == id }) {
-                context.delete(log)
+            for id in task.allLogIDs {
+                if let log = logs.first(where: { $0.id == id }) { context.delete(log) }
             }
             if let id = task.writingID {
                 if let entry = try? context.fetch(FetchDescriptor<WritingEntry>(predicate: #Predicate { $0.id == id })).first {
@@ -533,6 +541,7 @@ final class AppModel {
         task.status = .planned
         task.startedAt = nil
         task.logID = nil
+        task.splitLogIDs = []
         task.writingID = nil
         task.progressBefore = nil
         task.duolingoSectionBefore = nil
@@ -686,7 +695,7 @@ final class AppModel {
     /// listening logged today) and the plan's minutes (all its tasks, skipped ones included).
     func dayProgress(for plan: DayPlanRecord) -> (done: Int, planned: Int) {
         let allLogs = logs
-        let logged = plan.sortedTasks.compactMap(\.logID).compactMap { id in allLogs.first { $0.id == id }?.minutes }.reduce(0, +)
+        let logged = plan.sortedTasks.flatMap(\.allLogIDs).compactMap { id in allLogs.first { $0.id == id }?.minutes }.reduce(0, +)
         let bonus = calendar.isDateInToday(plan.day) ? bonusLogsToday.reduce(0) { $0 + $1.minutes } : 0
         let planned = plan.planTasks.reduce(0) { $0 + $1.minutesPlanned }
         return (logged + bonus, planned)
@@ -704,8 +713,9 @@ final class AppModel {
 
     /// Minutes logged when the task was done (may differ from the plan).
     func loggedMinutes(for task: PlannedTaskRecord) -> Int? {
-        guard let id = task.logID else { return nil }
-        return logs.first { $0.id == id }?.minutes
+        guard task.logID != nil else { return nil }
+        let ids = Set(task.allLogIDs)
+        return logs.filter { ids.contains($0.id) }.reduce(0) { $0 + $1.minutes }
     }
 
     /// Card subtitle: the planner's detail, or the learner's Duolingo position for the warm-up.
@@ -935,7 +945,7 @@ final class AppModel {
         // Days with a plan: finished or not, credited to the day the plan is for (even if done early).
         for session in sessions {
             let done = session.sortedTasks.filter { $0.status == .done }
-            let ids = done.compactMap(\.logID)
+            let ids = done.flatMap(\.allLogIDs)
             plannedLogIDs.formUnion(ids)
             guard !done.isEmpty else { continue }
             let day = calendar.startOfDay(for: session.day)

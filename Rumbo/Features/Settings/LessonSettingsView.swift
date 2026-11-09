@@ -52,15 +52,15 @@ struct LessonSettingsView: View {
                 set: { minutes in update(profile) { $0.usualMinutes = minutes } }
             ), in: 15...180, step: 5)
             Picker("Usual lesson type", selection: Binding(
-                get: { schedule.usualStrand },
-                set: { strand in update(profile) { $0.usualStrand = strand } }
+                get: { schedule.usualType },
+                set: { type in update(profile) { $0.usualType = type } }
             )) {
-                ForEach(LessonSchedule.strands, id: \.self) { Text(TaskCopy.otherName($0)).tag($0) }
+                ForEach(LessonType.allCases, id: \.self) { Text(TaskCopy.lessonTypeName($0)).tag($0) }
             }
         } header: {
             Text("Usual lesson")
         } footer: {
-            Text("The type decides which part of your practice the lesson counts toward, so the rest of the day's plan balances it. You can change it for a one-off lesson when you log it.")
+            Text("The type decides which part of your practice the lesson counts toward, so the rest of the day's plan balances it. All-in-one splits the lesson's time evenly between speaking & writing, listening and grammar & vocabulary. You can change the type for a one-off lesson when you log it.")
         }
 
         let chosen = weekdays(profile).filter { schedule.days[$0] != nil }
@@ -80,14 +80,14 @@ struct LessonSettingsView: View {
     @ViewBuilder
     private func dayRow(_ profile: LearnerProfile, weekday: Int, schedule: LessonSchedule) -> some View {
         let day = schedule.days[weekday] ?? .init()
-        let custom = day.minutes != nil || day.strand != nil
+        let custom = day.minutes != nil || day.type != nil
         let lesson = schedule.lesson(weekday: weekday)
         DisclosureGroup {
             Toggle("Same as usual", isOn: Binding(
                 get: { !custom },
                 set: { same in
                     update(profile) { schedule in
-                        schedule.days[weekday] = same ? .init() : .init(minutes: schedule.usualMinutes, strand: schedule.usualStrand)
+                        schedule.days[weekday] = same ? .init() : .init(minutes: schedule.usualMinutes, type: schedule.usualType)
                     }
                 }
             ))
@@ -97,17 +97,17 @@ struct LessonSettingsView: View {
                     set: { minutes in update(profile) { $0.days[weekday]?.minutes = minutes } }
                 ), in: 15...180, step: 5)
                 Picker("Type", selection: Binding(
-                    get: { day.strand ?? schedule.usualStrand },
-                    set: { strand in update(profile) { $0.days[weekday]?.strand = strand } }
+                    get: { day.type ?? schedule.usualType },
+                    set: { type in update(profile) { $0.days[weekday]?.type = type } }
                 )) {
-                    ForEach(LessonSchedule.strands, id: \.self) { Text(TaskCopy.otherName($0)).tag($0) }
+                    ForEach(LessonType.allCases, id: \.self) { Text(TaskCopy.lessonTypeName($0)).tag($0) }
                 }
             }
         } label: {
             VStack(alignment: .leading, spacing: 2) {
                 Text(dayName(weekday)).font(.rounded(.body, weight: .bold))
                 if let lesson {
-                    Text("\(lesson.minutes) min · \(TaskCopy.otherName(lesson.strand))\(custom ? "" : " (usual)")")
+                    Text("\(lesson.minutes) min · \(TaskCopy.lessonTypeName(lesson.type))\(custom ? "" : " (usual)")")
                         .font(.rounded(.caption, weight: .semibold))
                         .foregroundStyle(Palette.secondaryText)
                 }

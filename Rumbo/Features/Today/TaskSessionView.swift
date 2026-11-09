@@ -24,7 +24,7 @@ struct TaskSessionView: View {
     @State private var ltNextTrack = 1
     @State private var levelWatched = 40
     /// A lesson's type, pre-set from the schedule; changing it applies to this lesson only.
-    @State private var lessonStrand = Strand.output
+    @State private var lessonType = LessonType.output
     @State private var duolingoSection = 1
     @State private var duolingoUnit = 1
     @State private var keyboardVisible = false
@@ -246,10 +246,13 @@ struct TaskSessionView: View {
             }
             if kind.isLesson {
                 question("What kind of lesson was it?",
-                         explanation: "Pre-set from Settings → Lessons. Change it if this one was different; it only changes this lesson.") {
+                         explanation: lessonType == .allInOne
+                            ? "All-in-one splits the time evenly between speaking & writing, listening and grammar & vocabulary. Pre-set from Settings → Lessons; changing it only changes this lesson."
+                            : "Pre-set from Settings → Lessons. Change it if this one was different; it only changes this lesson.") {
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 10) {
-                        ForEach(LessonSchedule.strands, id: \.self) { strand in
-                            ChipButton(title: TaskCopy.otherName(strand), isSelected: lessonStrand == strand, color: strand.color) { lessonStrand = strand }
+                        ForEach(LessonType.allCases, id: \.self) { type in
+                            ChipButton(title: TaskCopy.lessonTypeName(type), isSelected: lessonType == type,
+                                       color: type.strand?.color ?? Palette.sun) { lessonType = type }
                         }
                     }
                 }
@@ -412,7 +415,12 @@ struct TaskSessionView: View {
         // The middle of the planned range: 40–45 suggests 43.
         let range: ClosedRange<Int> = if case .dreamingDifficulty(let planned) = task.detail { planned } else { model.profile?.dsDifficulty ?? 40...45 }
         levelWatched = (range.lowerBound + range.upperBound + 1) / 2
-        lessonStrand = kind.strand
+        lessonType = switch kind {
+        case .lessonInput: .input
+        case .lessonStudy: .languageFocused
+        case .lessonMixed: .allInOne
+        default: .output
+        }
         withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { logging = true }
     }
 
@@ -427,7 +435,7 @@ struct TaskSessionView: View {
             rewrite: kind == .writeGuided ? rewrite : nil,
             duolingoPosition: kind == .duoLesson ? (section: duolingoSection, unit: duolingoUnit) : nil,
             languageTransferNextTrack: kind == .ltTrack ? ltNextTrack : nil,
-            lessonKind: kind.isLesson ? TaskKind.lesson(for: lessonStrand) : nil,
+            lessonType: kind.isLesson ? lessonType : nil,
             levelWatched: isDreaming ? levelWatched : nil
         ))
         UINotificationFeedbackGenerator().notificationOccurred(.success)

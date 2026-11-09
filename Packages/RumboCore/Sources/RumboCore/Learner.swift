@@ -146,7 +146,7 @@ public struct LearnerSnapshot: Sendable {
         case .otherStudy, .otherOutput, .otherFluency:
             // Only ever logged by hand.
             return false
-        case .lessonOutput, .lessonInput, .lessonStudy:
+        case .lessonOutput, .lessonInput, .lessonStudy, .lessonMixed:
             // Planned from the lesson schedule, never chosen by the planner.
             return false
         }

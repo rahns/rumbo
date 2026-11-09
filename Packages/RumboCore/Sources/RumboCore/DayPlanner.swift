@@ -253,7 +253,7 @@ private struct PlanBuilder {
         func rank(_ task: PlannedTask) -> Int {
             switch task.kind {
             case .duoLesson: 0
-            case .lessonOutput, .lessonInput, .lessonStudy: 1
+            case .lessonOutput, .lessonInput, .lessonStudy, .lessonMixed: 1
             case .reviewMistakes: 2
             default:
                 switch task.kind.strand {
@@ -274,10 +274,14 @@ private struct PlanBuilder {
     func deficit(_ strand: Strand) -> Double {
         let logged = window.filter { $0.kind.strand == strand }.reduce(0) { $0 + $1.minutes }
         let loggedTotal = window.reduce(0) { $0 + $1.minutes }
-        let planned = tasks.filter { $0.kind.strand == strand }.reduce(0) { $0 + $1.minutes }
+        // An all-in-one lesson counts a third toward speaking, listening and grammar & vocabulary.
+        let planned = tasks.reduce(0.0) { total, task in
+            if task.kind == .lessonMixed { return total + (strand == .fluency ? 0 : Double(task.minutes) / 3) }
+            return total + (task.kind.strand == strand ? Double(task.minutes) : 0)
+        }
         let share = learner.band.strandTargets[strand] ?? 0
         let target = share * Double(loggedTotal + budget)
-        return target - Double(logged) - Double(planned)
+        return target - Double(logged) - planned
     }
 
     // MARK: Candidates

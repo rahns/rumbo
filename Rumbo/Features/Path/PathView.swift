@@ -799,10 +799,10 @@ struct DaySummarySheet: View {
     var body: some View {
         let plan = model.session(for: date)
         let planned = plan?.sortedTasks.filter { $0.status == .done } ?? []
-        let plannedIDs = Set(planned.compactMap(\.logID))
+        let plannedIDs = Set(planned.flatMap(\.allLogIDs))
         let others = model.logs(on: date).filter { !plannedIDs.contains($0.id) }
         let logs = model.logs
-        let minutes = planned.compactMap { task in logs.first { $0.id == task.logID }?.minutes }.reduce(0, +)
+        let minutes = planned.flatMap(\.allLogIDs).compactMap { id in logs.first { $0.id == id }?.minutes }.reduce(0, +)
             + others.reduce(0) { $0 + $1.minutes }
         VStack(alignment: .leading, spacing: 14) {
             Text(SpanishDate.longDay(date))
@@ -813,7 +813,7 @@ struct DaySummarySheet: View {
                 .foregroundStyle(plan?.isComplete == true ? Palette.leaf : Palette.secondaryText)
             ForEach(planned) { task in
                 row(symbol: TaskCopy.symbol(for: task.task), color: task.task.strand.color, title: TaskCopy.title(for: task.task),
-                    minutes: logs.first { $0.id == task.logID }?.minutes ?? task.minutesPlanned)
+                    minutes: model.loggedMinutes(for: task) ?? task.minutesPlanned)
             }
             ForEach(others) { log in
                 row(symbol: log.isBonus ? TaskCopy.otherSymbol(log.task.strand) : TaskCopy.symbol(for: log.task), color: log.task.strand.color,

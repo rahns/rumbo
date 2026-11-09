@@ -11,7 +11,7 @@ import Testing
 
     /// Tuesday and Thursday: 60 min speaking as usual; Thursday is 45 min of study instead.
     var schedule: LessonSchedule {
-        LessonSchedule(days: [3: .init(), 5: .init(minutes: 45, strand: .languageFocused)], usualMinutes: 60, usualStrand: .output)
+        LessonSchedule(days: [3: .init(), 5: .init(minutes: 45, type: .languageFocused)], usualMinutes: 60, usualType: .output)
     }
 
     func learner(_ lessons: LessonSchedule, duolingo: Bool = true) -> LearnerSnapshot {
@@ -35,7 +35,7 @@ import Testing
         let lesson = planner.plan(budget: 60, learner: learner(schedule), history: [], today: thursday).tasks.first { $0.kind.isLesson }
         #expect(lesson?.kind == .lessonStudy)
         #expect(lesson?.minutes == 45)
-        #expect(schedule.lesson(weekday: 3)?.minutes == 60 && schedule.lesson(weekday: 3)?.strand == .output)
+        #expect(schedule.lesson(weekday: 3)?.minutes == 60 && schedule.lesson(weekday: 3)?.type == .output)
     }
 
     @Test func theLessonUsesUpPartOfTheDaysTime() {
@@ -104,6 +104,30 @@ import Testing
         #expect(BudgetAdvisor.level(remaining: 100, lessons: [60, 60]) == 0, "the lessons cover it")
         #expect(BudgetAdvisor.level(remaining: 70, lessons: [0, 0]) == 35)
         #expect(BudgetAdvisor.level(remaining: 300, lessons: [60, 0, 45, 0, 0, 0]) == 48)
+    }
+
+    @Test func allInOneLessonsSplitEvenlyAcrossThreeAreas() {
+        #expect(LessonType.split(minutes: 60).map(\.minutes) == [20, 20, 20])
+        #expect(LessonType.split(minutes: 50).map(\.minutes) == [17, 17, 16])
+        #expect(LessonType.split(minutes: 50).map(\.kind) == [.lessonOutput, .lessonInput, .lessonStudy])
+        #expect(LessonType.split(minutes: 2).map(\.minutes) == [1, 1], "no empty parts")
+        #expect(TaskKind.lesson(for: LessonType.allInOne) == .lessonMixed)
+        #expect(TaskKind.lesson(for: LessonType.input) == .lessonInput)
+    }
+
+    @Test func anAllInOneLessonIsPlannedAsOneCardAndSharedInTheMix() {
+        let tuesday = TestCalendar.adding(days: 1, to: monday)
+        let mixed = LessonSchedule(days: [3: .init()], usualMinutes: 60, usualType: .allInOne)
+        let plan = planner.plan(budget: 90, learner: learner(mixed), history: [], today: tuesday)
+        #expect(plan.tasks.filter(\.kind.isLesson).map(\.kind) == [.lessonMixed])
+        #expect(plan.tasks.first { $0.kind == .lessonMixed }?.minutes == 60)
+        #expect(plan.totalMinutes <= 90)
+    }
+
+    @Test func schedulesSavedBeforeAllInOneStillDecode() throws {
+        let old = Data(#"{"days":{"3":{"minutes":45,"strand":"languageFocused"}},"usualMinutes":60,"usualStrand":"output"}"#.utf8)
+        let schedule = try JSONDecoder().decode(LessonSchedule.self, from: old)
+        #expect(schedule.usualType == .output && schedule.lesson(weekday: 3)?.type == .languageFocused)
     }
 
     @Test func scheduleRoundTripsThroughJSON() throws {

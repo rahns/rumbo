@@ -41,17 +41,20 @@ public enum TaskKind: String, CaseIterable, Codable, Sendable {
     case lessonOutput = "lesson.output"
     case lessonInput = "lesson.input"
     case lessonStudy = "lesson.study"
+    /// An all-in-one lesson: planned as one card, logged as three equal parts (`LessonType.split`).
+    case lessonMixed = "lesson.mixed"
 
-    /// The lesson kind for a lesson of this type (speaking & writing, listening or language study).
-    public static func lesson(for strand: Strand) -> TaskKind {
-        switch strand {
+    /// The lesson kind for a lesson type; all-in-one is planned as one mixed card.
+    public static func lesson(for type: LessonType) -> TaskKind {
+        switch type {
+        case .output: .lessonOutput
         case .input: .lessonInput
         case .languageFocused: .lessonStudy
-        case .output, .fluency: .lessonOutput
+        case .allInOne: .lessonMixed
         }
     }
 
-    public var isLesson: Bool { self == .lessonOutput || self == .lessonInput || self == .lessonStudy }
+    public var isLesson: Bool { self == .lessonOutput || self == .lessonInput || self == .lessonStudy || self == .lessonMixed }
 
     /// The kind "Log other" records for practice in `strand`.
     public static func other(for strand: Strand) -> TaskKind {
@@ -67,7 +70,8 @@ public enum TaskKind: String, CaseIterable, Codable, Sendable {
         switch self {
         // Intensive Extra viewing is captioned input with a short shadowing step, so it sits in input.
         case .dsWatch, .extraIntensive, .extraExtensive, .contentWatch, .lessonInput: .input
-        case .writeGuided, .tandemText, .tandemVoice, .tandemCall, .missionTravel, .otherOutput, .lessonOutput: .output
+        // An all-in-one lesson is logged split across three strands; as a planned card it shows as speaking.
+        case .writeGuided, .tandemText, .tandemVoice, .tandemCall, .missionTravel, .otherOutput, .lessonOutput, .lessonMixed: .output
         case .duoLesson, .ltTrack, .reviewMistakes, .otherStudy, .lessonStudy: .languageFocused
         case .dsEasy, .writeQuick, .fluency432, .otherFluency: .fluency
         }
@@ -93,7 +97,7 @@ public enum TaskKind: String, CaseIterable, Codable, Sendable {
         case .reviewMistakes: MinuteRange(min: 3, standard: 5, max: 10)
         case .missionTravel: MinuteRange(min: 5, standard: 10, max: 20)
         case .otherStudy, .otherOutput, .otherFluency: MinuteRange(min: 1, standard: 20, max: 600)
-        case .lessonOutput, .lessonInput, .lessonStudy: MinuteRange(min: 5, standard: 60, max: 240)
+        case .lessonOutput, .lessonInput, .lessonStudy, .lessonMixed: MinuteRange(min: 5, standard: 60, max: 240)
         }
     }
 
@@ -108,7 +112,7 @@ public enum TaskKind: String, CaseIterable, Codable, Sendable {
         case .writeGuided, .writeQuick: .writing
         case .tandemText, .tandemVoice, .tandemCall: .tandem
         case .fluency432, .reviewMistakes, .missionTravel, .otherStudy, .otherOutput, .otherFluency,
-             .lessonOutput, .lessonInput, .lessonStudy: nil
+             .lessonOutput, .lessonInput, .lessonStudy, .lessonMixed: nil
         }
     }
 
