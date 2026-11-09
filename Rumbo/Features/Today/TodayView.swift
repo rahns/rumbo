@@ -32,8 +32,8 @@ struct TodayView: View {
                     // Only while today's plan can still change: switching it re-plans today by itself.
                     if model.canChangeBudget {
                         travelToggle
+                            .padding(.top, 8)
                     }
-                        .padding(.top, 8)
                 }
                 .padding(20)
             }
