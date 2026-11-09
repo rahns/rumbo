@@ -92,7 +92,7 @@ struct OnboardingView: View {
 
     private func advance() {
         if step == .habit {
-            if !draft.geminiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { GeminiKey.save(draft.geminiKey) }
+            if !draft.geminiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { AISettings.save(draft.geminiKey, for: .gemini) }
             onFinish(draft)
             return
         }

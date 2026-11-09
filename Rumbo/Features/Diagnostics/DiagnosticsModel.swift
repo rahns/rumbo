@@ -36,7 +36,7 @@ enum CheckID: String, CaseIterable, Identifiable {
     case keychainShare = "Keychain sharing (widgets fallback)"
     case liveActivities = "Live Activities"
     case notifications = "Notifications"
-    case gemini = "Gemini API key"
+    case gemini = "Writing feedback model"
     case onDeviceModel = "Apple on-device model"
     case languageTool = "LanguageTool"
     case urlSchemes = "Source apps installed"
@@ -119,17 +119,18 @@ final class DiagnosticsModel {
     }
 
     private func checkGemini() async -> CheckStatus {
-        guard let key = GeminiKey.current else {
-            return .warn("Not set up. Writing is checked by the basic checker. Add a key in Settings → Writing feedback.")
+        let model = AISettings.model
+        guard let key = AISettings.currentKey else {
+            return .warn("\(model.displayName): no \(model.provider.name) key. Writing is checked by the basic checker. Add one in Settings → Writing feedback.")
         }
-        let result = await GeminiClient.test(key: key)
+        let result = await AIClient.test(model: model, key: key)
         return result.works ? .pass("\(result.message) Use \"Test writing correction\" for a sample.") : .fail(result.message)
     }
 
     private func checkOnDeviceModel() -> CheckStatus {
         switch SystemLanguageModel.default.availability {
         case .available:
-            return .pass("Available (used when Gemini isn't set up or can't answer).")
+            return .pass("Available (used when no AI model is set up or it can't answer).")
         case .unavailable(let reason):
             return .fail("Unavailable: \(String(describing: reason))")
         }
@@ -193,15 +194,16 @@ final class DiagnosticsModel {
         }
     }
 
-    // MARK: - Gemini
+    // MARK: - Writing feedback model
 
     /// A full writing check exactly as a task runs it, with every step: order, model, method, timings, fallback.
     func traceGeminiCheck() async {
         geminiRunning = true
         defer { geminiRunning = false }
         geminiTrace = "Running a full check…"
-        let (result, trace) = await GeminiClient.traced(Self.sampleText, band: .a2_1, prompt: "Write about yesterday.")
-        var lines = ["Full check" + (GeminiKey.current == nil ? " (no Gemini key: basic checker only)" : "")] + trace
+        let (result, trace) = await AIClient.traced(Self.sampleText, band: .a2_1, prompt: "Write about yesterday.")
+        let model = AISettings.model
+        var lines = ["Full check · \(model.displayName)" + (AISettings.currentKey == nil ? " (no \(model.provider.name) key: basic checker only)" : "")] + trace
         switch result {
         case .success(let feedback):
             lines.append("Checked by: \(feedback.engine)")
@@ -213,20 +215,21 @@ final class DiagnosticsModel {
         geminiTrace = lines.joined(separator: "\n")
     }
 
-    /// Streaming and one piece, directly (no retry or fallback). Uses 2 of the free requests.
+    /// Streaming and one piece with the chosen model, directly (no retry or fallback). Uses 2 requests.
     func probeGeminiMethods() async {
-        guard let key = GeminiKey.current else {
-            geminiTrace = "No Gemini key. Add one in Settings → Writing feedback."
+        let model = AISettings.model
+        guard let key = AISettings.currentKey else {
+            geminiTrace = "No \(model.provider.name) key for \(model.displayName). Add one in Settings → Writing feedback."
             return
         }
         geminiRunning = true
         defer { geminiRunning = false }
         var lines: [String] = []
         for stream in [true, false] {
-            let label = "\(Gemini.displayName) · \(stream ? "streaming" : "one piece")"
+            let label = "\(model.displayName) · \(stream ? "streaming" : "one piece")"
             lines.append("— \(label): running…")
             geminiTrace = lines.joined(separator: "\n")
-            let (ok, trace) = await GeminiClient.probe(stream: stream, key: key)
+            let (ok, trace) = await AIClient.probe(model: model, stream: stream, key: key)
             lines.removeLast()
             lines.append("— \(label): \(ok ? "✅ works" : "❌ failed")")
             lines += trace
@@ -254,7 +257,7 @@ final class DiagnosticsModel {
             lines.append("\nWriting correction sample:\n\(modelSample)")
         }
         if let geminiTrace {
-            lines.append("\nGemini:\n\(geminiTrace)")
+            lines.append("\nWriting feedback (\(AISettings.model.displayName)):\n\(geminiTrace)")
         }
         return lines.joined(separator: "\n")
     }

@@ -15,7 +15,7 @@ import Testing
         #expect((object["generation_config"] as? [String: Any])?["thinking_level"] as? String == "medium")
         let lite = try #require(try JSONSerialization.jsonObject(with: Gemini.requestBody(model: "gemini-3.5-flash-lite", instructions: "", input: "")) as? [String: Any])
         #expect((lite["generation_config"] as? [String: Any])?["thinking_level"] as? String == "medium")
-        #expect(Gemini.model == "gemini-3.5-flash-lite", "Flash-Lite only")
+        #expect(WritingModel.standard == .geminiFlashLite, "Flash-Lite by default")
         let high = try #require(try JSONSerialization.jsonObject(with: Gemini.requestBody(model: "m", instructions: "", input: "", thinking: .high)) as? [String: Any])
         #expect((high["generation_config"] as? [String: Any])?["thinking_level"] as? String == "high")
         #expect(Gemini.ThinkingLevel.standard == .medium)
@@ -102,5 +102,63 @@ import Testing
         #expect(limits.stall(started: start, firstEvent: at(1), lastEvent: at(40), now: at(60)) == nil, "still thinking")
         #expect(limits.stall(started: start, firstEvent: at(1), lastEvent: at(5), now: at(31)) == .wentQuiet)
         #expect(limits.stall(started: start, firstEvent: at(1), lastEvent: at(90), now: at(91)) == .tooLong)
+    }
+}
+
+@Suite struct ClaudeTests {
+    @Test func requestUsesAdaptiveThinkingEffortAndAClosedSchema() throws {
+        let data = Claude.requestBody(model: "claude-haiku-5-5", instructions: "Be kind.", input: "Ayer yo voy.", stream: true, thinking: .high)
+        let body = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        #expect(body["model"] as? String == "claude-haiku-5-5")
+        #expect(body["system"] as? String == "Be kind.")
+        #expect(body["stream"] as? Bool == true)
+        #expect((body["thinking"] as? [String: Any])?["type"] as? String == "adaptive")
+        #expect((body["thinking"] as? [String: Any])?["display"] as? String == "summarized")
+        let output = try #require(body["output_config"] as? [String: Any])
+        #expect(output["effort"] as? String == "high")
+        let schema = try #require((output["format"] as? [String: Any])?["schema"] as? [String: Any])
+        #expect(schema["additionalProperties"] as? Bool == false)
+        let items = ((schema["properties"] as? [String: Any])?["errors"] as? [String: Any])?["items"] as? [String: Any]
+        #expect(items?["additionalProperties"] as? Bool == false)
+        #expect(body["fallbacks"] == nil, "Haiku has no server-side fallback")
+        let opus = try #require(try JSONSerialization.jsonObject(with: Claude.requestBody(model: "claude-opus-5-5", instructions: "", input: "")) as? [String: Any])
+        #expect(opus["fallbacks"] as? String == "default")
+        #expect(opus["stream"] == nil)
+    }
+
+    @Test func readsTextBlocksAndNotThinking() throws {
+        var reader = Claude.StreamReader()
+        let lines = [
+            "event: message_start",
+            #"data: {"type":"message_start","message":{"id":"msg_1"}}"#,
+            #"data: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":""}}"#,
+            #"data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Checking tenses"}}"#,
+            #"data: {"type": "ping"}"#,
+            #"data: {"type":"content_block_start","index":1,"content_block":{"type":"text","text":""}}"#,
+            #"data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"{\"errors\":[],"}}"#,
+            #"data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"\"naturalRewrite\":\"Hola\",\"strengths\":[]}"}}"#,
+            #"data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":12}}"#,
+            #"data: {"type":"message_stop"}"#,
+        ]
+        let events = lines.compactMap { reader.read(line: $0) }
+        let text = events.compactMap { if case .text(let t) = $0 { t } else { nil } }.joined()
+        #expect(try Gemini.feedback(from: text).naturalRewrite == "Hola")
+        #expect(events.last == .completed)
+        var refusing = Claude.StreamReader()
+        #expect(refusing.read(line: #"data: {"type":"message_delta","delta":{"stop_reason":"refusal"}}"#) == .failed(.other("Claude declined to check this text.")))
+        #expect(refusing.read(line: #"data: {"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}}"#) == .failed(.busy))
+    }
+
+    @Test func wholeRepliesAndErrors() throws {
+        let reply = #"{"stop_reason":"end_turn","content":[{"type":"thinking","thinking":""},{"type":"text","text":"{\"errors\":[],\"naturalRewrite\":\"Hola\",\"strengths\":[]}"}]}"#
+        #expect(try Gemini.feedback(from: Claude.outputText(from: Data(reply.utf8))).naturalRewrite == "Hola")
+        #expect(throws: Gemini.Failure.self) { try Claude.outputText(from: Data(#"{"stop_reason":"refusal","content":[]}"#.utf8)) }
+        func body(_ type: String) -> Data { Data(#"{"type":"error","error":{"type":"\#(type)","message":"x"}}"#.utf8) }
+        #expect(Claude.failure(status: 200, body: Data()) == nil)
+        #expect(Claude.failure(status: 401, body: body("authentication_error")) == .invalidKey)
+        #expect(Claude.failure(status: 429, body: body("rate_limit_error")) == .rateLimited)
+        #expect(Claude.failure(status: 529, body: body("overloaded_error")) == .busy)
+        #expect(Claude.failure(status: 400, body: body("invalid_request_error")) == .other("x"))
+        #expect(WritingModel.claudeOpus.provider == .claude && WritingModel.geminiFlash.provider == .gemini)
     }
 }

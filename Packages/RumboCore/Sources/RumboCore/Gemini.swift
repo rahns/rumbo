@@ -6,11 +6,6 @@ public enum Gemini {
     public static let endpoint = URL(string: "https://generativelanguage.googleapis.com/v1beta/interactions")!
     /// Where to create a free key.
     public static let keyPage = URL(string: "https://aistudio.google.com/apikey")!
-    /// Flash-Lite at medium thinking: plenty for short A2–B1 corrections. In testing it answered in about 3 s,
-    /// streamed or not, while Flash (`gemini-3.8-flash`) never started, so Flash isn't used.
-    public static let model = "gemini-3.5-flash-lite"
-    /// Shown under feedback: "Checked by Gemini Flash-Lite".
-    public static let displayName = "Gemini Flash-Lite"
 
     /// How much the model reasons before answering. More catches subtler errors but takes longer.
     public enum ThinkingLevel: String, CaseIterable, Sendable {
@@ -55,27 +50,7 @@ public enum Gemini {
     /// Streamed requests also ask for thought summaries, so events keep arriving while the model thinks.
     public static func requestBody(model: String, instructions: String, input: String, stream: Bool = false,
                                    thinking: ThinkingLevel = .standard) -> Data {
-        let errorSchema: [String: Any] = [
-            "type": "object",
-            "properties": [
-                "original": ["type": "string", "description": "The exact wrong words, copied from the learner's text."],
-                "corrected": ["type": "string", "description": "The corrected words. Must be different from original."],
-                "explanation": ["type": "string", "description": "One short sentence explaining the rule."],
-            ],
-            "required": ["original", "corrected", "explanation"],
-        ]
-        let schema: [String: Any] = [
-            "type": "object",
-            "properties": [
-                "errors": ["type": "array", "items": errorSchema,
-                           "description": "Each real error in the learner's text, most important first. Skip anything already correct."],
-                "naturalRewrite": ["type": "string",
-                                   "description": "The whole text rewritten the way a native speaker would say it, keeping the learner's meaning."],
-                "strengths": ["type": "array", "items": ["type": "string"],
-                              "description": "One or two short, specific things the learner did well."],
-            ],
-            "required": ["errors", "naturalRewrite", "strengths"],
-        ]
+        let schema = feedbackSchema(closed: false)
         var generation: [String: Any] = ["thinking_level": thinking.rawValue]
         if stream { generation["thinking_summaries"] = "auto" }
         var body: [String: Any] = [
@@ -89,6 +64,41 @@ public enum Gemini {
         ]
         if stream { body["stream"] = true }
         return (try? JSONSerialization.data(withJSONObject: body, options: [.sortedKeys])) ?? Data()
+    }
+
+    /// The JSON schema for `Feedback`, shared with Claude. `closed` adds `additionalProperties: false` to every
+    /// object, which Claude's structured outputs require.
+    public static func feedbackSchema(closed: Bool) -> [String: Any] {
+        var errorSchema: [String: Any] = [
+            "type": "object",
+            "properties": [
+                "original": ["type": "string", "description": "The exact wrong words, copied from the learner's text."],
+                "corrected": ["type": "string", "description": "The corrected words. Must be different from original."],
+                "explanation": ["type": "string", "description": "One short sentence explaining the rule."],
+            ],
+            "required": ["original", "corrected", "explanation"],
+        ]
+        var schema: [String: Any] = [
+            "type": "object",
+            "properties": [
+                "errors": ["type": "array", "items": errorSchema,
+                           "description": "Each real error in the learner's text, most important first. Skip anything already correct."],
+                "naturalRewrite": ["type": "string",
+                                   "description": "The whole text rewritten the way a native speaker would say it, keeping the learner's meaning."],
+                "strengths": ["type": "array", "items": ["type": "string"],
+                              "description": "One or two short, specific things the learner did well."],
+            ],
+            "required": ["errors", "naturalRewrite", "strengths"],
+        ]
+        if closed {
+            errorSchema["additionalProperties"] = false
+            var properties = schema["properties"] as! [String: Any]
+            properties["errors"] = ["type": "array", "items": errorSchema,
+                                    "description": "Each real error in the learner's text, most important first. Skip anything already correct."]
+            schema["properties"] = properties
+            schema["additionalProperties"] = false
+        }
+        return schema
     }
 
     /// The text of the model's answer: every text part of the `model_output` steps.

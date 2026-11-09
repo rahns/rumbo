@@ -70,9 +70,9 @@ struct DiagnosticsView: View {
                         .textSelection(.enabled)
                 }
             } header: {
-                Text("Gemini")
+                Text("Writing feedback")
             } footer: {
-                Text("Trace a full check runs a writing check exactly like a task: streaming or one piece, when the first event arrived, thinking updates, the longest silence, and any retry or fallback. Test streaming and one piece asks Gemini Flash-Lite both ways, directly (uses 2 free requests).")
+                Text("Uses the model chosen in Settings → Writing feedback. Trace a full check runs a writing check exactly like a task: streaming or one piece, when the first event arrived, thinking updates, the longest silence, and any retry or fallback. Test streaming and one piece asks the model both ways, directly (2 requests; with Claude these are billed).")
             }
 
             Section {

@@ -220,7 +220,8 @@ final class AppModel {
                                        rewrite: $0.rewrite, feedback: $0.feedbackJSON, id: $0.id)
             },
             cards: allCards.map(BackupFile.CardData.init),
-            gemini: BackupFile.GeminiData(apiKey: GeminiKey.current, thinkingLevel: GeminiKey.thinkingLevel.rawValue)
+            gemini: BackupFile.GeminiData(apiKey: AISettings.key(for: .gemini), thinkingLevel: AISettings.thinkingLevel.rawValue,
+                                          claudeAPIKey: AISettings.key(for: .claude), model: AISettings.model.rawValue)
         )
         return BackupDocument(data: try BackupFile.encoder().encode(file))
     }
@@ -237,9 +238,11 @@ final class AppModel {
         }
         LiveActivities.endAll()
         deleteAll()
-        // A backup without Gemini settings (older, or saved before a key was added) leaves the phone's as they are.
-        if let key = file.gemini?.apiKey, !key.isEmpty { GeminiKey.save(key) }
-        if let level = file.gemini?.thinkingLevel.flatMap(Gemini.ThinkingLevel.init(rawValue:)) { GeminiKey.thinkingLevel = level }
+        // Settings missing from a backup (older, or saved before a key was added) leave the phone's as they are.
+        if let key = file.gemini?.apiKey, !key.isEmpty { AISettings.save(key, for: .gemini) }
+        if let key = file.gemini?.claudeAPIKey, !key.isEmpty { AISettings.save(key, for: .claude) }
+        if let level = file.gemini?.thinkingLevel.flatMap(Gemini.ThinkingLevel.init(rawValue:)) { AISettings.thinkingLevel = level }
+        if let model = file.gemini?.model.flatMap(WritingModel.init(rawValue:)) { AISettings.model = model }
         let profile = file.profile.makeProfile()
         context.insert(profile)
         weekStartsOnSunday = profile.weekStartsOnSunday
