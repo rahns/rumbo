@@ -206,11 +206,13 @@ enum PicoDrawing {
             }
         }
 
-        // Tail
-        let tail = shape(p(14, 66), .l(p(26, 66)), .l(p(26, 86)), .c(p(26, 92), p(14, 92), p(14, 86)), .l(p(14, 66)))
-            .applying(rotation(38, around: p(20, 70)))
-        context.fill(tail, with: linear(p(20, 66), p(20, 92), [navy, navyLow]))
-        context.stroke(tail, with: .color(outline), style: line(2.2))
+        // Tail (hidden behind the travel backpack, where it would poke out below it)
+        if !wearsPack {
+            let tail = shape(p(14, 66), .l(p(26, 66)), .l(p(26, 86)), .c(p(26, 92), p(14, 92), p(14, 86)), .l(p(14, 66)))
+                .applying(rotation(38, around: p(20, 70)))
+            context.fill(tail, with: linear(p(20, 66), p(20, 92), [navy, navyLow]))
+            context.stroke(tail, with: .color(outline), style: line(2.2))
+        }
 
         // Body with a soft radial sheen
         let body = shape(p(40, 24), .c(p(56, 24), p(64, 38), p(64, 54)), .c(p(64, 72), p(54, 88), p(40, 88)),

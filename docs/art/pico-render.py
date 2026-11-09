@@ -102,7 +102,8 @@ def draw(mood='idle', breathe=0.0, canvas=None, shadow=True, backpack=False):
             c.stroke([(fx, 84), (fx + dx * 1.3, 91)], FEET, 2.4, closed=False)
     # tail
     tail = rot(path((14, 66), ('l', (26, 66)), ('l', (26, 86)), ('c', (26, 92), (14, 92), (14, 86)), ('l', (14, 66))), 38, (20, 70))
-    c.linear(tail, (20, 66), (20, 92), [(0, NAVY), (1, NAVY_LO)]); c.stroke(tail, OUT, 2.2)
+    if not (backpack or mood == 'backpacker'):  # hidden behind the travel backpack
+        c.linear(tail, (20, 66), (20, 92), [(0, NAVY), (1, NAVY_LO)]); c.stroke(tail, OUT, 2.2)
     # body
     body = path((40, 24), ('c', (56, 24), (64, 38), (64, 54)), ('c', (64, 72), (54, 88), (40, 88)),
                 ('c', (26, 88), (16, 74), (16, 56)), ('c', (16, 38), (26, 24), (40, 24)))

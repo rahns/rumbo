@@ -10,6 +10,7 @@ struct SettingsView: View {
     @State private var importing = false
     @State private var pendingRestore: Data?
     @State private var message: String?
+    @State private var sourceInfo: SourceKind?
     /// "Gemini, then Groq", "Groq" or "Not set up".
     @State private var checkers = SettingsView.checkersText()
 
@@ -60,6 +61,7 @@ struct SettingsView: View {
             } message: {
                 Text("Everything in Rumbo now will be replaced by what's in the file.")
             }
+            .sheet(item: $sourceInfo) { SourceInfoSheet(source: $0) }
             .alert(message ?? "", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
                 Button("OK", role: .cancel) {}
             }
@@ -68,17 +70,37 @@ struct SettingsView: View {
 
     @ViewBuilder
     private func sections(_ profile: LearnerProfile) -> some View {
-        Section("Sources") {
+        Section {
             ForEach(SourceKind.allCases, id: \.self) { source in
-                Toggle(SourceCopy.name(source), isOn: binding(
-                    get: { profile.enabledSources.contains(source) },
-                    set: { on in
-                        var sources = profile.enabledSources
-                        if on { sources.insert(source) } else { sources.remove(source) }
-                        profile.enabledSources = sources
+                HStack {
+                    // The name opens what the source is; the switch turns it on or off.
+                    Button {
+                        sourceInfo = source
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(SourceCopy.name(source)).foregroundStyle(Palette.ink)
+                            Image(systemName: "info.circle")
+                                .font(.rounded(.caption, weight: .bold))
+                                .foregroundStyle(Palette.secondaryText)
+                        }
                     }
-                ))
+                    .buttonStyle(.borderless)
+                    Spacer()
+                    Toggle(SourceCopy.name(source), isOn: binding(
+                        get: { profile.enabledSources.contains(source) },
+                        set: { on in
+                            var sources = profile.enabledSources
+                            if on { sources.insert(source) } else { sources.remove(source) }
+                            profile.enabledSources = sources
+                        }
+                    ))
+                    .labelsHidden()
+                }
             }
+        } header: {
+            Text("Sources")
+        } footer: {
+            Text("Tap a source to see what it is, where to find it and how Rumbo uses it.")
         }
 
         Section {

@@ -175,7 +175,7 @@ struct OnboardingView: View {
     private var sources: some View {
         VStack(alignment: .leading, spacing: 14) {
             StepTitle("Which do you use?")
-            Text("Switch off anything you don't use. Rumbo fills the time with the others.")
+            Text("Tick what you use; Rumbo fills the time with those. Not sure what one is? Tap it.")
                 .font(.rounded(.subheadline, weight: .medium))
                 .foregroundStyle(Palette.secondaryText)
             ForEach(SourceKind.allCases, id: \.self) { source in
@@ -390,32 +390,52 @@ struct SourceHeading: View {
 struct SourceToggleRow: View {
     let source: SourceKind
     @Binding var isOn: Bool
+    @State private var showingInfo = false
 
     var body: some View {
-        Button {
-            isOn.toggle()
-        } label: {
-            HStack(spacing: 14) {
-                Image(systemName: SourceCopy.symbol(source))
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(isOn ? .white : Palette.secondaryText)
-                    .frame(width: 44, height: 44)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(isOn ? Palette.coral : Palette.lilac))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(SourceCopy.name(source)).font(.rounded(.headline, weight: .bold))
-                    Text(SourceCopy.role(source)).font(.rounded(.caption, weight: .medium)).foregroundStyle(Palette.secondaryText)
+        HStack(spacing: 14) {
+            // The source itself opens what it is; the tick on the right switches it on or off.
+            Button {
+                showingInfo = true
+            } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: SourceCopy.symbol(source))
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(isOn ? .white : Palette.secondaryText)
+                        .frame(width: 44, height: 44)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(isOn ? Palette.coral : Palette.lilac))
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 5) {
+                            Text(SourceCopy.name(source)).font(.rounded(.headline, weight: .bold))
+                            Image(systemName: "info.circle")
+                                .font(.rounded(.caption, weight: .bold))
+                                .foregroundStyle(Palette.secondaryText)
+                        }
+                        Text(SourceCopy.role(source)).font(.rounded(.caption, weight: .medium)).foregroundStyle(Palette.secondaryText)
+                    }
+                    .foregroundStyle(Palette.ink)
+                    Spacer(minLength: 0)
                 }
-                .foregroundStyle(Palette.ink)
-                Spacer()
-                Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
-                    .font(.title2)
-                    .foregroundStyle(isOn ? Palette.leaf : Palette.secondaryText)
+                .contentShape(Rectangle())
             }
-            .padding(12)
-            .background(RoundedRectangle(cornerRadius: 16).fill(Palette.card))
+            .buttonStyle(.plain)
+            .accessibilityHint("Shows what \(SourceCopy.name(source)) is")
+            Button {
+                isOn.toggle()
+            } label: {
+                Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
+                    .font(.title)
+                    .foregroundStyle(isOn ? Palette.leaf : Palette.secondaryText)
+                    .padding(4)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isOn ? "Using \(SourceCopy.name(source))" : "Not using \(SourceCopy.name(source))")
         }
-        .buttonStyle(.plain)
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 16).fill(Palette.card))
         .sensoryFeedback(.selection, trigger: isOn)
+        .sheet(isPresented: $showingInfo) { SourceInfoSheet(source: source) }
     }
 }
 
