@@ -100,7 +100,7 @@ import SwiftData
     var isBonus: Bool = false
     var difficultyLow: Int?
     var difficultyHigh: Int?
-    /// Dreaming Spanish only: the difficulty (0–100) the learner says they watched, for the Progress chart.
+    /// Dreaming Spanish (not Easy Dreaming): the difficulty (0–100) the learner says they watched, for the Progress chart.
     var levelWatched: Int?
 
     init(date: Date, task: TaskKind, minutes: Int) {
@@ -117,7 +117,8 @@ import SwiftData
 
     /// The level watched, for the Progress chart. Older Dreaming Spanish logs without an answer use the middle of their range.
     var watchedLevel: WatchedLevel.Session? {
-        guard task == .dsWatch || task == .dsEasy else { return nil }
+        // Easy Dreaming is watched below level on purpose (fluency practice), so it would pull the line down.
+        guard task == .dsWatch else { return nil }
         if let levelWatched { return WatchedLevel.Session(date: date, level: Double(levelWatched), minutes: minutes) }
         guard let low = difficultyLow, let high = difficultyHigh else { return nil }
         return WatchedLevel.Session(date: date, level: Double(low + high) / 2, minutes: minutes)

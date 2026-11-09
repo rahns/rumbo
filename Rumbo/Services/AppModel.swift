@@ -420,7 +420,7 @@ final class AppModel {
             log.difficultyLow = profile.dsDifficultyLow
             log.difficultyHigh = profile.dsDifficultyHigh
         }
-        if task.task == .dsWatch || task.task == .dsEasy {
+        if task.task == .dsWatch {
             log.levelWatched = completion.levelWatched
         }
         context.insert(log)

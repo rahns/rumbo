@@ -162,6 +162,12 @@ struct StreakMilestoneOverlay: View {
 
     var body: some View {
         ZStack {
+            if shown != nil {
+                // Dims whatever is behind (the path, Today) so the count reads clearly in light and dark mode.
+                Palette.background.opacity(0.92)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+            }
             if let shown {
                 VStack(spacing: 4) {
                     Image(systemName: "flame.fill")

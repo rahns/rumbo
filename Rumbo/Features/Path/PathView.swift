@@ -64,6 +64,7 @@ struct PathView: View {
         let map = model.pathMap
         let todayDone = map.todayNode?.status == .done
         let countdown = model.goalCountdown
+        let weekMinutes = (done: model.streak.minutesThisWeek, goal: model.profile?.weeklyGoalMinutes ?? 150)
         NavigationStack {
             ScrollViewReader { proxy in
                 ScrollView {
@@ -71,7 +72,8 @@ struct PathView: View {
                         ForEach(map.units) { unit in
                             let isCurrent = unit.nodes.contains(where: \.isToday)
                             UnitBanner(unit: unit, isFuture: unit.nodes.allSatisfy { $0.status == .upcoming },
-                                       celebrating: celebratingUnit == unit.number)
+                                       celebrating: celebratingUnit == unit.number,
+                                       weekMinutes: isCurrent ? weekMinutes : nil)
                                 .padding(.top, unit.number == 1 ? 8 : 28)
                                 .padding(.bottom, 18)
                                 .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named("path")).minY } action: { top in
@@ -389,6 +391,8 @@ struct UnitBanner: View {
     let unit: PathUnit
     let isFuture: Bool
     var celebrating = false
+    /// The current week only: minutes so far against the weekly goal, as a thin bar under the dates.
+    var weekMinutes: (done: Int, goal: Int)? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// During the flip: show the old (unfinished) side until it's edge-on.
@@ -400,32 +404,55 @@ struct UnitBanner: View {
         let gold = unit.isComplete && !showingOldSide
         let color = gold ? Palette.sun : isFuture ? Palette.secondaryText.opacity(0.55) : Palette.sky
         let dates = unit.nodes.map(\.date)
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Semana \(unit.number)")
-                    .font(.rounded(.title3, weight: .black))
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Semana \(unit.number)")
+                        .font(.rounded(.title3, weight: .black))
+                    if gold {
+                        Text("¡Semana completa!")
+                            .font(.rounded(.subheadline, weight: .black))
+                    } else if unit.isPast && !showingOldSide {
+                        Text("Semana completa")
+                            .font(.rounded(.subheadline, weight: .bold))
+                            .opacity(0.85)
+                    } else if let first = dates.first, let last = dates.last {
+                        Text("\(Self.bannerDate(first)) – \(Self.bannerDate(last))")
+                            .font(.rounded(.subheadline, weight: .bold))
+                            .opacity(0.85)
+                    }
+                }
+                Spacer()
                 if gold {
-                    Text("¡Semana completa!")
-                        .font(.rounded(.subheadline, weight: .black))
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.title)
+                        .scaleEffect(sealScale)
                 } else if unit.isPast && !showingOldSide {
-                    Text("Semana completa")
-                        .font(.rounded(.subheadline, weight: .bold))
-                        .opacity(0.85)
-                } else if let first = dates.first, let last = dates.last {
-                    Text("\(Self.bannerDate(first)) – \(Self.bannerDate(last))")
-                        .font(.rounded(.subheadline, weight: .bold))
-                        .opacity(0.85)
+                    Image(systemName: "checkmark.circle.fill").font(.title3)
+                } else if isFuture {
+                    Image(systemName: "lock.fill").font(.title3)
                 }
             }
-            Spacer()
-            if gold {
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.title)
-                    .scaleEffect(sealScale)
-            } else if unit.isPast && !showingOldSide {
-                Image(systemName: "checkmark.circle.fill").font(.title3)
-            } else if isFuture {
-                Image(systemName: "lock.fill").font(.title3)
+            if let weekMinutes {
+                // Subtle: a thin translucent bar and small figures, not another progress card.
+                HStack(spacing: 8) {
+                    GeometryReader { proxy in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(.white.opacity(0.25))
+                            Capsule().fill(.white.opacity(0.85))
+                                .frame(width: proxy.size.width * min(1, Double(weekMinutes.done) / Double(max(weekMinutes.goal, 1))))
+                        }
+                    }
+                    .frame(height: 5)
+                    Text("\(weekMinutes.done) / \(weekMinutes.goal) min")
+                        .font(.rounded(.caption2, weight: .bold))
+                        .opacity(0.85)
+                        .contentTransition(.numericText())
+                        .fixedSize()
+                }
+                .animation(.spring(response: 0.5, dampingFraction: 0.85), value: weekMinutes.done)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(weekMinutes.done) of \(weekMinutes.goal) minutes this week")
             }
         }
         .foregroundStyle(gold ? Palette.inkOnBright : .white)

@@ -31,7 +31,8 @@ struct TaskSessionView: View {
     private var kind: TaskKind { task.task }
     private var color: Color { kind.strand.color }
     private var isWriting: Bool { kind == .writeGuided || kind == .writeQuick }
-    private var isDreaming: Bool { kind == .dsWatch || kind == .dsEasy }
+    /// Asks "What level did you watch?". Easy Dreaming is below level on purpose, so it isn't charted or asked.
+    private var isDreaming: Bool { kind == .dsWatch }
 
     var body: some View {
         VStack(spacing: 0) {
