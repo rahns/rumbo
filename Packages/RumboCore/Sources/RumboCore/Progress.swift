@@ -197,12 +197,16 @@ public enum GoalPace {
 /// spread over the days left this week (today included), rounded up to a budget choice.
 public enum BudgetAdvisor {
     public struct Advice: Equatable, Sendable {
-        /// Minutes a day needed from today to the end of the week.
+        /// The even amount each day left needs (a lesson day needs at least its lesson). See `level`.
         public let minutesPerDay: Int
+        /// What today needs: the even amount, or today's lesson if that's longer.
+        public let minutesToday: Int
         /// The budget chip to pick.
         public let recommended: Int
         public let daysLeft: Int
         public let goalAlreadyMet: Bool
+        /// Lesson minutes still to come after today this week, already counted in the advice.
+        public let upcomingLessonMinutes: Int
     }
 
     public static func advice(
@@ -213,22 +217,45 @@ public enum BudgetAdvisor {
         lessons: LessonSchedule = LessonSchedule(),
         calendar: Calendar = .current
     ) -> Advice {
-        let todaysLesson = lessons.lesson(on: today, calendar: calendar)?.minutes
-        let choices = choices ?? DayPlanner.budgetChoices(lessonMinutes: todaysLesson)
+        let todaysLesson = lessons.lesson(on: today, calendar: calendar)?.minutes ?? 0
+        let choices = (choices ?? DayPlanner.budgetChoices(lessonMinutes: todaysLesson > 0 ? todaysLesson : nil)).sorted()
         let todayStart = calendar.startOfDay(for: today)
         let weekEnd = calendar.dateInterval(of: .weekOfYear, for: today)?.end ?? todayStart
-        let daysLeft = max(1, calendar.dateComponents([.day], from: todayStart, to: weekEnd).day ?? 1)
+        // Each day left this week, today first, with its lesson minutes (0 without one).
+        var lessonByDay: [Int] = []
+        var day = todayStart
+        while day < weekEnd {
+            lessonByDay.append(lessons.lesson(on: day, calendar: calendar)?.minutes ?? 0)
+            day = calendar.date(byAdding: .day, value: 1, to: day)!
+        }
+        if lessonByDay.isEmpty { lessonByDay = [todaysLesson] }
+        let upcoming = lessonByDay.dropFirst().reduce(0, +)
         let remaining = weeklyGoal - minutesThisWeek
         // Today's lesson is part of today's time, so the advice never asks for less than it.
-        let smallest = choices.sorted().first { $0 >= (todaysLesson ?? 0) } ?? (choices.min() ?? 10)
+        func chip(for minutes: Int) -> Int { choices.first { $0 >= minutes } ?? (choices.last ?? minutes) }
         guard remaining > 0 else {
-            return Advice(minutesPerDay: 0, recommended: smallest, daysLeft: daysLeft, goalAlreadyMet: true)
+            return Advice(minutesPerDay: 0, minutesToday: todaysLesson, recommended: chip(for: todaysLesson),
+                          daysLeft: lessonByDay.count, goalAlreadyMet: true, upcomingLessonMinutes: upcoming)
         }
-        // Lessons later this week will cover part of the goal, so they come off what the days left need.
-        let upcoming = lessons.minutesLaterThisWeek(after: today, calendar: calendar)
-        let perDay = max(0, Int((Double(remaining - upcoming) / Double(daysLeft)).rounded(.up)))
-        let wanted = max(perDay, todaysLesson ?? 0)
-        let recommended = choices.sorted().first { $0 >= wanted } ?? (choices.max() ?? wanted)
-        return Advice(minutesPerDay: perDay, recommended: recommended, daysLeft: daysLeft, goalAlreadyMet: false)
+        let perDay = Int(level(remaining: Double(remaining), lessons: lessonByDay).rounded(.up))
+        let needed = max(perDay, todaysLesson)
+        return Advice(minutesPerDay: perDay, minutesToday: needed, recommended: chip(for: needed),
+                      daysLeft: lessonByDay.count, goalAlreadyMet: false, upcomingLessonMinutes: upcoming)
+    }
+
+    /// The even amount `x` for each day left, where a lesson day counts as its lesson if that's more:
+    /// the `x` with Σ max(x, lesson) = remaining. Lessons longer than `x` lower what the other days need.
+    /// 0 when the lessons alone cover what's left.
+    static func level(remaining: Double, lessons: [Int]) -> Double {
+        let sorted = lessons.map(Double.init).sorted()
+        guard sorted.reduce(0, +) < remaining else { return 0 }
+        // Try "the k shortest days sit at the level, the rest keep their (longer) lessons".
+        var longer = sorted.reduce(0, +)
+        for k in 1...sorted.count {
+            longer -= sorted[k - 1]
+            let x = (remaining - longer) / Double(k)
+            if x >= sorted[k - 1] && (k == sorted.count || x <= sorted[k]) { return x }
+        }
+        return remaining / Double(sorted.count)
     }
 }

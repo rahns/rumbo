@@ -198,20 +198,37 @@ struct TodayView: View {
         }
     }
 
-    /// What today needs for the weekly goal, e.g. "About 25 min a day for the 4 days left → pick 30".
+    /// What today needs for the weekly goal, e.g. "About 25 min a day for the 4 days left → pick 30". Lessons still
+    /// to come this week are counted, so the other days need less (`BudgetAdvisor`).
     private var goalAdvice: some View {
         let advice = model.budgetAdvice
         let goal = model.profile?.weeklyGoalMinutes ?? 150
-        let days = advice.daysLeft == 1 ? "today, the last day of the week" : "each of the \(advice.daysLeft) days left this week"
-        let lesson = model.todaysLessonMinutes.map { " That includes today's \($0)-minute lesson." } ?? ""
+        let todaysLesson = model.todaysLessonMinutes
+        let text: String
+        if advice.goalAlreadyMet {
+            text = "You've met your \(goal)-minute goal this week. Any time today is a bonus; a few minutes keeps the streak."
+                + (todaysLesson.map { " Today's \($0)-minute lesson is in the plan." } ?? "")
+        } else {
+            let days = advice.daysLeft == 1 ? "today, the last day of the week" : "a day for the \(advice.daysLeft) days left this week"
+            var parts: [String] = []
+            if advice.minutesPerDay == 0 {
+                parts.append("Your lessons this week cover the rest of your \(goal)-minute goal.")
+            } else {
+                let lessons = advice.upcomingLessonMinutes > 0
+                    ? ", counting the \(advice.upcomingLessonMinutes) min of lessons still to come"
+                    : ""
+                parts.append("To reach your \(goal)-minute goal: about \(advice.minutesPerDay) min \(days)\(lessons).")
+            }
+            parts.append("**\(advice.recommended) min** keeps you on track.")
+            if let todaysLesson { parts.append("That includes today's \(todaysLesson)-minute lesson.") }
+            text = parts.joined(separator: " ")
+        }
         return HStack(alignment: .top, spacing: 10) {
             Image(systemName: advice.goalAlreadyMet ? "checkmark.seal.fill" : "target")
                 .font(.title3.weight(.bold))
                 .foregroundStyle(advice.goalAlreadyMet ? Palette.leaf : Palette.sun)
             // LocalizedStringKey so the **bold** recommendation renders as Markdown.
-            Text(LocalizedStringKey((advice.goalAlreadyMet
-                 ? "You've met your \(goal)-minute goal this week. Any time today is a bonus; a few minutes keeps the streak."
-                 : "To reach your \(goal)-minute goal: about \(advice.minutesPerDay) min \(days). **\(advice.recommended) min** keeps you on track.") + lesson))
+            Text(LocalizedStringKey(text))
                 .font(.rounded(.subheadline, weight: .semibold))
                 .foregroundStyle(Palette.ink)
         }

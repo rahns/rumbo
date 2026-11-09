@@ -72,19 +72,38 @@ import Testing
         #expect(off.tasks.count == 1 && off.tasks.first?.minutes == 10)
     }
 
-    @Test func adviceCountsLessonsLaterThisWeekAndCoversTodaysLesson() {
-        // Monday, 150-min goal, nothing done: Tuesday's 60 and Thursday's 45 leave 45 min for 7 days.
+    @Test func adviceBalancesTheDaysLeftAroundLessons() {
+        // Monday, 150-min goal, nothing done; lessons Tue 60 and Thu 45 over 7 days left.
+        // Even level x with 5·x + max(x, 60) + max(x, 45) = 150 → x = 9 (rounded up from 9),
+        // so Tue and Thu are just their lessons and the other five days need about 9 each.
         let advice = BudgetAdvisor.advice(weeklyGoal: 150, minutesThisWeek: 0, today: monday, lessons: schedule, calendar: calendar)
-        #expect(advice.minutesPerDay == 7)
-        #expect(schedule.minutesLaterThisWeek(after: monday, calendar: calendar) == 105)
-        // On Tuesday the recommendation is at least the lesson.
+        #expect(advice.minutesPerDay == 9)
+        #expect(advice.minutesToday == 9)
+        #expect(advice.upcomingLessonMinutes == 105)
+        #expect(advice.recommended == 10)
+        // On Tuesday the recommendation covers the lesson.
         let tuesday = TestCalendar.adding(days: 1, to: monday)
-        let lessonDay = BudgetAdvisor.advice(weeklyGoal: 150, minutesThisWeek: 0, today: tuesday, lessons: schedule, calendar: calendar)
-        #expect(lessonDay.recommended >= 60)
+        let lessonDay = BudgetAdvisor.advice(weeklyGoal: 150, minutesThisWeek: 9, today: tuesday, lessons: schedule, calendar: calendar)
+        #expect(lessonDay.minutesToday == 60 && lessonDay.recommended == 60)
+        #expect(lessonDay.upcomingLessonMinutes == 45)
+        // A bigger goal lifts the other days above Thursday's lesson: 6 days left need 300; Tuesday's 60 binds,
+        // so the other five share 240 → 48 each (Thursday's 45 is below that, so it's a normal day).
+        let big = BudgetAdvisor.advice(weeklyGoal: 309, minutesThisWeek: 9, today: tuesday, lessons: schedule, calendar: calendar)
+        #expect(big.minutesPerDay == 48 && big.minutesToday == 60)
+        // Without lessons it's the plain share.
+        let plain = BudgetAdvisor.advice(weeklyGoal: 140, minutesThisWeek: 0, today: monday, calendar: calendar)
+        #expect(plain.minutesPerDay == 20 && plain.upcomingLessonMinutes == 0)
         #expect(DayPlanner.budgetChoices(lessonMinutes: 60).contains(90))
         #expect(!DayPlanner.budgetChoices(lessonMinutes: nil).contains(90))
         let done = BudgetAdvisor.advice(weeklyGoal: 150, minutesThisWeek: 200, today: tuesday, lessons: schedule, calendar: calendar)
         #expect(done.goalAlreadyMet && done.recommended >= 60)
+    }
+
+    @Test func levelSharesWhatsLeftEvenly() {
+        #expect(BudgetAdvisor.level(remaining: 150, lessons: [0, 60, 0, 45, 0, 0, 0]) == 9)
+        #expect(BudgetAdvisor.level(remaining: 100, lessons: [60, 60]) == 0, "the lessons cover it")
+        #expect(BudgetAdvisor.level(remaining: 70, lessons: [0, 0]) == 35)
+        #expect(BudgetAdvisor.level(remaining: 300, lessons: [60, 0, 45, 0, 0, 0]) == 48)
     }
 
     @Test func scheduleRoundTripsThroughJSON() throws {
