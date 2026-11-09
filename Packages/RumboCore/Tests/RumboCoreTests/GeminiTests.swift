@@ -108,7 +108,7 @@ import Testing
 
 @Suite struct GroqTests {
     @Test func requestUsesStrictSchemaAndReasoningEffort() throws {
-        let body = try #require(try JSONSerialization.jsonObject(with: Groq.requestBody(instructions: "Be kind.", input: "Ayer yo voy.", thinking: .high)) as? [String: Any])
+        let body = try #require(try JSONSerialization.jsonObject(with: Groq.requestBody(model: "openai/gpt-oss-120b", instructions: "Be kind.", input: "Ayer yo voy.", thinking: .high)) as? [String: Any])
         #expect(body["model"] as? String == "openai/gpt-oss-120b")
         #expect(body["stream"] == nil, "structured outputs don't stream on Groq")
         #expect(body["reasoning_effort"] as? String == "high")
@@ -136,5 +136,30 @@ import Testing
         #expect(Groq.failure(status: 400, body: Data(#"{"error":{"message":"Bad schema","type":"invalid_request_error"}}"#.utf8)) == .other("Bad schema"))
         // Gemini's schema stays open (it doesn't need additionalProperties).
         #expect(Gemini.feedbackSchema(closed: false)["additionalProperties"] == nil)
+    }
+}
+
+@Suite struct GroqModelChoiceTests {
+    @Test func picksTheBestChatModelOnTheList() {
+        let list = Data(#"{"object":"list","data":[{"id":"whisper-large-v3","active":true},{"id":"llama-3.1-8b-instant","active":true},{"id":"openai/gpt-oss-20b","active":true},{"id":"openai/gpt-oss-120b","active":true},{"id":"openai/gpt-oss-safeguard-20b","active":true},{"id":"old-model","active":false}]}"#.utf8)
+        let ids = Groq.modelIDs(from: list)
+        #expect(!ids.contains("old-model"), "inactive models are left out")
+        #expect(Groq.chooseModel(from: ids) == "openai/gpt-oss-120b")
+        #expect(Groq.chooseModel(from: ["openai/gpt-oss-120b-2", "llama-3.3-70b-versatile"]) == "openai/gpt-oss-120b-2", "a renamed GPT-OSS 120B")
+        #expect(Groq.chooseModel(from: ["openai/gpt-oss-20b", "llama-3.3-70b-versatile"]) == "openai/gpt-oss-20b")
+        #expect(Groq.chooseModel(from: ["whisper-large-v3", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"]) == "llama-3.3-70b-versatile")
+        #expect(Groq.chooseModel(from: ["openai/gpt-oss-safeguard-20b", "canopylabs/orpheus-v1"]) == nil, "only special models: nothing usable")
+        #expect(Groq.displayName(for: "openai/gpt-oss-120b") == "Groq (gpt-oss-120b)")
+    }
+
+    @Test func otherModelsGetJSONModeWithoutReasoning() throws {
+        let body = try #require(try JSONSerialization.jsonObject(with: Groq.requestBody(model: "llama-3.3-70b-versatile", instructions: "Be kind.", input: "Hola")) as? [String: Any])
+        #expect((body["response_format"] as? [String: Any])?["type"] as? String == "json_object")
+        #expect(body["reasoning_effort"] == nil)
+        let system = (body["messages"] as? [[String: Any]])?.first?["content"] as? String ?? ""
+        #expect(system.contains("JSON"), "JSON mode needs the word JSON in the prompt")
+        let qwen = try #require(try JSONSerialization.jsonObject(with: Groq.requestBody(model: "qwen/qwen3.8-27b", instructions: "", input: "")) as? [String: Any])
+        #expect(qwen["reasoning_format"] as? String == "hidden" && qwen["include_reasoning"] == nil)
+        #expect(Groq.failure(status: 400, body: Data(#"{"error":{"message":"The model `x` has been decommissioned","type":"invalid_request_error"}}"#.utf8)) == .modelUnavailable)
     }
 }

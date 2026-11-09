@@ -22,6 +22,17 @@ enum GroqKey {
     }
 
     static func remove() { KeychainShare.delete(forKey: account) }
+
+    /// The model picked from Groq's list, and when the list was last read (refreshed once a day).
+    static var model: String {
+        get { UserDefaults.standard.string(forKey: "groq.model") ?? Groq.defaultModel }
+        set { UserDefaults.standard.set(newValue, forKey: "groq.model") }
+    }
+
+    static var modelCheckedAt: Date? {
+        get { UserDefaults.standard.object(forKey: "groq.modelCheckedAt") as? Date }
+        set { UserDefaults.standard.set(newValue, forKey: "groq.modelCheckedAt") }
+    }
 }
 
 /// Sends writing to Groq (request and reply handling are in RumboCore's `Groq`). One request, not streamed:
@@ -30,20 +41,20 @@ enum GroqClient {
     static func correct(_ text: String, band: Band, prompt: String, key: String) async throws -> CorrectionService.Result {
         let input = "Writing task: \(prompt)\n\nLearner's text:\n\(text)"
         let reply = try await send(input: input, instructions: CorrectionService.instructions(for: band), key: key)
-        let feedback = try Gemini.feedback(from: reply)
+        let feedback = try Gemini.feedback(from: reply.text)
         return CorrectionService.Result(
             corrections: Mistakes.merge(model: feedback.corrections, languageTool: []),
             naturalRewrite: feedback.naturalRewrite,
             strengths: Array(feedback.strengths.prefix(2)),
-            engine: Groq.displayName
+            engine: Groq.displayName(for: reply.model)
         )
     }
 
     /// A tiny request to check a key works. Busy or rate-limited replies still mean Groq accepted the key.
     static func test(key: String) async -> (works: Bool, message: String) {
         do {
-            _ = try await send(input: "Escribe: «Ayer fui a la playa.»", instructions: "Reply with the JSON asked for.", key: key)
-            return (true, "It works. Groq will check your writing whenever Gemini can't.")
+            let reply = try await send(input: "Escribe: «Ayer fui a la playa.»", instructions: "Reply with the JSON asked for.", key: key)
+            return (true, "It works (using \(reply.model)). Groq will check your writing whenever Gemini can't.")
         } catch Gemini.Failure.rateLimited {
             return (true, "Your key works, but its free limit is used up for now. It resets soon.")
         } catch Gemini.Failure.busy {
@@ -57,25 +68,53 @@ enum GroqClient {
         }
     }
 
-    /// One request; if Groq is busy, waits 2 seconds and asks once more.
-    private static func send(input: String, instructions: String, key: String) async throws -> String {
+    /// One request with the current model. If Groq is busy, waits 2 seconds and asks once more; if the model is
+    /// gone (retired or renamed), reads the models list again, picks another and asks once more.
+    private static func send(input: String, instructions: String, key: String) async throws -> (text: String, model: String) {
+        var model = await currentModel(key: key)
         do {
-            return try await attempt(input: input, instructions: instructions, key: key)
+            return (try await attempt(model: model, input: input, instructions: instructions, key: key), model)
         } catch Gemini.Failure.busy {
             GeminiTrace.log("Groq busy: waiting 2 s, then trying once more")
             try await Task.sleep(for: .seconds(2))
-            return try await attempt(input: input, instructions: instructions, key: key)
+            return (try await attempt(model: model, input: input, instructions: instructions, key: key), model)
+        } catch Gemini.Failure.modelUnavailable {
+            let previous = model
+            model = await currentModel(key: key, forceRefresh: true)
+            guard model != previous else { throw Gemini.Failure.modelUnavailable }
+            GeminiTrace.log("Groq: \(previous) is gone, switching to \(model)")
+            return (try await attempt(model: model, input: input, instructions: instructions, key: key), model)
         }
     }
 
-    private static func attempt(input: String, instructions: String, key: String) async throws -> String {
+    /// The model to use: the one picked from Groq's list, which is read again once a day (or when a model has
+    /// gone). If the list can't be read, the last pick (or GPT-OSS 120B) is used.
+    static func currentModel(key: String, forceRefresh: Bool = false) async -> String {
+        let fresh = GroqKey.modelCheckedAt.map { Date.now.timeIntervalSince($0) < 24 * 3600 } ?? false
+        if fresh && !forceRefresh { return GroqKey.model }
+        var request = URLRequest(url: Groq.modelsEndpoint)
+        request.timeoutInterval = 10
+        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        guard case let (data, response)? = try? await URLSession.shared.data(for: request),
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let chosen = Groq.chooseModel(from: Groq.modelIDs(from: data)) else {
+            GeminiTrace.log("Groq: couldn't read the models list; using \(GroqKey.model)")
+            return GroqKey.model
+        }
+        if chosen != GroqKey.model { GeminiTrace.log("Groq: picked \(chosen) from its models list") }
+        GroqKey.model = chosen
+        GroqKey.modelCheckedAt = .now
+        return chosen
+    }
+
+    private static func attempt(model: String, input: String, instructions: String, key: String) async throws -> String {
         var request = URLRequest(url: Groq.endpoint)
         request.httpMethod = "POST"
         request.timeoutInterval = 40
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-        request.httpBody = Groq.requestBody(instructions: instructions, input: input, thinking: GeminiKey.thinkingLevel)
-        GeminiTrace.log("\(Groq.displayName) · one piece · \(GeminiKey.thinkingLevel.rawValue) reasoning: sent")
+        request.httpBody = Groq.requestBody(model: model, instructions: instructions, input: input, thinking: GeminiKey.thinkingLevel)
+        GeminiTrace.log("\(Groq.displayName(for: model)) · one piece · \(GeminiKey.thinkingLevel.rawValue) reasoning: sent")
         let started = Date.now
         do {
             let (data, response) = try await URLSession.shared.data(for: request)

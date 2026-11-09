@@ -195,7 +195,7 @@ struct GeminiSettingsView: View {
                     Text("Backup checker: Groq")
                         .font(.rounded(.title3, weight: .black))
                         .foregroundStyle(Palette.ink)
-                    Text("When Google is too busy, Groq checks your writing instead (GPT-OSS 120B, also free), before Rumbo falls back to the basic checker. Optional, but it makes checks much more reliable.")
+                    Text("When Google is too busy, Groq checks your writing instead (also free), before Rumbo falls back to the basic checker. Rumbo picks the best model Groq offers (GPT-OSS 120B for now) and switches by itself if Groq changes its models. Optional, but it makes checks much more reliable.")
                         .font(.rounded(.subheadline, weight: .medium))
                         .foregroundStyle(Palette.secondaryText)
                         .fixedSize(horizontal: false, vertical: true)
