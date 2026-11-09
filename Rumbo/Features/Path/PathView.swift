@@ -1,5 +1,6 @@
 import RumboCore
 import SwiftUI
+import UIKit
 
 /// Home: a winding path with one node per calendar day, in units of 7, running on into the future
 /// with projected level-ups. Extra practice after today is done happens on Today ("Keep going").
@@ -35,6 +36,8 @@ struct PathView: View {
         var viewportHeight: CGFloat = 0
         /// Being dragged, coasting or animating.
         var isScrolling = false
+        /// The UIKit scroll view behind the path, so a coasting scroll can be stopped (SwiftUI can't).
+        weak var scrollView: UIScrollView?
 
         /// Which way back to today's week, if it's out of view. The margins leave room for the header and tab bar.
         var direction: ScrollBack? {
@@ -50,13 +53,22 @@ struct PathView: View {
     }
 
     private func scrollToToday(_ proxy: ScrollViewProxy, _ today: PathNode) {
-        if weekEdges.isScrolling {
-            // Still moving: an animated scroll would fight the coasting and get cancelled, but a jump always lands.
+        guard weekEdges.isScrolling else {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { proxy.scrollTo(today.id, anchor: .center) }
+            return
+        }
+        if let scrollView = weekEdges.scrollView {
+            // Still coasting: SwiftUI ignores scrollTo until a flick settles, so stop it in UIKit (setting the
+            // current offset without animation ends the deceleration), then glide back on the next frame.
+            scrollView.setContentOffset(scrollView.contentOffset, animated: false)
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(16))
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { proxy.scrollTo(today.id, anchor: .center) }
+            }
+        } else {
             var jump = Transaction()
             jump.disablesAnimations = true
             withTransaction(jump) { proxy.scrollTo(today.id, anchor: .center) }
-        } else {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { proxy.scrollTo(today.id, anchor: .center) }
         }
     }
 
@@ -110,6 +122,7 @@ struct PathView: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 40)
+                    .background(ScrollViewFinder { weekEdges.scrollView = $0 })
                 }
                 .coordinateSpace(.named("path"))
                 .onScrollPhaseChange { _, phase in weekEdges.isScrolling = phase.isScrolling }
@@ -832,4 +845,29 @@ enum SpanishDate {
 
 private extension String {
     var capitalizedFirstLetter: String { prefix(1).uppercased() + dropFirst() }
+}
+
+/// Finds the UIKit scroll view a SwiftUI ScrollView is built on, by walking up from a view placed in its content.
+private struct ScrollViewFinder: UIViewRepresentable {
+    let found: (UIScrollView) -> Void
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.isUserInteractionEnabled = false
+        return view
+    }
+
+    func updateUIView(_ view: UIView, context: Context) {
+        // Once the view is in the hierarchy.
+        DispatchQueue.main.async {
+            var current = view.superview
+            while let candidate = current {
+                if let scrollView = candidate as? UIScrollView {
+                    found(scrollView)
+                    return
+                }
+                current = candidate.superview
+            }
+        }
+    }
 }
