@@ -100,7 +100,7 @@ struct SettingsView: View {
         } header: {
             Text("Sources")
         } footer: {
-            Text("Tap a source to see what it is, where to find it and how Rumbo uses it.")
+            Text("Tap a source to see what it is and where to find it.")
         }
 
         Section {
