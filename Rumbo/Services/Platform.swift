@@ -14,7 +14,7 @@ enum LiveActivities {
         let attributes = RumboTimerAttributes(
             taskTitle: TaskCopy.title(for: task.task),
             sourceSymbol: TaskCopy.symbol(for: task.task),
-            colorHex: task.task.strand.hex
+            colorHex: task.task.hex
         )
         let content = self.content(for: task)
         Task {

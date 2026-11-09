@@ -384,7 +384,7 @@ struct ExtraOptionRow: View {
     let onStart: () -> Void
 
     var body: some View {
-        let color = option.kind.strand.color
+        let color = option.kind.color
         HStack(spacing: 12) {
             Image(systemName: TaskCopy.symbol(for: option.kind))
                 .font(.headline.weight(.bold))
@@ -518,7 +518,7 @@ struct TaskCardView: View {
 
     var body: some View {
         let kind = task.task
-        let color = kind.strand.color
+        let color = kind.color
         let finished = task.status == .done || task.status == .skipped
         RaisedCard(accent: color) {
             VStack(alignment: .leading, spacing: 12) {

@@ -12,6 +12,8 @@ enum Palette {
     static let lilac = dynamic(light: 0xDEE4FF, dark: 0x2A3560)
     /// Streak freezes.
     static let ice = dynamic(light: 0x5CC8F2, dark: 0x6FD0F5)
+    /// All-in-one lessons, which span three strands.
+    static let lavender = dynamic(light: 0xA98BEB, dark: 0xB69CF2)
     static let cream = dynamic(light: 0xFFF3D6, dark: 0x3A3320)
 
     /// App background: soft off-white by day, Dreaming-style navy by night.
@@ -51,6 +53,14 @@ extension Color {
             return UIColor(hue: hue, saturation: min(1, saturation * 1.05), brightness: max(0, brightness - amount), alpha: alpha)
         })
     }
+}
+
+extension TaskKind {
+    /// A task's accent: its strand's, except all-in-one lessons, which span three strands (pastel purple).
+    var color: Color { self == .lessonMixed ? Palette.lavender : strand.color }
+
+    /// Light-mode hex for the widgets and Live Activity.
+    var hex: UInt32 { self == .lessonMixed ? 0xA98BEB : strand.hex }
 }
 
 extension Strand {

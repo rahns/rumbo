@@ -1036,7 +1036,7 @@ final class AppModel {
         var tasks = shown.map {
             WidgetSnapshot.TaskLine(title: TaskCopy.title(for: $0.task), symbol: TaskCopy.symbol(for: $0.task),
                                     minutes: $0.status == .done ? loggedMinutes(for: $0) ?? $0.minutesPlanned : $0.minutesPlanned,
-                                    done: $0.status == .done, colorHex: $0.task.strand.hex, isExtra: $0.isExtra)
+                                    done: $0.status == .done, colorHex: $0.task.hex, isExtra: $0.isExtra)
         }
         // No plan yet: preview the one the gold-starred budget would give, so the widget shows what's on track.
         var suggested: Int?
@@ -1077,7 +1077,7 @@ final class AppModel {
         let preview = DayPlanner(calendar: calendar).plan(budget: budget, learner: snapshot(for: profile), history: history, today: day)
         return (budget, preview.tasks.map {
             WidgetSnapshot.TaskLine(title: TaskCopy.title(for: $0.kind), symbol: TaskCopy.symbol(for: $0.kind),
-                                    minutes: $0.minutes, done: false, colorHex: $0.kind.strand.hex)
+                                    minutes: $0.minutes, done: false, colorHex: $0.kind.hex)
         })
     }
 

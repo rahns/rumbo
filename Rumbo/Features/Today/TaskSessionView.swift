@@ -31,7 +31,7 @@ struct TaskSessionView: View {
     @State private var confirmingFinish = false
 
     private var kind: TaskKind { task.task }
-    private var color: Color { kind.strand.color }
+    private var color: Color { kind.color }
     private var isWriting: Bool { kind == .writeGuided || kind == .writeQuick }
     /// Asks "What level did you watch?". Easy Dreaming is below level on purpose, so it isn't charted or asked.
     private var isDreaming: Bool { kind == .dsWatch }
@@ -252,7 +252,7 @@ struct TaskSessionView: View {
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 10) {
                         ForEach(LessonType.allCases, id: \.self) { type in
                             ChipButton(title: TaskCopy.lessonTypeName(type), isSelected: lessonType == type,
-                                       color: type.strand?.color ?? Palette.sun) { lessonType = type }
+                                       color: TaskKind.lesson(for: type).color) { lessonType = type }
                         }
                     }
                 }

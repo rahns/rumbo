@@ -812,7 +812,7 @@ struct DaySummarySheet: View {
                 .font(.rounded(.headline, weight: .bold))
                 .foregroundStyle(plan?.isComplete == true ? Palette.leaf : Palette.secondaryText)
             ForEach(planned) { task in
-                row(symbol: TaskCopy.symbol(for: task.task), color: task.task.strand.color, title: TaskCopy.title(for: task.task),
+                row(symbol: TaskCopy.symbol(for: task.task), color: task.task.color, title: TaskCopy.title(for: task.task),
                     minutes: model.loggedMinutes(for: task) ?? task.minutesPlanned)
             }
             ForEach(others) { log in
