@@ -282,7 +282,8 @@ struct TodayView: View {
                     .font(.rounded(.title3, weight: .black))
                     .foregroundStyle(Palette.ink)
                 Spacer()
-                Text("\(plan.budgetMinutes) min")
+                // The plan's real length: a lesson plus the daily Duolingo lesson can run past the time picked.
+                Text("\(plan.planTasks.reduce(0) { $0 + $1.minutesPlanned }) min")
                     .font(.rounded(.subheadline, weight: .heavy))
                     .foregroundStyle(Palette.secondaryText)
             }
