@@ -157,6 +157,20 @@ import Testing
         #expect(extras.first { $0.kind == .ltTrack }?.minutes == 16)
     }
 
+    @Test func travelModeAlwaysPlansAMissionOnlineOrNot() {
+        for online in [true, false] {
+            var learner = authorAtStart
+            learner.travelMode = true
+            learner.isOnline = online
+            for budget in DayPlanner.budgetChoices {
+                let tasks = plan(budget, learner).tasks
+                #expect(tasks.contains { $0.kind == .missionTravel }, "\(budget) min, online: \(online)")
+                #expect(tasks.reduce(0) { $0 + $1.minutes } <= budget)
+            }
+        }
+        #expect(plan(30, authorAtStart).tasks.allSatisfy { $0.kind != .missionTravel }, "not without travel mode")
+    }
+
     @Test func otherPracticeIsLoggedNeverPlanned() {
         let others: [TaskKind] = [.otherStudy, .otherOutput, .otherFluency]
         for budget in DayPlanner.budgetChoices {

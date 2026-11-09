@@ -61,11 +61,14 @@ public struct DayPlanner: Sendable {
             builder.addLesson(lesson)
         }
         if budget <= 10 {
-            // Busy day: a 3-minute Duolingo lesson keeps that streak alive, then one task for the rest.
+            // Busy day: a 3-minute Duolingo lesson keeps that streak alive, then one task for the rest
+            // (the travel mission, in travel mode).
             builder.planBusyDayWarmUp()
+            builder.planTravelMission()
             builder.planSingleTask()
         } else {
             builder.planWarmUp()
+            builder.planTravelMission()
             builder.fill()
             builder.spendLeftover()
         }
@@ -166,6 +169,15 @@ private struct PlanBuilder {
         if budget >= 20, learner.dueReviewCards >= 5, learner.isEligible(.reviewMistakes) {
             add(.reviewMistakes, minutes: budget >= 30 ? 5 : 3)
         }
+    }
+
+    /// Travel mode: a real-world mission every day, online or not, not only when speaking & writing gets a card.
+    mutating func planTravelMission() {
+        guard learner.travelMode, learner.isEligible(.missionTravel), !tasks.contains(where: { $0.kind == .missionTravel }) else { return }
+        let range = TaskKind.missionTravel.minutes
+        let minutes = min(range.standard, remaining)
+        guard minutes >= range.min else { return }
+        add(.missionTravel, minutes: minutes)
     }
 
     // Step 3: new cards, strand with the largest deficit first.
