@@ -34,7 +34,7 @@ struct SourceInfoSheet: View {
                  whereToFind: "The Duolingo app (iPhone and Android) and duolingo.com.",
                  links: [("Open duolingo.com", URL(string: "https://www.duolingo.com")!)])
         case .writing:
-            Info(what: "Short writing tasks inside Rumbo: guided writing with a prompt, and quick timed writes.",
+            Info(what: "Short writing tasks inside Rumbo: guided writing with a prompt, and quick timed writes. Pico checks your writing with AI using your own Gemini or Groq key, which are both free to get (Settings → Writing feedback).",
                  whereToFind: "Right here in Rumbo; there's nothing else to install.",
                  links: [])
         case .tandem:
