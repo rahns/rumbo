@@ -105,14 +105,14 @@ struct MistakeDeckView: View {
                 }
                 .disabled(dueCount == 0)
             } footer: {
-                Text("Mistakes from your writing are added automatically. Add your Tandem partner's corrections with +.")
+                Text("Mistakes from your writing are added automatically. Add your Tandem/HelloTalk partner's corrections with +.")
             }
             if cards.isEmpty {
                 Section {
                     ContentUnavailableView {
                         Label("No cards yet", systemImage: "rectangle.stack")
                     } description: {
-                        Text("When a writing task is corrected, each mistake becomes a card here. Tap + to add a correction from your Tandem partner.")
+                        Text("When a writing task is corrected, each mistake becomes a card here. Tap + to add a correction from your Tandem/HelloTalk partner.")
                     }
                 }
             }

@@ -97,7 +97,7 @@ extension Strand {
     var detail: String {
         switch self {
         case .input: "Dreaming Spanish, Extra, shows and podcasts"
-        case .output: "Guided writing, Tandem and travel missions"
+        case .output: "Guided writing, Tandem/HelloTalk and travel missions"
         case .languageFocused: "Language Transfer, Duolingo and the mistake deck"
         case .fluency: "Easy videos, quick writes and 4-3-2 talks: using what you know, faster"
         }

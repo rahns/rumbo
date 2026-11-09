@@ -996,7 +996,7 @@ final class AppModel {
         profile.speakingStage = capped
         save()
         banner = capped == .calls
-            ? Banner(title: "Live calls unlocked", message: "Once a week Rumbo will plan a short call with your Tandem partner.")
+            ? Banner(title: "Live calls unlocked", message: "Once a week Rumbo will plan a short call with your Tandem/HelloTalk partner.")
             : Banner(title: "Voice notes unlocked", message: "Plan a few bullet points, then record a 1–2 minute voice note. Planning first makes speaking easier.")
     }
 

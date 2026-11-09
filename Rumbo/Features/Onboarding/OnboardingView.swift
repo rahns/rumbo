@@ -465,7 +465,7 @@ enum SourceCopy {
         case .extraEnEspanol: "Extra en Español"
         case .duolingo: "Duolingo"
         case .writing: "Writing"
-        case .tandem: "Tandem partner"
+        case .tandem: "Tandem/HelloTalk partner"
         case .suggestedContent: "Suggested shows & podcasts"
         }
     }

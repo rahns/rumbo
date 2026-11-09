@@ -139,7 +139,7 @@ struct StatsView: View {
                     courseRow("Extra en Español", done: profile.extraEpisodesWatched, total: Course.extraEpisodes, unit: "episodes")
                 }
                 if sources.contains(.tandem) {
-                    infoRow("Tandem", "Speaking stage: \(stageName(profile.speakingStage))")
+                    infoRow("Tandem/HelloTalk", "Speaking stage: \(stageName(profile.speakingStage))")
                 }
             }
         }

@@ -1,5 +1,6 @@
 import RumboCore
 import SwiftUI
+import UIKit
 
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
@@ -181,7 +182,7 @@ struct SettingsView: View {
         } header: {
             Text("Speaking")
         } footer: {
-            Text("Rumbo switches these on by itself as your hours and Tandem exchanges grow, and you can go early if you feel ready. Switch one off and it stays off until you switch it back on.")
+            Text("Rumbo switches these on by itself as your hours and Tandem/HelloTalk exchanges grow, and you can go early if you feel ready. Switch one off and it stays off until you switch it back on.")
         }
 
         Section("Habit") {
@@ -255,6 +256,9 @@ struct SettingsView: View {
             Link(destination: URL(string: "https://github.com/rahns/rumbo/releases")!) {
                 Label("Downloads and what's new", systemImage: "arrow.down.circle")
             }
+            Link(destination: Self.feedbackEmail) {
+                Label("Report a bug or suggest something", systemImage: "envelope")
+            }
         } header: {
             Text("Share")
         }
@@ -263,8 +267,26 @@ struct SettingsView: View {
             NavigationLink("Diagnostics") { DiagnosticsView() }
             Button("Start over", role: .destructive) { confirmingReset = true }
         } footer: {
-            Text("Rumbo \(DiagnosticsModel.appVersion)")
+            VStack(spacing: 4) {
+                Text("Rumbo \(DiagnosticsModel.appVersion)")
+                Text("Made out of necessity (and ❤️) by Rahn")
+                    .font(.rounded(.caption2, weight: .medium))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 8)
         }
+    }
+
+    /// A new email to Rahn in the Mail app, with the app and iOS version filled in for bug reports.
+    static var feedbackEmail: URL {
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = "contact@rahnstavar.com"
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: "Rumbo feedback"),
+            URLQueryItem(name: "body", value: "\n\n\n— Rumbo \(DiagnosticsModel.appVersion) · iOS \(UIDevice.current.systemVersion)"),
+        ]
+        return components.url ?? URL(string: "mailto:contact@rahnstavar.com")!
     }
 
     static func checkersText() -> String { WritingCheckers.summary }
