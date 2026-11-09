@@ -9,8 +9,7 @@ struct SettingsView: View {
     @State private var importing = false
     @State private var pendingRestore: Data?
     @State private var message: String?
-    /// "Gemini Flash-Lite", or "Claude Haiku 5.5 · no key".
-    @State private var aiSummary = SettingsView.aiSummaryText()
+    @State private var geminiConnected = GeminiKey.current != nil
 
     var body: some View {
         NavigationStack {
@@ -50,7 +49,7 @@ struct SettingsView: View {
                     pendingRestore = nil
                     do {
                         try model.restore(from: data)
-                        aiSummary = SettingsView.aiSummaryText()
+                        geminiConnected = GeminiKey.current != nil
                         message = "Backup restored."
                     } catch {
                         message = error.localizedDescription
@@ -100,14 +99,14 @@ struct SettingsView: View {
 
         Section {
             NavigationLink {
-                GeminiSettingsView { aiSummary = SettingsView.aiSummaryText() }
+                GeminiSettingsView { geminiConnected = $0 }
             } label: {
-                LabeledContent("Model", value: aiSummary)
+                LabeledContent("Gemini API key", value: geminiConnected ? "Connected" : "Not set up")
             }
         } header: {
             Text("Writing feedback")
         } footer: {
-            Text("Pico checks your writing with the model you choose: Gemini (free) or Claude (paid), with your own API key. Without one, a basic checker is used.")
+            Text("Pico checks your writing with Gemini using your own free key. Without one, a basic checker is used.")
         }
 
         Section {
@@ -239,11 +238,6 @@ struct SettingsView: View {
         } footer: {
             Text("Rumbo \(DiagnosticsModel.appVersion)")
         }
-    }
-
-    static func aiSummaryText() -> String {
-        let model = AISettings.model
-        return AISettings.currentKey == nil ? "\(model.displayName) · no key" : model.displayName
     }
 
     /// The last part seen: "Extra en Español: seen Ep 3 Part 2" (or "not started").

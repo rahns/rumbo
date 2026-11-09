@@ -2,8 +2,8 @@ import Foundation
 import FoundationModels
 import RumboCore
 
-/// Writing correction (docs/05-architecture.md §5.3). With the learner's key for the chosen model (Gemini, free,
-/// or Claude), that model checks the writing. Without one, or when it can't answer (limit reached, bad key, offline), the basic checker
+/// Writing correction (docs/05-architecture.md §5.3). With the learner's free Gemini key, Gemini checks the
+/// writing. Without one, or when Gemini can't answer (free limit used up, bad key, offline), the basic checker
 /// runs instead: LanguageTool finds errors when online and the on-device Apple model explains them; the result
 /// then carries a `notice` saying why. Apple's cloud model isn't used: it crashes sideloaded builds.
 enum CorrectionService {
@@ -11,9 +11,9 @@ enum CorrectionService {
         var corrections: [Correction]
         var naturalRewrite: String
         var strengths: [String]
-        /// Which checker ran, e.g. "Gemini Flash-Lite", "Claude Haiku 5.5" or "LanguageTool + on-device model".
+        /// Which checker ran, e.g. "Gemini" or "LanguageTool + on-device model".
         var engine: String
-        /// Shown above the feedback when a model was set up but the basic checker had to stand in.
+        /// Shown above the feedback when Gemini was set up but the basic checker had to stand in.
         var notice: String? = nil
     }
 
@@ -34,12 +34,11 @@ enum CorrectionService {
 
     static func correct(_ text: String, band: Band, prompt: String) async throws -> Result {
         var notice: String?
-        let model = AISettings.model
-        if let key = AISettings.currentKey {
+        if let key = GeminiKey.current {
             do {
-                return try await AIClient.correct(text, band: band, prompt: prompt, model: model, key: key)
+                return try await GeminiClient.correct(text, band: band, prompt: prompt, key: key)
             } catch {
-                notice = AIClient.notice(for: error, model: model)
+                notice = GeminiClient.notice(for: error)
             }
         }
         var result = try await basicCheck(text, band: band, prompt: prompt, notice: notice)
