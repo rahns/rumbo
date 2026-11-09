@@ -218,8 +218,18 @@ enum PicoDrawing {
         context.fill(body, with: .radialGradient(Gradient(stops: [.init(color: navyHigh, location: 0), .init(color: navy, location: 0.45), .init(color: navyLow, location: 1)]),
                                                  center: p(32, 38), startRadius: 0, endRadius: 52))
 
+        if mood != .backpacker {
+            // Crest: three tufts (the backpacker's hat covers them)
+            for (base, peak, end) in [(p(34, 26), p(30, 12), p(39, 24)), (p(38, 25), p(37, 9), p(44, 24)), (p(42, 25), p(46, 12), p(48, 26))] {
+                let tuft = shape(base, .c(p(base.x - 2, 18), p(peak.x - 2, peak.y + 2), peak), .c(p(peak.x + 3, peak.y + 3), p(end.x, 18), end))
+                context.fill(tuft, with: .color(navy))
+                context.stroke(tuft, with: .color(outline), style: line(1.8))
+            }
+        }
+        context.stroke(body, with: .color(outline), style: line(2.4))
+
         if wearsPack {
-            // A big backpacking pack on his back, with a rolled sleeping mat on top.
+            // A big backpacking pack on his back, drawn after the body's outline so the outline doesn't cut across it.
             let pack = Path(roundedRect: CGRect(x: 3, y: 34, width: 27, height: 51), cornerRadius: 8)
             context.fill(pack, with: linear(p(4, 34), p(29, 85), [leather, leatherDark]))
             context.stroke(pack, with: .color(outline), style: line(2))
@@ -232,22 +242,27 @@ enum PicoDrawing {
             let pocket = Path(roundedRect: CGRect(x: 6.5, y: 61, width: 20, height: 17), cornerRadius: 4)
             context.fill(pocket, with: .color(leatherDark))
             context.stroke(pocket, with: .color(outline), style: line(1.4))
-            let mat = Path(roundedRect: CGRect(x: 0.5, y: 23, width: 32, height: 12), cornerRadius: 6)
-            context.fill(mat, with: linear(p(16, 23), p(16, 35), [khaki, khakiDark]))
+
+            // A rolled-up yoga mat strapped on top: a tube with the spiral of the roll showing at one end.
+            let mat = Path(roundedRect: CGRect(x: 1, y: 23, width: 32, height: 11), cornerRadius: 5.5)
+            context.fill(mat, with: linear(p(17, 23), p(17, 34), [sky, skyDark]))
             context.stroke(mat, with: .color(outline), style: line(1.8))
-            for x in [9.0, 24.0] {
-                context.stroke(shape(p(x, 23), .l(p(x, 35))), with: .color(leatherDark), style: line(2.2))
+            context.fill(ellipse(6.5, 28.5, 11, 11), with: .color(sky))
+            context.stroke(ellipse(6.5, 28.5, 11, 11), with: .color(outline), style: line(1.6))
+            // The roll: a spiral tightening from the edge to the middle, about one and a half turns.
+            var roll = Path()
+            for step in 0...36 {
+                let turn = Double(step) / 36
+                let angle = turn * 3 * .pi
+                let radius = 4.4 - turn * 3.4
+                let point = p(6.5 + cos(angle) * radius, 28.5 + sin(angle) * radius)
+                if step == 0 { roll.move(to: point) } else { roll.addLine(to: point) }
+            }
+            context.stroke(roll, with: .color(skyDark), style: line(1.3))
+            for x in [15.0, 26.0] {
+                context.stroke(shape(p(x, 23.5), .l(p(x, 33.5))), with: .color(leatherDark), style: line(2))
             }
         }
-        if mood != .backpacker {
-            // Crest: three tufts (the backpacker's hat covers them)
-            for (base, peak, end) in [(p(34, 26), p(30, 12), p(39, 24)), (p(38, 25), p(37, 9), p(44, 24)), (p(42, 25), p(46, 12), p(48, 26))] {
-                let tuft = shape(base, .c(p(base.x - 2, 18), p(peak.x - 2, peak.y + 2), peak), .c(p(peak.x + 3, peak.y + 3), p(end.x, 18), end))
-                context.fill(tuft, with: .color(navy))
-                context.stroke(tuft, with: .color(outline), style: line(1.8))
-            }
-        }
-        context.stroke(body, with: .color(outline), style: line(2.4))
 
         // Chest bib with scalloped feathers, and a coral sash
         let bib = shape(p(47, 29), .c(p(60, 31), p(65, 45), p(61, 58)), .c(p(57, 66), p(46, 66), p(41, 58)), .c(p(38, 48), p(38, 34), p(47, 29)))
@@ -302,11 +317,6 @@ enum PicoDrawing {
         context.stroke(shape(p(44, 23), .c(p(49, 20), p(56, 19.5), p(61, 22))), with: .color(outline), style: line(2.6))
         context.fill(ellipse(51, 49, 7, 3.8), with: .color(blush))
 
-        if wearsPack {
-            let strap = shape(p(40, 30), .c(p(46, 44), p(46, 60), p(40, 72)))
-            context.stroke(strap, with: .color(leatherDark), style: line(3.2))
-            context.stroke(strap, with: .color(outline), style: line(0.8))
-        }
         if mood == .backpacker {
             context.fill(ellipse(40, 23, 40, 8), with: .color(khakiDark))
             context.stroke(ellipse(40, 23, 40, 8), with: .color(outline), style: line(1.8))

@@ -90,7 +90,7 @@ def wing(up=0):
     pts = path((30, 45), ('c', (38, 45), (41, 58), (38, 70)), ('c', (35, 78), (26, 80), (21, 73)), ('c', (17, 63), (21, 48), (30, 45)))
     return rot(pts, up, WING_PIVOT)
 
-def draw(mood='idle', breathe=0.0, canvas=None, shadow=True):
+def draw(mood='idle', breathe=0.0, canvas=None, shadow=True, backpack=False):
     c = canvas or Canvas()
     happy = mood in ('cheer', 'proud'); sleepy = mood == 'sleepy'
     # ground shadow
@@ -107,18 +107,29 @@ def draw(mood='idle', breathe=0.0, canvas=None, shadow=True):
     body = path((40, 24), ('c', (56, 24), (64, 38), (64, 54)), ('c', (64, 72), (54, 88), (40, 88)),
                 ('c', (26, 88), (16, 74), (16, 56)), ('c', (16, 38), (26, 24), (40, 24)))
     c.radial(body, (32, 38), 52, [(0, NAVY_HI), (0.45, NAVY), (1, NAVY_LO)])
-    if mood == 'backpacker':
-        pack = path((12, 50), ('c', (12, 44), (16, 42), (22, 42)), ('l', (26, 42)), ('c', (30, 42), (31, 46), (31, 50)), ('l', (31, 70)), ('c', (31, 74), (28, 76), (24, 76)), ('l', (16, 76)), ('c', (12, 76), (11, 73), (11, 70)), ('l', (12, 50)))
-        c.linear(pack, (12, 44), (30, 76), [(0, LEATHER), (1, LEATHER_D)]); c.stroke(pack, OUT, 2.0)
-        flap = path((11, 52), ('c', (16, 49), (26, 49), (31, 52)), ('l', (31, 58)), ('c', (26, 61), (16, 61), (11, 58)), ('l', (11, 52)))
-        c.fill(flap, LEATHER_D); c.stroke(flap, OUT, 1.6)
-        c.fill(ellipse(21, 59, 3, 3), AMBER); c.stroke(ellipse(21, 59, 3, 3), OUT, 1.0)
     # crest
     for pts in ([(34, 26), (30, 12), (39, 24)], [(38, 25), (37, 9), (44, 24)], [(42, 25), (46, 12), (48, 26)]):
         tuft = path(pts[0], ('c', (pts[0][0] - 2, 18), (pts[1][0] - 2, pts[1][1] + 2), pts[1]), ('c', (pts[1][0] + 3, pts[1][1] + 3), (pts[2][0], 18), pts[2]))
         if mood != 'backpacker':
             c.fill(tuft, NAVY); c.stroke(tuft, OUT, 1.8)
     c.stroke(body, OUT, 2.4)
+    # travel mode: a big backpacking pack, drawn after the body's outline, with a rolled yoga mat on top
+    if backpack or mood == 'backpacker':
+        def rrect(x, y, w, h, r, n=10):
+            pts = []
+            for cx, cy, a0 in [(x + w - r, y + r, -90), (x + w - r, y + h - r, 0), (x + r, y + h - r, 90), (x + r, y + r, 180)]:
+                pts += [(cx + r * math.cos(math.radians(a0 + 90 * i / n)), cy + r * math.sin(math.radians(a0 + 90 * i / n))) for i in range(n + 1)]
+            return pts
+        pack = rrect(3, 34, 27, 51, 8); c.linear(pack, (4, 34), (29, 85), [(0, LEATHER), (1, LEATHER_D)]); c.stroke(pack, OUT, 2.0)
+        flap = rrect(3, 34, 27, 16, 8); c.fill(flap, LEATHER_D); c.stroke(flap, OUT, 1.6)
+        buckle = rrect(14.5, 46, 5, 5, 1.2); c.fill(buckle, AMBER); c.stroke(buckle, OUT, 1.0)
+        pocket = rrect(6.5, 61, 20, 17, 4); c.fill(pocket, LEATHER_D); c.stroke(pocket, OUT, 1.4)
+        mat = rrect(1, 23, 32, 11, 5.5); c.linear(mat, (17, 23), (17, 34), [(0, SKY), (1, SKY_D)]); c.stroke(mat, OUT, 1.8)
+        c.fill(ellipse(6.5, 28.5, 11, 11), SKY); c.stroke(ellipse(6.5, 28.5, 11, 11), OUT, 1.6)
+        roll = [(6.5 + math.cos(t * 3 * math.pi) * (4.4 - t * 3.4), 28.5 + math.sin(t * 3 * math.pi) * (4.4 - t * 3.4)) for t in [i / 36 for i in range(37)]]
+        c.stroke(roll, SKY_D, 1.3, closed=False)
+        for x in (15, 26):
+            c.stroke([(x, 23.5), (x, 33.5)], LEATHER_D, 2.0, closed=False)
     # chest bib with scalloped feathers
     bib = path((47, 29), ('c', (60, 31), (65, 45), (61, 58)), ('c', (57, 66), (46, 66), (41, 58)), ('c', (38, 48), (38, 34), (47, 29)))
     c.linear(bib, (50, 30), (50, 64), [(0, SUN), (1, AMBER)])
@@ -158,8 +169,6 @@ def draw(mood='idle', breathe=0.0, canvas=None, shadow=True):
     c.stroke(path((44, 23), ('c', (49, 20), (56, 19.5), (61, 22))), OUT, 2.6, closed=False)
     c.fill(ellipse(51, 49, 7, 3.8), BLUSH)
     if mood == 'backpacker':
-        strap = path((40, 30), ('c', (46, 44), (46, 60), (40, 72)))
-        c.stroke(strap, LEATHER_D, 3.2, closed=False); c.stroke(strap, OUT, 0.8, closed=False)
         brim = ellipse(40, 23, 40, 8); c.fill(brim, KHAKI_D); c.stroke(brim, OUT, 1.8)
         crown = path((28, 22), ('c', (28, 12), (34, 8), (40, 8)), ('c', (46, 8), (52, 12), (52, 22)), ('l', (28, 22)))
         c.linear(crown, (40, 8), (40, 22), [(0, KHAKI), (1, KHAKI_D)]); c.stroke(crown, OUT, 1.8)
