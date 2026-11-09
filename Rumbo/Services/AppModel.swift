@@ -331,13 +331,14 @@ final class AppModel {
     // MARK: - Doing tasks
 
     func start(_ task: PlannedTaskRecord) {
+        // A lesson happens outside the app: opening it just shows the log form. It isn't "started", so the plan
+        // isn't locked and it can still be skipped.
+        guard !task.task.isLesson else { return }
         task.status = .active
         task.startedAt = .now
         task.pausedAt = nil
         task.pausedSeconds = 0
         save()
-        // A lesson happens outside the app: it goes straight to logging, with no timer.
-        guard !task.task.isLesson else { return }
         LiveActivities.start(task: task)
     }
 

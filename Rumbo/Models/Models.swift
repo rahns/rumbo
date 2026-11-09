@@ -164,7 +164,8 @@ import SwiftData
 
     /// Something has been done (or is underway), so the budget is fixed.
     var hasStarted: Bool {
-        planTasks.contains { $0.status == .done || $0.status == .active }
+        // A lesson opened in an older version was marked active without anything being done; that doesn't count.
+        planTasks.contains { $0.status == .done || ($0.status == .active && !$0.task.isLesson) }
     }
 
     /// Every planned card is done or skipped, and at least one was done. Extras don't count.

@@ -578,7 +578,8 @@ struct TaskCardView: View {
                     HStack(spacing: 10) {
                         Button(task.task.isLesson ? "Log it" : task.status == .active ? "Continue" : "Start", action: onStart)
                             .buttonStyle(ChunkyButtonStyle(color: color))
-                        if task.status == .planned {
+                        // A lesson can be skipped until it's logged (it never really "starts").
+                        if task.status == .planned || task.task.isLesson {
                             Button(action: onSkip) {
                                 Image(systemName: "forward.fill")
                             }
