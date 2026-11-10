@@ -5,11 +5,24 @@ public struct StreakCalculator: Sendable {
     /// Any logged practice keeps the streak going: a partial day (even just Duolingo) counts.
     public static let minutesForStreakDay = 1
     /// Freezes held at most.
-    public static let maxFreezes = 2
+    public static let maxFreezes = 3
     /// Every learner starts with one.
     public static let startingFreezes = 1
-    /// Every two weeks of streak (day 14, 28, 42…) earns a freeze.
+    /// The first freeze is earned at a 7-day streak, then one every two weeks (day 7, 21, 35…).
+    public static let streakDaysForFirstFreeze = 7
     public static let streakDaysPerFreeze = 14
+
+    /// Whether reaching this streak length earns a freeze.
+    public static func earnsFreeze(atStreak streak: Int) -> Bool {
+        streak >= streakDaysForFirstFreeze && (streak - streakDaysForFirstFreeze) % streakDaysPerFreeze == 0
+    }
+
+    /// Streak days from `streak` to the next one that earns a freeze.
+    public static func daysToNextFreeze(fromStreak streak: Int) -> Int {
+        streak < streakDaysForFirstFreeze
+            ? streakDaysForFirstFreeze - streak
+            : streakDaysPerFreeze - (streak - streakDaysForFirstFreeze) % streakDaysPerFreeze
+    }
 
     public var calendar: Calendar
     public var weeklyGoalMinutes: Int
@@ -59,7 +72,7 @@ public struct StreakCalculator: Sendable {
             if minutes >= Self.minutesForStreakDay {
                 status.streak += 1
                 if day == todayStart { status.todayCounted = true }
-                if status.streak % Self.streakDaysPerFreeze == 0 && status.freezes < Self.maxFreezes {
+                if Self.earnsFreeze(atStreak: status.streak) && status.freezes < Self.maxFreezes {
                     // With the inventory full, the reward is skipped.
                     status.freezes += 1
                     status.freezesEarned.append(EarnedFreeze(day: day, streak: status.streak))
@@ -85,11 +98,11 @@ public struct StreakCalculator: Sendable {
         return status
     }
 
-    /// The day the streak reaches its next multiple of 14 if practice continues every day from today
+    /// The day the streak reaches its next freeze (7, 21, 35…) if practice continues every day from today
     /// (counting today if it's still to do), and how many streak days that is. Nil with the inventory full.
     public func nextFreeze(_ status: Status, today: Date) -> (day: Date, daysLeft: Int)? {
         guard status.freezes < Self.maxFreezes else { return nil }
-        let daysLeft = Self.streakDaysPerFreeze - status.streak % Self.streakDaysPerFreeze
+        let daysLeft = Self.daysToNextFreeze(fromStreak: status.streak)
         let offset = status.todayCounted ? daysLeft : daysLeft - 1
         return (calendar.startOfDay(for: calendar.date(byAdding: .day, value: offset, to: today)!), daysLeft)
     }

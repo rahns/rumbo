@@ -77,20 +77,11 @@ struct SettingsView: View {
                     Button {
                         sourceInfo = source
                     } label: {
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack(spacing: 6) {
-                                Text(SourceCopy.name(source)).foregroundStyle(Palette.ink)
-                                Image(systemName: "info.circle")
-                                    .font(.rounded(.caption, weight: .bold))
-                                    .foregroundStyle(Palette.secondaryText)
-                            }
-                            // The one source that isn't an app you already use: say what switching it on does.
-                            if source == .suggestedContent {
-                                Text(SourceCopy.role(source))
-                                    .font(.rounded(.caption, weight: .medium))
-                                    .foregroundStyle(Palette.secondaryText)
-                                    .multilineTextAlignment(.leading)
-                            }
+                        HStack(spacing: 6) {
+                            Text(SourceCopy.name(source)).foregroundStyle(Palette.ink)
+                            Image(systemName: "info.circle")
+                                .font(.rounded(.caption, weight: .bold))
+                                .foregroundStyle(Palette.secondaryText)
                         }
                     }
                     .buttonStyle(.borderless)
@@ -173,18 +164,17 @@ struct SettingsView: View {
                 get: { profile.languageTransferLastTrack },
                 set: { profile.languageTransferLastTrack = $0; profile.languageTransferRepeatPending = false }
             ), in: 0...Course.languageTransferTracks)
-            // Section and unit side by side, as compact menus, so Duolingo takes one row.
-            LabeledContent("Duolingo") {
-                HStack(spacing: 0) {
-                    Picker("Section", selection: binding(get: { profile.duolingoSection }, set: { profile.duolingoSection = $0 })) {
-                        ForEach(1...10, id: \.self) { Text("Section \($0)").tag($0) }
-                    }
-                    Picker("Unit", selection: binding(get: { profile.duolingoUnit }, set: { profile.duolingoUnit = $0 })) {
-                        ForEach(1...300, id: \.self) { Text("Unit \($0)").tag($0) }
-                    }
+            // Section and unit side by side, each with its own small − / +, so Duolingo takes one row.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) {
+                    Text("Duolingo")
+                    Spacer(minLength: 0)
+                    duolingoSteppers(profile)
                 }
-                .pickerStyle(.menu)
-                .labelsHidden()
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Duolingo")
+                    duolingoSteppers(profile)
+                }
             }
             // One step = one part (each episode is two parts), so a half-watched episode can be set.
             Stepper(extraProgressLabel(profile), value: binding(
@@ -305,6 +295,15 @@ struct SettingsView: View {
         }
     }
 
+    private func duolingoSteppers(_ profile: LearnerProfile) -> some View {
+        HStack(spacing: 12) {
+            CompactStepper(label: "Section \(profile.duolingoSection)", value: binding(
+                get: { profile.duolingoSection }, set: { profile.duolingoSection = $0 }), range: 1...10)
+            CompactStepper(label: "Unit \(profile.duolingoUnit)", value: binding(
+                get: { profile.duolingoUnit }, set: { profile.duolingoUnit = $0 }), range: 1...300)
+        }
+    }
+
     /// A new email to Rahn in the Mail app, with the app and iOS version filled in for bug reports.
     static var feedbackEmail: URL {
         var components = URLComponents()
@@ -334,5 +333,52 @@ struct SettingsView: View {
             set(value)
             model.save()
         })
+    }
+}
+
+/// A small − / + pair with its value beside it, for two steppers on one Settings row. Hold to repeat.
+private struct CompactStepper: View {
+    let label: String
+    @Binding var value: Int
+    let range: ClosedRange<Int>
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(label)
+                .monospacedDigit()
+                .foregroundStyle(Palette.ink)
+            HStack(spacing: 0) {
+                button("minus", by: -1)
+                Divider().frame(height: 16)
+                button("plus", by: 1)
+            }
+            .background(Capsule().fill(Color(.tertiarySystemFill)))
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: step(1)
+            case .decrement: step(-1)
+            @unknown default: break
+            }
+        }
+    }
+
+    private func button(_ symbol: String, by delta: Int) -> some View {
+        Button { step(delta) } label: {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .bold))
+                .frame(width: 30, height: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
+        .buttonRepeatBehavior(.enabled)
+        .foregroundStyle(Palette.ink)
+        .disabled(delta < 0 ? value <= range.lowerBound : value >= range.upperBound)
+    }
+
+    private func step(_ delta: Int) {
+        value = min(max(value + delta, range.lowerBound), range.upperBound)
     }
 }

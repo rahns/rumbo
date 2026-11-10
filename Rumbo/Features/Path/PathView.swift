@@ -15,7 +15,7 @@ struct PathView: View {
     @State private var showingGate = false
     /// Bumped to play the ice-shatter on the streak flame (a freeze saved the streak).
     @State private var freezeShatters = 0
-    /// Shows "1 of 2 streak freezes" under the freeze pill for a moment.
+    /// Shows "1 of 3 streak freezes" under the freeze pill for a moment.
     @State private var showingFreezeTip = false
     /// Bumped to bounce the freeze pill when one is earned.
     @State private var freezeEarned = 0
@@ -275,7 +275,7 @@ struct PathView: View {
             freezeShatters += 1
             model.banner = AppModel.Banner(
                 title: "🧊 A streak freeze saved you",
-                message: "Nothing was logged on \(day.formatted(.dateTime.weekday(.wide))), so a freeze kept the streak going. Every 14 days of streak earns another (you can hold \(StreakCalculator.maxFreezes))."
+                message: "Nothing was logged on \(day.formatted(.dateTime.weekday(.wide))), so a freeze kept the streak going. Freezes are earned at a 7-day streak, then every 14 days after that (you can hold \(StreakCalculator.maxFreezes))."
             )
         } else if model.takeUnseenFreezeEarned() != nil {
             freezeEarned += 1
@@ -658,7 +658,7 @@ struct GoalCountdownLine: View {
     }
 }
 
-/// A streak freeze on the path: one earned on the day the streak reached 14, 28… days, or the next one still to earn.
+/// A streak freeze on the path: one earned on the day the streak reached 7, 21, 35… days, or the next one still to earn.
 struct FreezeRow: View {
     let marker: PathFreezeMarker
 

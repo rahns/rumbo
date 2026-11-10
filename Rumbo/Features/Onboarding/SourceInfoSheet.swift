@@ -13,6 +13,8 @@ struct SourceInfoSheet: View {
         let what: String
         let whereToFind: String
         let links: [(title: String, url: URL)]
+        /// What switching the source on adds to the plan, when that isn't obvious.
+        var inYourPlan: String? = nil
     }
 
     private var info: Info {
@@ -42,9 +44,10 @@ struct SourceInfoSheet: View {
                  whereToFind: "The Tandem and HelloTalk apps.",
                  links: [("Open tandem.net", URL(string: "https://www.tandem.net")!), ("Open hellotalk.com", URL(string: "https://www.hellotalk.com")!)])
         case .suggestedContent:
-            Info(what: "Real shows, series, podcasts and YouTube channels made for native speakers, picked for each level in Rumbo's Library. With this on, your plan includes watching one of them from B1 once Extra en Español is done (or straight away if you don't use Dreaming Spanish). Switch it off to keep your listening to your courses; the Library is there either way.",
+            Info(what: "Real shows, series, podcasts and YouTube channels made for native speakers, picked for each level in Rumbo's Library.",
                  whereToFind: "The Library tab: each suggestion says where to find it (YouTube, Netflix, Spotify, …).",
-                 links: [])
+                 links: [],
+                 inYourPlan: "With this switched on, your plan includes watching one of these from B1, once Extra en Español is done (or at any level if you don't use Dreaming Spanish). Switch it off to keep your listening to your courses; the Library is there either way.")
         }
     }
 
@@ -69,6 +72,9 @@ struct SourceInfoSheet: View {
                 }
                 section("What it is", info.what, symbol: "questionmark.circle.fill")
                 section("Where to find it", info.whereToFind, symbol: "mappin.circle.fill")
+                if let inYourPlan = info.inYourPlan {
+                    section("In your plan", inYourPlan, symbol: "calendar.circle.fill")
+                }
                 ForEach(info.links.indices, id: \.self) { index in
                     Link(destination: info.links[index].url) {
                         Label(info.links[index].title, systemImage: "arrow.up.right.square.fill")

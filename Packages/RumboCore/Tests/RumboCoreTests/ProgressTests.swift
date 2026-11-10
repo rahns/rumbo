@@ -54,54 +54,62 @@ import Testing
         #expect(status.streak == 1)
     }
 
-    @Test func everyTwoWeeksOfStreakEarnsAFreeze() {
-        // A 14-day streak earns one on day 14, on top of the starting freeze.
-        let history = log(Array(repeating: 5, count: 14), from: monday)
-        let status = calculator.status(history: history, today: TestCalendar.adding(days: 13, to: monday))
-        #expect(status.streak == 14)
-        #expect(status.freezes == 2)
-        #expect(status.freezesEarned.map(\.day) == [TestCalendar.utc.startOfDay(for: TestCalendar.adding(days: 13, to: monday))])
-        let thirteen = calculator.status(history: log(Array(repeating: 5, count: 13), from: monday), today: TestCalendar.adding(days: 12, to: monday))
-        #expect(thirteen.freezes == 1)
+    @Test func aWeekOfStreakEarnsTheFirstFreezeThenEveryTwoWeeks() {
+        func day(_ n: Int) -> Date { TestCalendar.utc.startOfDay(for: TestCalendar.adding(days: n, to: monday)) }
+        // Day 7 earns the first, on top of the starting freeze; then day 21, 35…
+        let seven = calculator.status(history: log(Array(repeating: 5, count: 7), from: monday), today: day(6))
+        #expect(seven.streak == 7)
+        #expect(seven.freezes == 2)
+        #expect(seven.freezesEarned.map(\.day) == [day(6)])
+        let six = calculator.status(history: log(Array(repeating: 5, count: 6), from: monday), today: day(5))
+        #expect(six.freezes == 1)
+        let twenty = calculator.status(history: log(Array(repeating: 5, count: 20), from: monday), today: day(19))
+        #expect(twenty.freezes == 2, "nothing at 14 any more")
+        let twentyOne = calculator.status(history: log(Array(repeating: 5, count: 21), from: monday), today: day(20))
+        #expect(twentyOne.freezes == 3)
+        #expect(twentyOne.freezesEarned.map(\.streak) == [7, 21])
     }
 
     @Test func aFrozenDayDoesNotAddToTheCount() {
-        // Day 3 is frozen: the streak reaches 14 on day 15, not 14.
-        let history = log([5, 5, 5, 0] + Array(repeating: 5, count: 11), from: monday)
-        let status = calculator.status(history: history, today: TestCalendar.adding(days: 14, to: monday))
-        #expect(status.streak == 14)
-        #expect(status.freezesEarned.map(\.day) == [TestCalendar.utc.startOfDay(for: TestCalendar.adding(days: 14, to: monday))])
-        #expect(status.freezes == 1, "one spent on day 3, one earned on day 15")
+        // Day 3 is frozen: the streak reaches 7 on day 8, not 7.
+        let history = log([5, 5, 5, 0] + Array(repeating: 5, count: 4), from: monday)
+        let status = calculator.status(history: history, today: TestCalendar.adding(days: 7, to: monday))
+        #expect(status.streak == 7)
+        #expect(status.freezesEarned.map(\.day) == [TestCalendar.utc.startOfDay(for: TestCalendar.adding(days: 7, to: monday))])
+        #expect(status.freezes == 1, "one spent on day 3, one earned on day 8")
     }
 
     @Test func aBrokenStreakStartsTheCountAgain() {
-        // 10 days, a freeze day, a missed day (streak lost), then 13 days: no freeze earned yet.
-        let history = log(Array(repeating: 5, count: 10) + [0, 0] + Array(repeating: 5, count: 13), from: monday)
-        let status = calculator.status(history: history, today: TestCalendar.adding(days: 24, to: monday))
-        #expect(status.streak == 13)
+        // 5 days, a freeze day, a missed day (streak lost), then 6 days: no freeze earned yet.
+        let history = log(Array(repeating: 5, count: 5) + [0, 0] + Array(repeating: 5, count: 6), from: monday)
+        let status = calculator.status(history: history, today: TestCalendar.adding(days: 12, to: monday))
+        #expect(status.streak == 6)
         #expect(status.freezesEarned.isEmpty)
     }
 
-    @Test func freezesAreCappedAtTwo() {
-        let history = log(Array(repeating: 5, count: 56), from: monday)
-        let status = calculator.status(history: history, today: TestCalendar.adding(days: 55, to: monday))
-        #expect(status.freezes == 2)
-        #expect(status.freezesEarned.count == 1, "later rewards are skipped while the inventory is full")
+    @Test func freezesAreCappedAtThree() {
+        let history = log(Array(repeating: 5, count: 63), from: monday)
+        let status = calculator.status(history: history, today: TestCalendar.adding(days: 62, to: monday))
+        #expect(status.freezes == 3)
+        #expect(status.freezesEarned.count == 2, "later rewards are skipped while the inventory is full")
     }
 
     @Test func nextFreezeDay() {
-        let today = TestCalendar.adding(days: 9, to: monday)
-        // 10-day streak including today: 4 more days, on day 13.
-        let counted = calculator.status(history: log(Array(repeating: 5, count: 10), from: monday), today: today)
-        #expect(calculator.nextFreeze(counted, today: today)?.daysLeft == 4)
-        #expect(calculator.nextFreeze(counted, today: today)?.day == TestCalendar.utc.startOfDay(for: TestCalendar.adding(days: 13, to: monday)))
-        // 9-day streak with today still to do: today is day 10, so day 14 is still day 13.
-        let pending = calculator.status(history: log(Array(repeating: 5, count: 9), from: monday), today: today)
-        #expect(calculator.nextFreeze(pending, today: today)?.daysLeft == 5)
-        #expect(calculator.nextFreeze(pending, today: today)?.day == TestCalendar.utc.startOfDay(for: TestCalendar.adding(days: 13, to: monday)))
+        func day(_ n: Int) -> Date { TestCalendar.utc.startOfDay(for: TestCalendar.adding(days: n, to: monday)) }
+        // 4-day streak including today: 3 more days, on day 7.
+        let counted = calculator.status(history: log(Array(repeating: 5, count: 4), from: monday), today: day(3))
+        #expect(calculator.nextFreeze(counted, today: day(3))?.daysLeft == 3)
+        #expect(calculator.nextFreeze(counted, today: day(3))?.day == day(6))
+        // 3-day streak with today still to do: today is day 4, so day 7 is still the 7th.
+        let pending = calculator.status(history: log(Array(repeating: 5, count: 3), from: monday), today: day(3))
+        #expect(calculator.nextFreeze(pending, today: day(3))?.daysLeft == 4)
+        #expect(calculator.nextFreeze(pending, today: day(3))?.day == day(6))
+        // After the first, every 14: a 10-day streak is 11 days from 21.
+        let ten = calculator.status(history: log(Array(repeating: 5, count: 10), from: monday), today: day(9))
+        #expect(calculator.nextFreeze(ten, today: day(9))?.daysLeft == 11)
         var full = counted
-        full.freezes = 2
-        #expect(calculator.nextFreeze(full, today: today) == nil)
+        full.freezes = 3
+        #expect(calculator.nextFreeze(full, today: day(3)) == nil)
     }
 
     // MARK: Goal pace
