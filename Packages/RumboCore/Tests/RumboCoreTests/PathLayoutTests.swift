@@ -37,6 +37,30 @@ import Testing
         #expect(path.allNodes.prefix(6).map(\.status) == [.done, .partial, .missed, .done, .current, .upcoming])
     }
 
+    @Test func withAGoalADayIsGreenOnlyIfItReachedWhatTheGoalNeeded() {
+        func path(goal: Int, today: Int, _ days: [Int: PathLayout.Day]) -> [PathNode.Status] {
+            PathLayout.map(start: start, today: TestCalendar.adding(days: today, to: start),
+                           days: Dictionary(uniqueKeysWithValues: days.map { (day($0.key), $0.value) }), arrivals: [:],
+                           goal: PathLayout.Goal(weeklyMinutes: goal), calendar: calendar)
+                .allNodes.prefix(today + 1).map(\.status)
+        }
+        // 140 a week from a Monday: 20 a day, then what's left spread over the days left.
+        #expect(path(goal: 140, today: 4, [
+            0: PathLayout.Day(minutes: 20, session: .finished),   // needed 20: green
+            1: PathLayout.Day(minutes: 15, session: .finished),   // needed 20: yellow, even with the plan finished
+            2: PathLayout.Day(minutes: 30, session: .none),       // needed 21: green without a plan
+            3: PathLayout.Day(minutes: 25, session: .unfinished), // needed 19: green with the plan unfinished
+            4: PathLayout.Day(minutes: 10, session: .finished),   // today, finished, needed 17: yellow
+        ]) == [.done, .partial, .done, .done, .partial])
+        #expect(path(goal: 140, today: 1, [1: PathLayout.Day(minutes: 5, session: .unfinished)]) == [.missed, .current],
+                "today stays current until it's finished")
+        // Once the week's goal is met, any practice is enough.
+        #expect(path(goal: 30, today: 2, [
+            0: PathLayout.Day(minutes: 30, session: .finished),
+            1: PathLayout.Day(minutes: 5, session: .none),
+        ]) == [.done, .done, .current])
+    }
+
     @Test func weeksStartOnTheLearnersWeekStart() {
         // Started on a Thursday: the first week runs from that Monday, with Mon–Wed before the start.
         let thursday = TestCalendar.adding(days: 3, to: start)

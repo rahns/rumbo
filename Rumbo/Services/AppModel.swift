@@ -985,7 +985,9 @@ final class AppModel {
         let calculator = StreakCalculator(weeklyGoalMinutes: profile.weeklyGoalMinutes, calendar: calendar)
         return PathLayout.map(start: profile.createdAt, today: .now, days: days, arrivals: arrivals,
                               frozen: Set(status.frozenDays), freezesEarned: status.freezesEarned.map { (day: $0.day, streak: $0.streak) },
-                              nextFreeze: calculator.nextFreeze(status, today: .now), calendar: calendar)
+                              nextFreeze: calculator.nextFreeze(status, today: .now),
+                              goal: PathLayout.Goal(weeklyMinutes: profile.weeklyGoalMinutes, lessons: profile.lessonSchedule),
+                              calendar: calendar)
     }
 
     func acceptDifficultySuggestion() {
