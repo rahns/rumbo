@@ -22,7 +22,7 @@ enum TaskCopy {
         case .otherStudy: "Other grammar & vocab"
         case .otherOutput: "Other speaking & writing"
         case .otherFluency: "Other fluency practice"
-        case .lessonOutput, .lessonInput, .lessonStudy, .lessonMixed: "Lesson"
+        case .lessonOutput, .lessonInput, .lessonStudy, .lessonMixed: "Class/Tutoring"
         }
     }
 
@@ -115,7 +115,7 @@ enum TaskCopy {
         case .otherStudy, .otherOutput, .otherFluency:
             "Logged with Log other."
         case .lessonOutput, .lessonInput, .lessonStudy, .lessonMixed:
-            "Your lesson today. Log it once it's done."
+            "Your class or tutoring today. Log it once it's done."
         }
     }
 
@@ -151,6 +151,10 @@ enum TaskCopy {
         case .fluency: "Easy reading or listening at speed, retelling a story, chatting about familiar things."
         }
     }
+
+    /// All-in-one other practice: split across speaking & writing, listening and grammar & vocab.
+    static let allInOneSymbol = "square.stack.3d.up.fill"
+    static let allInOneExamples = "A class, tutoring or an exchange that mixed speaking, listening and grammar. It's split evenly across the three."
 
     static func otherSymbol(_ strand: Strand) -> String {
         strand == .input ? "ear.fill" : symbol(for: TaskKind.other(for: strand))

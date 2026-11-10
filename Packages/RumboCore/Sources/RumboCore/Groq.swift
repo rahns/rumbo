@@ -16,7 +16,7 @@ public enum Groq {
 
     /// Shown under feedback: "Checked by Groq (gpt-oss-120b)".
     public static func displayName(for model: String) -> String {
-        "Groq (\(model.split(separator: "/").last.map(String.init) ?? model))"
+        "GroqCloud (\(model.split(separator: "/").last.map(String.init) ?? model))"
     }
 
     /// The chat model ids in a `GET /models` reply (inactive ones left out).
@@ -88,11 +88,11 @@ public enum Groq {
     public static func outputText(from data: Data) throws -> String {
         guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let choice = (object["choices"] as? [[String: Any]])?.first else {
-            throw Gemini.Failure.other("Unexpected reply from Groq.")
+            throw Gemini.Failure.other("Unexpected reply from GroqCloud.")
         }
-        if (choice["finish_reason"] as? String) == "length" { throw Gemini.Failure.other("Groq's answer was cut off.") }
+        if (choice["finish_reason"] as? String) == "length" { throw Gemini.Failure.other("GroqCloud's answer was cut off.") }
         guard let text = (choice["message"] as? [String: Any])?["content"] as? String, !text.isEmpty else {
-            throw Gemini.Failure.other("Groq sent an empty reply.")
+            throw Gemini.Failure.other("GroqCloud sent an empty reply.")
         }
         return text
     }
@@ -112,7 +112,7 @@ public enum Groq {
         case 429: return .rateLimited
         // 498: Groq's own "capacity exceeded".
         case 498, 500, 502, 503, 504: return .busy
-        default: return .other(message.isEmpty ? "Groq returned error \(status)." : message)
+        default: return .other(message.isEmpty ? "GroqCloud returned error \(status)." : message)
         }
     }
 }

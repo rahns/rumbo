@@ -77,11 +77,20 @@ struct SettingsView: View {
                     Button {
                         sourceInfo = source
                     } label: {
-                        HStack(spacing: 6) {
-                            Text(SourceCopy.name(source)).foregroundStyle(Palette.ink)
-                            Image(systemName: "info.circle")
-                                .font(.rounded(.caption, weight: .bold))
-                                .foregroundStyle(Palette.secondaryText)
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 6) {
+                                Text(SourceCopy.name(source)).foregroundStyle(Palette.ink)
+                                Image(systemName: "info.circle")
+                                    .font(.rounded(.caption, weight: .bold))
+                                    .foregroundStyle(Palette.secondaryText)
+                            }
+                            // The one source that isn't an app you already use: say what switching it on does.
+                            if source == .suggestedContent {
+                                Text(SourceCopy.role(source))
+                                    .font(.rounded(.caption, weight: .medium))
+                                    .foregroundStyle(Palette.secondaryText)
+                                    .multilineTextAlignment(.leading)
+                            }
                         }
                     }
                     .buttonStyle(.borderless)
@@ -130,17 +139,17 @@ struct SettingsView: View {
         } header: {
             Text("Writing feedback")
         } footer: {
-            Text("Pico checks your writing with Gemini and/or Groq, both free with your own keys: your default first, then the other. Without either, a basic checker is used.")
+            Text("Pico checks your writing with Gemini and/or GroqCloud, both free with your own keys: your default first, then the other. Without either, a basic checker is used.")
         }
 
         Section {
             NavigationLink {
                 LessonSettingsView()
             } label: {
-                LabeledContent("Lessons", value: profile.lessonSchedule.summary(weekStartsOnSunday: profile.weekStartsOnSunday))
+                LabeledContent("Classes/Tutoring", value: profile.lessonSchedule.summary(weekStartsOnSunday: profile.weekStartsOnSunday))
             }
         } header: {
-            Text("Lessons")
+            Text("Classes/Tutoring")
         } footer: {
             Text("A tutor or a class on set days: it's always in that day's plan, at its usual length.")
         }
@@ -164,14 +173,19 @@ struct SettingsView: View {
                 get: { profile.languageTransferLastTrack },
                 set: { profile.languageTransferLastTrack = $0; profile.languageTransferRepeatPending = false }
             ), in: 0...Course.languageTransferTracks)
-            Stepper("Duolingo: doing section \(profile.duolingoSection)", value: binding(
-                get: { profile.duolingoSection },
-                set: { profile.duolingoSection = $0 }
-            ), in: 1...10)
-            Stepper("Duolingo: doing unit \(profile.duolingoUnit)", value: binding(
-                get: { profile.duolingoUnit },
-                set: { profile.duolingoUnit = $0 }
-            ), in: 1...300)
+            // Section and unit side by side, as compact menus, so Duolingo takes one row.
+            LabeledContent("Duolingo") {
+                HStack(spacing: 0) {
+                    Picker("Section", selection: binding(get: { profile.duolingoSection }, set: { profile.duolingoSection = $0 })) {
+                        ForEach(1...10, id: \.self) { Text("Section \($0)").tag($0) }
+                    }
+                    Picker("Unit", selection: binding(get: { profile.duolingoUnit }, set: { profile.duolingoUnit = $0 })) {
+                        ForEach(1...300, id: \.self) { Text("Unit \($0)").tag($0) }
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+            }
             // One step = one part (each episode is two parts), so a half-watched episode can be set.
             Stepper(extraProgressLabel(profile), value: binding(
                 get: { profile.extraEpisodesWatched * Course.extraIntensivePartsPerEpisode + profile.extraPartsDoneInEpisode },
@@ -269,9 +283,6 @@ struct SettingsView: View {
                       message: Text("I'm using Rumbo to plan my Spanish. Download it here (you sign it with your own certificate):")) {
                 Label("Share Rumbo with a friend", systemImage: "square.and.arrow.up")
             }
-            Link(destination: URL(string: "https://github.com/rahns/rumbo/releases")!) {
-                Label("Downloads and what's new", systemImage: "arrow.down.circle")
-            }
             Link(destination: Self.feedbackEmail) {
                 Label("Report a bug or suggest something", systemImage: "envelope")
             }
@@ -285,11 +296,12 @@ struct SettingsView: View {
         } footer: {
             VStack(spacing: 4) {
                 Text("Rumbo \(DiagnosticsModel.appVersion)")
-                Text("Made out of necessity (and ❤️) by Rahn")
-                    .font(.rounded(.caption2, weight: .medium))
+                Text("Made out of necessity (and with ❤️) by Rahn")
             }
             .frame(maxWidth: .infinity)
             .padding(.top, 8)
+            // A little room between the credit and the tab bar.
+            .padding(.bottom, 24)
         }
     }
 

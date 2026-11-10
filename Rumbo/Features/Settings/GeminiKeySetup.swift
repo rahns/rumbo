@@ -20,7 +20,7 @@ struct GeminiKeySetup: View {
                         .font(.rounded(.headline, weight: .black))
                         .foregroundStyle(Palette.ink)
                     if groq {
-                        step(1, "Open the GroqCloud console and sign up with an email or Google account.")
+                        step(1, "Open the GroqCloud console (Groq with a Q, not Grok) and sign up with an email or Google account.")
                         Link(destination: Groq.keyPage) {
                             Label("Open GroqCloud", systemImage: "arrow.up.right.square.fill")
                         }
@@ -79,8 +79,8 @@ struct GeminiKeySetup: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 note("gift.fill", groq
-                     ? "Free: Groq gives about 1,000 requests a day, plenty for writing checks."
-                     : "Free: Google gives a daily allowance, plenty for a few writing checks a day. If you run out, Rumbo tries Groq (if set up), then its basic checker, and shows a small warning.")
+                     ? "Free: GroqCloud gives about 1,000 requests a day, plenty for writing checks."
+                     : "Free: Google gives a daily allowance, plenty for a few writing checks a day. If you run out, Rumbo tries GroqCloud (if set up), then its basic checker, and shows a small warning.")
                 note("lock.fill", "Your key is kept in the phone's Keychain and saved in your backups, so restoring brings it back. Keep backup files private.")
                 if !groq {
                     note("eye.fill", "On the free tier Google may use what you send to improve its products, so don't write anything private.")
@@ -169,7 +169,7 @@ struct GeminiSettingsView: View {
                         .foregroundStyle(Palette.ink)
                     Picker("Default checker", selection: $defaultChecker) {
                         Text("Gemini Flash-Lite").tag(WritingChecker.gemini)
-                        Text("Groq").tag(WritingChecker.groq)
+                        Text("GroqCloud").tag(WritingChecker.groq)
                     }
                     .pickerStyle(.segmented)
                     Label(orderNote, systemImage: "arrow.triangle.branch")
@@ -198,10 +198,10 @@ struct GeminiSettingsView: View {
                     Button("Remove Gemini key", role: .destructive) { key = "" }
                         .buttonStyle(ChunkySecondaryButtonStyle())
                 }
-                section("Groq", "Also free and fast, and usually less busy than Google. Rumbo picks the best model Groq offers (GPT-OSS 120B for now) and switches by itself if Groq changes its models.")
+                section("GroqCloud", "Groq with a Q, at console.groq.com: a company that runs open AI models fast. Not Grok, the chatbot on X. Also free, and usually less busy than Google. Rumbo picks the best model GroqCloud offers (GPT-OSS 120B for now) and switches by itself if GroqCloud changes its models.")
                 GeminiKeySetup(key: $groqKey, groq: true)
                 if !groqKey.isEmpty {
-                    Button("Remove Groq key", role: .destructive) { groqKey = "" }
+                    Button("Remove GroqCloud key", role: .destructive) { groqKey = "" }
                         .buttonStyle(ChunkySecondaryButtonStyle())
                 }
             }

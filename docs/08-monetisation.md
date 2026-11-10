@@ -5,7 +5,7 @@ Status: **ideas only, parked for later.** Nothing here is implemented. Rumbo is 
 ## Constraints
 
 - **Apple Developer Program:** $99 a year, App Store distribution. Apple takes 15% under the Small Business Program.
-- **No running costs per user:** writing feedback uses each learner's own free Gemini or Groq key, and data stays on the phone. That keeps one-time pricing viable.
+- **No running costs per user:** writing feedback uses each learner's own free Gemini or GroqCloud key, and data stays on the phone. That keeps one-time pricing viable.
 - **Subscriptions don't fit:** the author's view is that the app doesn't add enough ongoing value to justify one.
 - **App Store review:** needs a privacy policy, and a way for the reviewer to try writing feedback (a demo key, or noting that the basic checker works without one).
 - **Names:** don't use "Dreaming Spanish", "Duolingo", "Language Transfer" or "Extra en Español" in the app name or icon. "Works with…" in the description is fine.

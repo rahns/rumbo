@@ -498,7 +498,7 @@ enum SourceCopy {
         case .duolingo: "Short daily warm-up"
         case .writing: "Short writing tasks in Rumbo"
         case .tandem: "I have a language exchange partner"
-        case .suggestedContent: "Native content once a course runs out"
+        case .suggestedContent: "Native shows in your plan once Extra is done"
         }
     }
 

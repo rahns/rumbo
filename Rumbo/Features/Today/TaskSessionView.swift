@@ -245,10 +245,10 @@ struct TaskSessionView: View {
                 }
             }
             if kind.isLesson {
-                question("What kind of lesson was it?",
+                question("What kind of class/tutoring was it?",
                          explanation: lessonType == .allInOne
-                            ? "All-in-one splits the time evenly between speaking & writing, listening and grammar & vocab. Pre-set from Settings → Lessons; changing it only changes this lesson."
-                            : "Pre-set from Settings → Lessons. Change it if this one was different; it only changes this lesson.") {
+                            ? "All-in-one splits the time evenly between speaking & writing, listening and grammar & vocab. Pre-set from Settings → Classes/Tutoring; changing it only changes this one."
+                            : "Pre-set from Settings → Classes/Tutoring. Change it if this one was different; it only changes this one.") {
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 10) {
                         ForEach(LessonType.allCases, id: \.self) { type in
                             ChipButton(title: TaskCopy.lessonTypeName(type), isSelected: lessonType == type,
@@ -515,21 +515,30 @@ struct BonusInputSheet: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @State private var minutes = 20
-    @State private var strand = Strand.input
+    /// Nil is all-in-one: split evenly across speaking & writing, listening and grammar & vocab.
+    @State private var strand: Strand? = .input
     /// The form's height, so the sheet fits it exactly.
     @State private var height: CGFloat = 520
 
-    private static let strands: [Strand] = [.input, .languageFocused, .output, .fluency]
+    private static let strands: [Strand?] = [.input, .languageFocused, .output, .fluency, nil]
+
+    private func name(_ strand: Strand?) -> String { strand.map(TaskCopy.otherName) ?? "All-in-one" }
+    private func color(_ strand: Strand?) -> Color { strand?.color ?? Palette.lavender }
+
+    private var examples: String {
+        guard let strand else { return TaskCopy.allInOneExamples }
+        return TaskCopy.otherExamples(strand) + (strand == .input ? " It all counts toward your listening hours." : " It counts toward your training hours.")
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             StepTitle("Log other practice")
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 10) {
                 ForEach(Self.strands, id: \.self) { option in
-                    ChipButton(title: TaskCopy.otherName(option), isSelected: strand == option, color: option.color) { strand = option }
+                    ChipButton(title: name(option), isSelected: strand == option, color: color(option)) { strand = option }
                 }
             }
-            Text(TaskCopy.otherExamples(strand) + (strand == .input ? " It all counts toward your listening hours." : " It counts toward your training hours."))
+            Text(examples)
                 .font(.rounded(.subheadline, weight: .medium))
                 .foregroundStyle(Palette.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
@@ -544,7 +553,7 @@ struct BonusInputSheet: View {
                 model.logOther(minutes: minutes, strand: strand)
                 dismiss()
             }
-            .buttonStyle(ChunkyButtonStyle(color: strand.color))
+            .buttonStyle(ChunkyButtonStyle(color: color(strand)))
         }
         .padding(24)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }

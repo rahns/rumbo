@@ -6,7 +6,7 @@ public enum WritingChecker: String, CaseIterable, Sendable {
     public static let standardDefault = WritingChecker.gemini
 
     /// For the picker and warnings: "Gemini" or "Groq".
-    public var name: String { self == .gemini ? "Gemini" : "Groq" }
+    public var name: String { self == .gemini ? "Gemini" : "GroqCloud" }
 
     /// The order to try them in: the default first (if it has a key), then the others that have keys.
     public static func order(default first: WritingChecker, available: Set<WritingChecker>) -> [WritingChecker] {

@@ -14,7 +14,7 @@ struct LessonSettingsView: View {
             }
         }
         .rumboListBackground()
-        .navigationTitle("Lessons")
+        .navigationTitle("Classes/Tutoring")
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -41,26 +41,26 @@ struct LessonSettingsView: View {
             }
             .padding(.vertical, 4)
         } header: {
-            Text("Choose each day you have lessons")
+            Text("Choose each day you have classes or tutoring")
         } footer: {
-            Text("On these days a Lesson card is always in your plan. It's part of the time you pick for the day, so pick a bit more on lesson days.")
+            Text("On these days a Class/Tutoring card is always in your plan. It's part of the time you pick for the day, so pick a bit more on those days.")
         }
 
         Section {
-            Stepper("Usual lesson duration: \(schedule.usualMinutes) min", value: Binding(
+            Stepper("Usual duration: \(schedule.usualMinutes) min", value: Binding(
                 get: { schedule.usualMinutes },
                 set: { minutes in update(profile) { $0.usualMinutes = minutes } }
             ), in: 15...180, step: 5)
-            Picker("Usual lesson type", selection: Binding(
+            Picker("Usual type", selection: Binding(
                 get: { schedule.usualType },
                 set: { type in update(profile) { $0.usualType = type } }
             )) {
                 ForEach(LessonType.allCases, id: \.self) { Text(TaskCopy.lessonTypeName($0)).tag($0) }
             }
         } header: {
-            Text("Usual lesson")
+            Text("Usual class/tutoring")
         } footer: {
-            Text("The type decides which part of your practice the lesson counts toward, so the rest of the day's plan balances it. All-in-one splits the lesson's time evenly between speaking & writing, listening and grammar & vocab. You can change the type for a one-off lesson when you log it.")
+            Text("The type decides which part of your practice it counts toward, so the rest of the day's plan balances it. All-in-one splits its time evenly between speaking & writing, listening and grammar & vocab. You can change the type for a one-off session when you log it.")
         }
 
         let chosen = weekdays(profile).filter { schedule.days[$0] != nil }
@@ -72,7 +72,7 @@ struct LessonSettingsView: View {
             } header: {
                 Text("Each day")
             } footer: {
-                Text("Give a day its own length or type, e.g. a longer speaking class on Tuesdays and a shorter grammar lesson on Thursdays.")
+                Text("Give a day its own length or type, e.g. a longer speaking class on Tuesdays and a shorter grammar session with a tutor on Thursdays.")
             }
         }
     }

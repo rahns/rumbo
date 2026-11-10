@@ -584,11 +584,17 @@ final class AppModel {
     }
 
     /// "Log other": practice outside the plan, in any strand (listening is logged as `contentWatch`).
-    func logOther(minutes: Int, strand: Strand) {
+    /// Practice outside the plan. A nil strand is all-in-one: split evenly across speaking & writing,
+    /// listening and grammar & vocab, as logs sharing one timestamp so Today shows (and undoes) them as one.
+    func logOther(minutes: Int, strand: Strand?) {
         let before = streak
-        let log = ActivityLog(date: .now, task: TaskKind.other(for: strand), minutes: minutes)
-        log.isBonus = true
-        context.insert(log)
+        let date = Date.now
+        let parts = strand.map { [(kind: TaskKind.other(for: $0), minutes: minutes)] } ?? LessonType.splitOther(minutes: minutes)
+        for part in parts {
+            let log = ActivityLog(date: date, task: part.kind, minutes: part.minutes)
+            log.isBonus = true
+            context.insert(log)
+        }
         save()
         refreshReminders()
         celebrateProgress(since: before, minutes: minutes)
@@ -703,6 +709,25 @@ final class AppModel {
 
     var bonusLogsToday: [ActivityLog] {
         logs.filter { $0.isBonus && calendar.isDateInToday($0.date) }
+    }
+
+    /// Today's other practice as Today lists it: an all-in-one entry's logs (same timestamp) form one group.
+    var bonusEntriesToday: [[ActivityLog]] {
+        var groups: [[ActivityLog]] = []
+        for log in bonusLogsToday {
+            if let index = groups.firstIndex(where: { $0[0].date == log.date }) {
+                groups[index].append(log)
+            } else {
+                groups.append([log])
+            }
+        }
+        return groups
+    }
+
+    func delete(_ logs: [ActivityLog]) {
+        logs.forEach(context.delete)
+        save()
+        refreshReminders()
     }
 
     func delete(_ log: ActivityLog) {

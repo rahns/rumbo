@@ -95,7 +95,7 @@ public enum TaskKind: String, CaseIterable, Codable, Sendable {
         case .tandemCall: MinuteRange(min: 15, standard: 20, max: 30)
         case .fluency432: MinuteRange(min: 10, standard: 10, max: 12)
         case .reviewMistakes: MinuteRange(min: 3, standard: 5, max: 10)
-        case .missionTravel: MinuteRange(min: 5, standard: 10, max: 20)
+        case .missionTravel: MinuteRange(min: 3, standard: 3, max: 3)
         case .otherStudy, .otherOutput, .otherFluency: MinuteRange(min: 1, standard: 20, max: 600)
         case .lessonOutput, .lessonInput, .lessonStudy, .lessonMixed: MinuteRange(min: 5, standard: 60, max: 240)
         }

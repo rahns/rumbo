@@ -19,8 +19,17 @@ public enum LessonType: String, CaseIterable, Codable, Sendable {
     /// An all-in-one lesson's minutes as three logs: speaking & writing, listening, grammar & vocab.
     /// Spread evenly; any extra minute goes to the first parts (50 → 17, 17, 16).
     public static func split(minutes: Int) -> [(kind: TaskKind, minutes: Int)] {
-        let kinds: [TaskKind] = [.lessonOutput, .lessonInput, .lessonStudy]
-        return kinds.enumerated().compactMap { index, kind in
+        split(minutes: minutes, into: [.lessonOutput, .lessonInput, .lessonStudy])
+    }
+
+    /// All-in-one practice logged with "Log other": the same even split, as other practice
+    /// (speaking & writing, listening, grammar & vocab).
+    public static func splitOther(minutes: Int) -> [(kind: TaskKind, minutes: Int)] {
+        split(minutes: minutes, into: [.otherOutput, .contentWatch, .otherStudy])
+    }
+
+    static func split(minutes: Int, into kinds: [TaskKind]) -> [(kind: TaskKind, minutes: Int)] {
+        kinds.enumerated().compactMap { index, kind in
             let share = minutes / 3 + (index < minutes % 3 ? 1 : 0)
             return share > 0 ? (kind, share) : nil
         }

@@ -196,20 +196,19 @@ struct TodayView: View {
         let text: String
         if advice.goalAlreadyMet {
             text = "You've met your \(goal)-minute goal this week. Any time today is a bonus; a few minutes keeps the streak."
-                + (todaysLesson.map { " Today's \($0)-minute lesson is in the plan." } ?? "")
+                + (todaysLesson.map { " Today's \($0) min of classes/tutoring is in the plan." } ?? "")
         } else {
             let days = advice.daysLeft == 1 ? "today, the last day of the week" : "a day for the \(advice.daysLeft) days left this week"
             var parts: [String] = []
             if advice.minutesPerDay == 0 {
-                parts.append("Your lessons this week cover the rest of your \(goal)-minute goal.")
+                parts.append("Your classes/tutoring this week cover the rest of your \(goal)-minute goal.")
             } else {
                 let lessons = advice.upcomingLessonMinutes > 0
-                    ? ", counting the \(advice.upcomingLessonMinutes) min of lessons still to come"
+                    ? ", accounting for \(advice.upcomingLessonMinutes) min of classes/tutoring still to come"
                     : ""
                 parts.append("To reach your \(goal)-minute goal: about \(advice.minutesPerDay) min \(days)\(lessons).")
             }
             parts.append("**\(advice.recommended) min** keeps you on track.")
-            if let todaysLesson { parts.append("That includes today's \(todaysLesson)-minute lesson.") }
             text = parts.joined(separator: " ")
         }
         return HStack(alignment: .top, spacing: 10) {
@@ -268,8 +267,9 @@ struct TodayView: View {
                     .font(.rounded(.title3, weight: .black))
                     .foregroundStyle(Palette.ink)
                 Spacer()
-                // The plan's real length: a lesson plus the daily Duolingo lesson can run past the time picked.
-                Text("\(plan.planTasks.reduce(0) { $0 + $1.minutesPlanned }) min")
+                // The plan's real length (a class plus the daily Duolingo warm-up can run past the time picked);
+                // once the day is complete, the minutes actually logged.
+                Text("\(plan.isComplete ? model.dayProgress(for: plan).done : plan.planTasks.reduce(0) { $0 + $1.minutesPlanned }) min")
                     .font(.rounded(.subheadline, weight: .heavy))
                     .foregroundStyle(Palette.secondaryText)
             }
@@ -407,16 +407,19 @@ extension TodayView {
     /// Other practice logged today ("Log other"), each with an undo.
     @ViewBuilder
     var bonusSection: some View {
-        let logs = model.bonusLogsToday
-        if !logs.isEmpty {
+        let entries = model.bonusEntriesToday
+        if !entries.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Other practice today")
                     .font(.rounded(.headline, weight: .black))
                     .foregroundStyle(Palette.ink)
-                ForEach(logs) { log in
+                ForEach(entries, id: \.[0].id) { entry in
+                    let log = entry[0]
+                    let allInOne = entry.count > 1
                     HStack {
-                        Image(systemName: TaskCopy.otherSymbol(log.task.strand)).foregroundStyle(log.task.strand.color)
-                        Text("\(TaskCopy.otherName(log.task.strand)) · \(log.minutes) min")
+                        Image(systemName: allInOne ? TaskCopy.allInOneSymbol : TaskCopy.otherSymbol(log.task.strand))
+                            .foregroundStyle(allInOne ? Palette.lavender : log.task.strand.color)
+                        Text("\(allInOne ? "All-in-one" : TaskCopy.otherName(log.task.strand)) · \(entry.reduce(0) { $0 + $1.minutes }) min")
                             .font(.rounded(.body, weight: .bold))
                             .foregroundStyle(Palette.ink)
                         Text(log.date.formatted(date: .omitted, time: .shortened))
@@ -424,7 +427,7 @@ extension TodayView {
                             .foregroundStyle(Palette.secondaryText)
                         Spacer()
                         Button {
-                            withAnimation { model.delete(log) }
+                            withAnimation { model.delete(entry) }
                         } label: {
                             Label("Undo", systemImage: "arrow.uturn.backward")
                                 .font(.rounded(.subheadline, weight: .heavy))

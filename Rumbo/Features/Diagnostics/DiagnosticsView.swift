@@ -72,7 +72,7 @@ struct DiagnosticsView: View {
             } header: {
                 Text("Writing checkers")
             } footer: {
-                Text("Trace a full check runs a writing check exactly like a task, in your order (default checker, then the other, then the basic checker): which checker answered, streaming or one piece, when the first event arrived, thinking updates, the longest silence, Groq's model pick, and any retry or fallback. Test each checker asks every checker that has a key directly: Gemini streamed and in one piece, and Groq (up to 3 free requests).")
+                Text("Trace a full check runs a writing check exactly like a task, in your order (default checker, then the other, then the basic checker): which checker answered, streaming or one piece, when the first event arrived, thinking updates, the longest silence, GroqCloud's model pick, and any retry or fallback. Test each checker asks every checker that has a key directly: Gemini streamed and in one piece, and GroqCloud (up to 3 free requests).")
             }
 
             Section {

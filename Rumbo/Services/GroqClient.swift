@@ -54,17 +54,17 @@ enum GroqClient {
     static func test(key: String) async -> (works: Bool, message: String) {
         do {
             let reply = try await send(input: "Escribe: «Ayer fui a la playa.»", instructions: "Reply with the JSON asked for.", key: key)
-            return (true, "It works (using \(reply.model)). Pico will use Groq to check your writing.")
+            return (true, "It works (using \(reply.model)). Pico will use GroqCloud to check your writing.")
         } catch Gemini.Failure.rateLimited {
             return (true, "Your key works, but its free limit is used up for now. It resets soon.")
         } catch Gemini.Failure.busy {
-            return (true, "Your key works. Groq is busy right now; try a check again in a minute.")
+            return (true, "Your key works. GroqCloud is busy right now; try a check again in a minute.")
         } catch Gemini.Failure.timedOut {
-            return (false, "Groq didn't answer in time, so the key isn't confirmed yet. Try again in a minute.")
+            return (false, "GroqCloud didn't answer in time, so the key isn't confirmed yet. Try again in a minute.")
         } catch Gemini.Failure.invalidKey {
-            return (false, "Groq didn't accept that key. Check you copied all of it.")
+            return (false, "GroqCloud didn't accept that key. Check you copied all of it.")
         } catch {
-            return (false, "Couldn't reach Groq: \(error.localizedDescription)")
+            return (false, "Couldn't reach GroqCloud: \(error.localizedDescription)")
         }
     }
 
@@ -75,14 +75,14 @@ enum GroqClient {
         do {
             return (try await attempt(model: model, input: input, instructions: instructions, key: key), model)
         } catch Gemini.Failure.busy {
-            GeminiTrace.log("Groq busy: waiting 2 s, then trying once more")
+            GeminiTrace.log("GroqCloud busy: waiting 2 s, then trying once more")
             try await Task.sleep(for: .seconds(2))
             return (try await attempt(model: model, input: input, instructions: instructions, key: key), model)
         } catch Gemini.Failure.modelUnavailable {
             let previous = model
             model = await currentModel(key: key, forceRefresh: true)
             guard model != previous else { throw Gemini.Failure.modelUnavailable }
-            GeminiTrace.log("Groq: \(previous) is gone, switching to \(model)")
+            GeminiTrace.log("GroqCloud: \(previous) is gone, switching to \(model)")
             return (try await attempt(model: model, input: input, instructions: instructions, key: key), model)
         }
     }
@@ -98,10 +98,10 @@ enum GroqClient {
         guard case let (data, response)? = try? await URLSession.shared.data(for: request),
               (response as? HTTPURLResponse)?.statusCode == 200,
               let chosen = Groq.chooseModel(from: Groq.modelIDs(from: data)) else {
-            GeminiTrace.log("Groq: couldn't read the models list; using \(GroqKey.model)")
+            GeminiTrace.log("GroqCloud: couldn't read the models list; using \(GroqKey.model)")
             return GroqKey.model
         }
-        if chosen != GroqKey.model { GeminiTrace.log("Groq: picked \(chosen) from its models list") }
+        if chosen != GroqKey.model { GeminiTrace.log("GroqCloud: picked \(chosen) from its models list") }
         GroqKey.model = chosen
         GroqKey.modelCheckedAt = .now
         return chosen
@@ -119,16 +119,16 @@ enum GroqClient {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            GeminiTrace.log("Groq HTTP \(status) after \(String(format: "%.1f", Date.now.timeIntervalSince(started))) s")
+            GeminiTrace.log("GroqCloud HTTP \(status) after \(String(format: "%.1f", Date.now.timeIntervalSince(started))) s")
             if let failure = Groq.failure(status: status, body: data) { throw failure }
             let text = try Groq.outputText(from: data)
-            GeminiTrace.log("Groq answered (\(text.count) characters)")
+            GeminiTrace.log("GroqCloud answered (\(text.count) characters)")
             return text
         } catch let error as URLError where error.code == .timedOut || error.code == .networkConnectionLost {
-            GeminiTrace.log("Groq: no answer in time")
+            GeminiTrace.log("GroqCloud: no answer in time")
             throw Gemini.Failure.timedOut
         } catch {
-            GeminiTrace.log("Groq failed: \(error.localizedDescription)")
+            GeminiTrace.log("GroqCloud failed: \(error.localizedDescription)")
             throw error
         }
     }
@@ -152,14 +152,14 @@ enum GroqClient {
 
     /// The warning above feedback when the basic checker had to do it, after Groq (and maybe Gemini) failed.
     static func notice(for error: Error, geminiAlsoFailed: Bool) -> String {
-        let who = geminiAlsoFailed ? "Gemini and Groq" : "Groq"
+        let who = geminiAlsoFailed ? "Gemini and GroqCloud" : "GroqCloud"
         return switch error {
         case Gemini.Failure.rateLimited:
             geminiAlsoFailed
-                ? "Gemini and Groq are both at their free limits for now, so the basic checker did this one. It's less accurate."
-                : "You've used Groq's free limit for now, so the basic checker did this one. It's less accurate."
+                ? "Gemini and GroqCloud are both at their free limits for now, so the basic checker did this one. It's less accurate."
+                : "You've used GroqCloud's free limit for now, so the basic checker did this one. It's less accurate."
         case Gemini.Failure.invalidKey:
-            "Groq didn't accept your API key, so the basic checker did this one. Check it in Settings → Writing feedback."
+            "GroqCloud didn't accept your API key, so the basic checker did this one. Check it in Settings → Writing feedback."
         case Gemini.Failure.busy, Gemini.Failure.timedOut:
             "\(who) \(geminiAlsoFailed ? "are" : "is") busy right now, so the basic checker did this one. Try checking again in a minute."
         case let urlError as URLError where urlError.code == .notConnectedToInternet:

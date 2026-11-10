@@ -164,7 +164,9 @@ import Testing
             learner.isOnline = online
             for budget in DayPlanner.budgetChoices {
                 let tasks = plan(budget, learner).tasks
-                #expect(tasks.contains { $0.kind == .missionTravel }, "\(budget) min, online: \(online)")
+                let missions = tasks.filter { $0.kind == .missionTravel }
+                #expect(missions.count == 1, "\(budget) min, online: \(online)")
+                #expect(missions.allSatisfy { $0.minutes == 3 }, "a mission is a short exchange, never stretched: \(budget) min")
                 #expect(tasks.reduce(0) { $0 + $1.minutes } <= budget)
             }
         }

@@ -73,7 +73,7 @@ Times are minutes: min / default / max per day.
 | `tandem.call` | Output | 15 / 20 / 30 | From call stage | Includes a 3-question prep card |
 | `fluency.432` | Fluency | 10 / 10 / 12 | From voice stage | Same story in 4 → 3 → 2 minutes, recorded in-app (R8) |
 | `review.mistakes` | Language | 3 / 5 / 10 | All | Only when cards are due (FSRS scheduling) |
-| `mission.travel` | Output | 5 / 10 / 20 | All, Travel mode | Real-world task, e.g. "Ask for a recommendation at the hostel and log two phrases you heard." |
+| `mission.travel` | Output | 3 / 3 / 3 | All, Travel mode | Real-world task, e.g. "Ask for a recommendation at the hostel and log two phrases you heard." |
 
 If a source is disabled, its tasks are never planned. Its strand's minutes go to the other tasks in the same strand.
 
@@ -101,7 +101,7 @@ Implemented in `RumboCore/DayPlanner.swift`.
 
 0. **Lesson.** On a lesson day (Settings → Lessons: chosen weekdays, a usual length and type, and each day's own length and type when more than one day is chosen; `LessonSchedule`), the lesson is always planned, at that day's length, as `lesson.output` (speaking & writing), `lesson.input` (listening), `lesson.study` (grammar & vocab) or `lesson.mixed` (**All-in-one**). An all-in-one lesson counts a third of its minutes toward each of speaking & writing, listening and grammar & vocab in the day's mix, and is logged as three logs, split evenly (`LessonType.split`: 60 → 20 + 20 + 20, 50 → 17 + 17 + 16). It's **inside** the budget: it uses up part of `B`, and its minutes count in that strand's deficit, so the rest of the day leans to other strands. It doesn't take one of the 4 cards, never gets leftover minutes, and is never offered in Keep going. If it takes the whole budget, the plan is the lesson (plus Duolingo when that's always included). Lessons don't count toward the weekly Tandem or writing anchors.
 1. **Warm-up.** Every day the band uses Duolingo and Settings → Habit → **Always include Duolingo** is on (the default; "If you're keeping a streak going"), plan `duo.lesson` first: one lesson, 3 min (it keeps the learner's Duolingo streak; never more than 5). With it off, nothing reserves room for Duolingo: it's just one of the study options. If `B ≥ 20` and ≥ 5 cards are due, plan `review.mistakes` (3 min, or 5 from 30 min).
-1b. **Travel mission.** In travel mode, a real-world mission (`mission.travel`, 10 min, less if that's all that's left; at least 5) is always planned right after the warm-up, online or offline, on every budget including 10-minute days. Before, it was only the first choice for a speaking & writing card, so whether it appeared depended on which strand got a card.
+1b. **Travel mission.** In travel mode, a real-world mission (`mission.travel`, a fixed 3 min: it's one short real-world exchange, and leftover minutes never stretch it) is always planned right after the warm-up, online or offline, on every budget including 10-minute days. Before, it was only the first choice for a speaking & writing card, so whether it appeared depended on which strand got a card.
 2. **Deficits.** For each strand: `target = share × (logged last 6 days + B)`, then `deficit = target − logged last 6 days − planned today`.
 3. **Fill with new cards.** While there are fewer than 4 cards:
    - Pick the strand with the largest deficit.
@@ -159,7 +159,7 @@ Over the last 5 ratings at the current difficulty: 3 or more "Easy" → suggest 
 
 - **Offline preference.** Tasks are marked offline-capable or not. Offline: downloaded Language Transfer tracks, Dreaming Spanish downloads (where the user's DS subscription allows), writing with on-device AI feedback. Online-only: LanguageTool, Extra on YouTube (unless downloaded with YouTube Premium).
 - **Missions.** `mission.travel` becomes the preferred output task.
-- **Log other.** Logging for practice outside the plan, in any strand: Listening (a bus podcast, a tour in Spanish; logged as `content.watch`, so it also counts toward listening hours), Grammar & vocab (`other.study`: a grammar book, a class, another app), Speaking & writing (`other.output`) and Fluency practice (`other.fluency`). It counts toward training hours, the weekly goal, the streak and strand balance. The `other.*` kinds are never planned and don't count toward weekly anchors (writing, Tandem).
+- **Log other.** Logging for practice outside the plan, in any strand: Listening (a bus podcast, a tour in Spanish; logged as `content.watch`, so it also counts toward listening hours), Grammar & vocab (`other.study`: a grammar book, a class, another app), Speaking & writing (`other.output`), Fluency practice (`other.fluency`) and All-in-one (split evenly across `other.output`, `content.watch` and `other.study`, like an all-in-one lesson; `LessonType.splitOther`). It counts toward training hours, the weekly goal, the streak and strand balance. The `other.*` kinds are never planned and don't count toward weekly anchors (writing, Tandem).
 
 ## 2.8 Streaks, hours and goals
 

@@ -148,7 +148,7 @@ import Testing
         #expect(Groq.chooseModel(from: ["openai/gpt-oss-20b", "llama-3.3-70b-versatile"]) == "openai/gpt-oss-20b")
         #expect(Groq.chooseModel(from: ["whisper-large-v3", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"]) == "llama-3.3-70b-versatile")
         #expect(Groq.chooseModel(from: ["openai/gpt-oss-safeguard-20b", "canopylabs/orpheus-v1"]) == nil, "only special models: nothing usable")
-        #expect(Groq.displayName(for: "openai/gpt-oss-120b") == "Groq (gpt-oss-120b)")
+        #expect(Groq.displayName(for: "openai/gpt-oss-120b") == "GroqCloud (gpt-oss-120b)")
     }
 
     @Test func otherModelsGetJSONModeWithoutReasoning() throws {
@@ -169,7 +169,7 @@ import Testing
         #expect(WritingChecker.order(default: .groq, available: [.gemini, .groq]) == [.groq, .gemini])
         #expect(WritingChecker.order(default: .groq, available: [.gemini]) == [.gemini], "a default without a key is skipped")
         #expect(WritingChecker.order(default: .gemini, available: []).isEmpty)
-        #expect(WritingChecker.summary(default: .groq, available: [.gemini, .groq]) == "Groq, then Gemini")
+        #expect(WritingChecker.summary(default: .groq, available: [.gemini, .groq]) == "GroqCloud, then Gemini")
         #expect(WritingChecker.summary(default: .gemini, available: []) == "Not set up")
         #expect(WritingChecker.standardDefault == .gemini)
     }

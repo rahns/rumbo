@@ -37,7 +37,7 @@ enum CheckID: String, CaseIterable, Identifiable {
     case liveActivities = "Live Activities"
     case notifications = "Notifications"
     case gemini = "Gemini API key"
-    case groq = "Groq API key"
+    case groq = "GroqCloud API key"
     case onDeviceModel = "Apple on-device model"
     case languageTool = "LanguageTool"
     case urlSchemes = "Source apps installed"
@@ -229,7 +229,7 @@ final class DiagnosticsModel {
     func probeCheckers() async {
         let order = WritingCheckers.order
         guard !order.isEmpty else {
-            geminiTrace = "No keys yet. Add Gemini and/or Groq in Settings → Writing feedback."
+            geminiTrace = "No keys yet. Add Gemini and/or GroqCloud in Settings → Writing feedback."
             return
         }
         geminiRunning = true
@@ -253,7 +253,7 @@ final class DiagnosticsModel {
                 }
             case .groq:
                 guard let key = GroqKey.current else { continue }
-                await run("Groq · \(GroqKey.model)") { await GroqClient.probe(key: key) }
+                await run("GroqCloud · \(GroqKey.model)") { await GroqClient.probe(key: key) }
             }
         }
     }

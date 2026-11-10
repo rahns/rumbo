@@ -111,6 +111,8 @@ import Testing
         #expect(LessonType.split(minutes: 50).map(\.minutes) == [17, 17, 16])
         #expect(LessonType.split(minutes: 50).map(\.kind) == [.lessonOutput, .lessonInput, .lessonStudy])
         #expect(LessonType.split(minutes: 2).map(\.minutes) == [1, 1], "no empty parts")
+        #expect(LessonType.splitOther(minutes: 30).map(\.kind) == [.otherOutput, .contentWatch, .otherStudy])
+        #expect(LessonType.splitOther(minutes: 31).map(\.minutes) == [11, 10, 10])
         #expect(TaskKind.lesson(for: LessonType.allInOne) == .lessonMixed)
         #expect(TaskKind.lesson(for: LessonType.input) == .lessonInput)
     }
