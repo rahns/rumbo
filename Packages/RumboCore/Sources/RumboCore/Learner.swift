@@ -65,8 +65,30 @@ public struct LearnerSnapshot: Sendable {
     /// Settings → Plan balance: the learner's own split between the strands, or nil for the band's.
     public var balance: StrandBalance?
 
-    /// What share of the day each strand should get: the custom balance, or the band's research-based split.
-    public var strandTargets: [Strand: Double] { balance?.targets ?? band.strandTargets }
+    /// What share of the day each strand should get: the custom balance, or the band's research-based split,
+    /// over the strands the planner can fill today. A strand with nothing to plan (every source for it off,
+    /// say) has its share spread over the others in proportion. If the split puts everything on such strands,
+    /// the band's split is used for the rest instead, so the plan is never left empty.
+    public var strandTargets: [Strand: Double] {
+        let available = Strand.allCases.filter(canPlan)
+        guard !available.isEmpty else { return balance?.targets ?? band.strandTargets }
+        func share(_ targets: [Strand: Double]) -> [Strand: Double]? {
+            // Nothing to move: keep the split exactly as it is.
+            if Strand.allCases.allSatisfy({ available.contains($0) || (targets[$0] ?? 0) == 0 }) { return targets }
+            let sum = available.reduce(0) { $0 + (targets[$1] ?? 0) }
+            guard sum > 0 else { return nil }
+            return Dictionary(uniqueKeysWithValues: Strand.allCases.map { strand in
+                (strand, available.contains(strand) ? (targets[strand] ?? 0) / sum : 0)
+            })
+        }
+        return balance.flatMap { share($0.targets) } ?? share(band.strandTargets)
+            ?? Dictionary(uniqueKeysWithValues: Strand.allCases.map { ($0, available.contains($0) ? 1 / Double(available.count) : 0) })
+    }
+
+    /// Whether the planner has anything it can put on a card in this strand (lessons and logged-only kinds aside).
+    public func canPlan(_ strand: Strand) -> Bool {
+        TaskKind.allCases.contains { $0.strand == strand && isEligible($0) }
+    }
 
     public init(
         band: Band,

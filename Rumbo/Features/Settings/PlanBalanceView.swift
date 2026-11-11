@@ -32,11 +32,16 @@ struct PlanBalanceView: View {
     private func sections(_ profile: LearnerProfile) -> some View {
         let standard = StrandBalance(band: profile.band)
         let balance = draft ?? profile.strandBalance ?? standard
+        let learner = model.snapshot(for: profile)
+        let blocked = Self.order.filter { !learner.canPlan($0) }
         Section {
             BalanceBar(balance: balance, order: Self.order)
                 .padding(.vertical, 4)
             ForEach(Self.order, id: \.self) { strand in
-                StrandSliderRow(strand: strand, percent: balance[strand], enabled: true) { value in
+                StrandSliderRow(strand: strand, percent: balance[strand], enabled: true,
+                                warning: blocked.contains(strand) && balance[strand] > 0
+                                    ? "Nothing for this can be planned right now (its sources are off), so its share goes to the others."
+                                    : nil) { value in
                     var updated = balance
                     updated.set(strand, to: value)
                     if updated != draft { Haptics.tap(.light, intensity: 0.6) }
@@ -46,7 +51,10 @@ struct PlanBalanceView: View {
                 }
             }
         } footer: {
-            Text("Move one and the others make room, keeping their proportions, so it always adds up to 100%. A type at 0% gets no cards.")
+            Text("Move one and the others make room, keeping their proportions, so it always adds up to 100%. A type at 0% gets no cards."
+                 + (blocked.contains { balance[$0] > 0 } && Self.order.allSatisfy { blocked.contains($0) || balance[$0] == 0 }
+                    ? " Everything is on types that can't be planned right now, so your plans use the default balance for the rest until you turn a source back on."
+                    : ""))
         }
 
         Section {
@@ -122,6 +130,8 @@ private struct StrandSliderRow: View {
     let strand: Strand
     let percent: Int
     let enabled: Bool
+    /// Why this share can't be used right now, if it can't.
+    let warning: String?
     let onChange: (Int) -> Void
     let onRelease: () -> Void
 
@@ -152,6 +162,12 @@ private struct StrandSliderRow: View {
             .tint(strand.color)
             .disabled(!enabled)
             .opacity(enabled ? 1 : 0.45)
+            if let warning {
+                Label(warning, systemImage: "exclamationmark.triangle.fill")
+                    .font(.rounded(.caption, weight: .semibold))
+                    .foregroundStyle(Palette.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(.vertical, 4)
     }

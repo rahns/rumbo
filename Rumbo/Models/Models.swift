@@ -84,9 +84,6 @@ import SwiftData
         set { strandBalanceData = newValue.flatMap { try? JSONEncoder().encode($0) } }
     }
 
-    /// The split the plan aims for: the custom balance, or the band's.
-    var strandTargets: [Strand: Double] { strandBalance?.targets ?? band.strandTargets }
-
     var pathHistory: PathLayout.PathHistory {
         get { pathHistoryData.flatMap { try? JSONDecoder().decode(PathLayout.PathHistory.self, from: $0) } ?? PathLayout.PathHistory() }
         set { pathHistoryData = try? JSONEncoder().encode(newValue) }
