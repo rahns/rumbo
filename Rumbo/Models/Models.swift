@@ -46,6 +46,8 @@ import SwiftData
     var speakingStageCap: Int = SpeakingStage.calls.rawValue
     /// Encoded `LessonSchedule` (Settings → Lessons); nil = no lessons.
     var lessonScheduleData: Data?
+    /// Encoded `PathLayout.PathHistory`: each past day's path colour, saved once the day is over, so it never changes.
+    var pathHistoryData: Data?
 
     init() {}
 
@@ -73,6 +75,11 @@ import SwiftData
     var lessonSchedule: LessonSchedule {
         get { lessonScheduleData.flatMap { try? JSONDecoder().decode(LessonSchedule.self, from: $0) } ?? LessonSchedule() }
         set { lessonScheduleData = try? JSONEncoder().encode(newValue) }
+    }
+
+    var pathHistory: PathLayout.PathHistory {
+        get { pathHistoryData.flatMap { try? JSONDecoder().decode(PathLayout.PathHistory.self, from: $0) } ?? PathLayout.PathHistory() }
+        set { pathHistoryData = try? JSONEncoder().encode(newValue) }
     }
 
     var dsDifficulty: ClosedRange<Int> {

@@ -956,6 +956,37 @@ final class AppModel {
 
     var pathMap: PathMap {
         guard let profile else { return PathMap(units: [], milestones: []) }
+        let days = pathDays()
+        var arrivals = Projection(calendar: calendar).arrivalDates(hours: trainingHours, weeklyHours: forecastWeeklyHours.hours, from: .now)
+        arrivals = arrivals.filter { $0.key > profile.band }
+        let status = streak
+        let calculator = StreakCalculator(weeklyGoalMinutes: profile.weeklyGoalMinutes, calendar: calendar)
+        return PathLayout.map(start: profile.createdAt, today: .now, days: days, arrivals: arrivals,
+                              frozen: Set(status.frozenDays), freezesEarned: status.freezesEarned.map { (day: $0.day, streak: $0.streak) },
+                              nextFreeze: calculator.nextFreeze(status, today: .now),
+                              goal: pathGoal(profile), history: profile.pathHistory,
+                              calendar: calendar)
+    }
+
+    private func pathGoal(_ profile: LearnerProfile) -> PathLayout.Goal {
+        PathLayout.Goal(weeklyMinutes: profile.weeklyGoalMinutes, lessons: profile.lessonSchedule)
+    }
+
+    /// Saves each past day's path colour once (and today's need as it stands), so later goal or schedule
+    /// changes never recolour a day that's over.
+    func settlePath() {
+        guard let profile else { return }
+        var history = profile.pathHistory
+        let today = calendar.startOfDay(for: .now)
+        let needed = PathLayout.neededMinutes(on: today, days: pathDays(), goal: pathGoal(profile), calendar: calendar)
+        if history.update(with: pathMap, todayNeeded: needed, today: today, calendar: calendar) {
+            profile.pathHistory = history
+            try? context.save()
+        }
+    }
+
+    /// What happened on each day, for the path: minutes, and whether its plan was finished.
+    private func pathDays() -> [Date: PathLayout.Day] {
         let allLogs = logs
         let minutesByLog = Dictionary(allLogs.map { ($0.id, $0.minutes) }, uniquingKeysWith: +)
         var days: [Date: PathLayout.Day] = [:]
@@ -978,16 +1009,7 @@ final class AppModel {
             let existing = days[day] ?? PathLayout.Day(minutes: 0, session: .none)
             days[day] = PathLayout.Day(minutes: existing.minutes + log.minutes, session: existing.session)
         }
-
-        var arrivals = Projection(calendar: calendar).arrivalDates(hours: trainingHours, weeklyHours: forecastWeeklyHours.hours, from: .now)
-        arrivals = arrivals.filter { $0.key > profile.band }
-        let status = streak
-        let calculator = StreakCalculator(weeklyGoalMinutes: profile.weeklyGoalMinutes, calendar: calendar)
-        return PathLayout.map(start: profile.createdAt, today: .now, days: days, arrivals: arrivals,
-                              frozen: Set(status.frozenDays), freezesEarned: status.freezesEarned.map { (day: $0.day, streak: $0.streak) },
-                              nextFreeze: calculator.nextFreeze(status, today: .now),
-                              goal: PathLayout.Goal(weeklyMinutes: profile.weeklyGoalMinutes, lessons: profile.lessonSchedule),
-                              calendar: calendar)
+        return days
     }
 
     func acceptDifficultySuggestion() {
@@ -1039,6 +1061,7 @@ final class AppModel {
 
     func save() {
         try? context.save()
+        settlePath()
         revision += 1
         publishWidgets()
     }

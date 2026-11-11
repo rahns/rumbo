@@ -61,6 +61,36 @@ import Testing
         ]) == [.done, .done, .current])
     }
 
+    @Test func aPastDaysColourIsSavedOnceAndNeverChanges() {
+        let days = [day(0): PathLayout.Day(minutes: 20, session: .finished), day(1): PathLayout.Day(minutes: 20, session: .finished)]
+        func map(goal: Int, today: Int, history: PathLayout.PathHistory) -> PathMap {
+            PathLayout.map(start: start, today: TestCalendar.adding(days: today, to: start), days: days, arrivals: [:],
+                           goal: PathLayout.Goal(weeklyMinutes: goal), history: history, calendar: calendar)
+        }
+        // Day 1 (Tuesday) with a 140 goal needs 20: green. Its need is recorded during the day.
+        var history = PathLayout.PathHistory()
+        let tuesday = map(goal: 140, today: 1, history: history)
+        let need = PathLayout.neededMinutes(on: day(1), days: days, goal: PathLayout.Goal(weeklyMinutes: 140), calendar: calendar)
+        #expect(need == 20)
+        let savedTuesday = history.update(with: tuesday, todayNeeded: need, today: day(1), calendar: calendar)
+        #expect(savedTuesday)
+        // On Wednesday the goal goes up to 280: unsaved, Tuesday would be yellow, but its recorded need keeps it green.
+        let wednesday = map(goal: 280, today: 2, history: history)
+        #expect(wednesday.allNodes[1].status == .done)
+        let savedWednesday = history.update(with: wednesday, todayNeeded: nil, today: day(2), calendar: calendar)
+        #expect(savedWednesday)
+        #expect(history.statuses[PathLayout.PathHistory.key(day(1), calendar: calendar)] == .done)
+        // Monday was settled on Tuesday, green; a lower goal later can't turn a yellow day green either.
+        #expect(wednesday.allNodes[0].status == .done)
+        var strict = PathLayout.PathHistory()
+        _ = strict.update(with: map(goal: 280, today: 2, history: strict), todayNeeded: nil, today: day(2), calendar: calendar)
+        #expect(map(goal: 70, today: 5, history: strict).allNodes.prefix(2).map(\.status) == [.partial, .partial],
+                "saved colours ignore later changes")
+        let again = map(goal: 70, today: 2, history: history)
+        let savedAgain = history.update(with: again, todayNeeded: nil, today: day(2), calendar: calendar)
+        #expect(!savedAgain, "nothing new to save")
+    }
+
     @Test func weeksStartOnTheLearnersWeekStart() {
         // Started on a Thursday: the first week runs from that Monday, with Mon–Wed before the start.
         let thursday = TestCalendar.adding(days: 3, to: start)

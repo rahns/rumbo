@@ -5,7 +5,7 @@ import Foundation
 /// level-ups. Future days stay locked.
 /// See docs/03-experience.md §3.4 "Path".
 public struct PathNode: Equatable, Sendable, Identifiable {
-    public enum Status: Equatable, Sendable {
+    public enum Status: String, Codable, Equatable, Sendable {
         /// Enough practice: at least what the weekly goal needed that day (with a goal), else a finished
         /// session or ≥ 10 minutes logged.
         case done
@@ -109,6 +109,51 @@ public enum PathLayout {
         case finished
     }
 
+    /// What the weekly goal asked of a day: Today's goal advice for it, from the minutes logged earlier
+    /// in its week (`BudgetAdvisor.minutesToday`). Once the week's goal is met, any practice is enough (1).
+    public static func neededMinutes(on day: Date, days: [Date: Day], goal: Goal, calendar: Calendar = .current) -> Int {
+        let start = calendar.startOfDay(for: day)
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: start)?.start ?? start
+        let before = days.filter { $0.key >= weekStart && $0.key < start }.reduce(0) { $0 + $1.value.minutes }
+        let advice = BudgetAdvisor.advice(weeklyGoal: goal.weeklyMinutes, minutesThisWeek: before, today: start,
+                                          lessons: goal.lessons, calendar: calendar)
+        return advice.goalAlreadyMet ? 1 : max(1, advice.minutesToday)
+    }
+
+    /// Past days' colours, saved once each day is over, and each day's need as it stood on the day.
+    /// Days are keyed "yyyy-MM-dd" in the learner's calendar.
+    public struct PathHistory: Codable, Equatable, Sendable {
+        public var statuses: [String: PathNode.Status] = [:]
+        public var neededMinutes: [String: Int] = [:]
+
+        public init() {}
+
+        public static func key(_ day: Date, calendar: Calendar) -> String {
+            let parts = calendar.dateComponents([.year, .month, .day], from: day)
+            return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+        }
+
+        public func status(on day: Date, calendar: Calendar) -> PathNode.Status? { statuses[Self.key(day, calendar: calendar)] }
+        public func needed(on day: Date, calendar: Calendar) -> Int? { neededMinutes[Self.key(day, calendar: calendar)] }
+
+        /// Records today's need (it can still change today) and settles every past day of `map` not settled yet.
+        /// Returns whether anything changed.
+        public mutating func update(with map: PathMap, todayNeeded: Int?, today: Date, calendar: Calendar) -> Bool {
+            var changed = false
+            let todayStart = calendar.startOfDay(for: today)
+            if let todayNeeded {
+                let key = Self.key(todayStart, calendar: calendar)
+                if neededMinutes[key] != todayNeeded { neededMinutes[key] = todayNeeded; changed = true }
+            }
+            for node in map.allNodes where node.date < todayStart {
+                guard [.done, .partial, .missed, .frozen].contains(node.status) else { continue }
+                let key = Self.key(node.date, calendar: calendar)
+                if statuses[key] == nil { statuses[key] = node.status; changed = true }
+            }
+            return changed
+        }
+    }
+
     /// The weekly goal, for judging each day against what it needed (see `map`).
     public struct Goal: Equatable, Sendable {
         public let weeklyMinutes: Int
@@ -138,7 +183,7 @@ public enum PathLayout {
     ///   - nextFreeze: the day the next freeze can be earned, and how many streak days away it is.
     public static func map(start: Date, today: Date, days: [Date: Day], arrivals: [Band: Date],
                            frozen: Set<Date> = [], freezesEarned: [(day: Date, streak: Int)] = [], nextFreeze: (day: Date, daysLeft: Int)? = nil,
-                           goal: Goal? = nil, calendar: Calendar = .current) -> PathMap {
+                           goal: Goal? = nil, history: PathHistory = PathHistory(), calendar: Calendar = .current) -> PathMap {
         let startDay = calendar.startOfDay(for: min(start, today))
         // The path starts on the first day of the week the learner started in, so each "Semana" is a goal week.
         let first = calendar.dateInterval(of: .weekOfYear, for: startDay)?.start ?? startDay
@@ -163,13 +208,11 @@ public enum PathLayout {
 
         /// What the weekly goal asked of a day: Today's goal advice for it, from the minutes logged earlier
         /// in its week (`BudgetAdvisor.minutesToday`). Once the week's goal is met, any practice is enough.
+        /// A day's need as recorded on the day itself, if it was, so later goal changes don't move it.
         func needed(on day: Date) -> Int? {
             guard let goal else { return nil }
-            let weekStart = calendar.dateInterval(of: .weekOfYear, for: day)?.start ?? day
-            let before = days.filter { $0.key >= weekStart && $0.key < day }.reduce(0) { $0 + $1.value.minutes }
-            let advice = BudgetAdvisor.advice(weeklyGoal: goal.weeklyMinutes, minutesThisWeek: before, today: day,
-                                              lessons: goal.lessons, calendar: calendar)
-            return advice.goalAlreadyMet ? 1 : max(1, advice.minutesToday)
+            if let saved = history.needed(on: day, calendar: calendar), day < todayStart { return saved }
+            return neededMinutes(on: day, days: days, goal: goal, calendar: calendar)
         }
 
         var nodes: [PathNode] = []
@@ -177,7 +220,10 @@ public enum PathLayout {
             let day = date(at: index)
             let info = days[day] ?? Day(minutes: 0, session: .none)
             let status: PathNode.Status
-            if day < startDay && info.minutes == 0 && info.session == .none {
+            if index < todayIndex, let saved = history.status(on: day, calendar: calendar) {
+                // A past day keeps the colour it was given once it ended (see `PathHistory`).
+                status = saved
+            } else if day < startDay && info.minutes == 0 && info.session == .none {
                 status = .beforeStart
             } else if let needed = needed(on: day), index < todayIndex || (index == todayIndex && info.session == .finished) {
                 // With a goal, time decides: green once the day reached what the goal needed, yellow below it.
