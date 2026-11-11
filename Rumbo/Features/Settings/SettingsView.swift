@@ -146,13 +146,36 @@ struct SettingsView: View {
         }
 
         Section {
-            NavigationLink {
-                PlanBalanceView()
-            } label: {
-                LabeledContent("Plan balance", value: profile.strandBalance == nil ? "Rumbo's" : "Custom")
+            Toggle("Custom plan balance", isOn: binding(
+                get: { profile.strandBalance != nil },
+                set: { on in
+                    profile.strandBalance = on ? StrandBalance(band: profile.band) : nil
+                    model.replanTodayIfNotStarted()
+                }
+            ))
+            if let balance = profile.strandBalance {
+                NavigationLink {
+                    PlanBalanceView()
+                } label: {
+                    HStack(spacing: 10) {
+                        Text("Plan balance")
+                        Spacer()
+                        // The split at a glance, each share in its strand's colour.
+                        HStack(spacing: 6) {
+                            ForEach([Strand.input, .languageFocused, .output, .fluency], id: \.self) { strand in
+                                Text("\(balance[strand])")
+                                    .font(.rounded(.subheadline, weight: .black))
+                                    .foregroundStyle(strand.color)
+                                    .monospacedDigit()
+                            }
+                        }
+                    }
+                }
             }
         } footer: {
-            Text("How each day's practice is split between listening, speaking & writing, grammar & vocab and fluency.")
+            Text(profile.strandBalance == nil
+                 ? "Rumbo splits each day between listening, grammar & vocab, speaking & writing and fluency by your level. Switch this on to set your own split."
+                 : "Your own split between listening, grammar & vocab, speaking & writing and fluency (%).")
         }
 
         Section {
