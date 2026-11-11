@@ -51,6 +51,8 @@ Every task belongs to exactly one strand (R1). The planner targets these shares 
 | B2.1 | 55% | 23% | 10% | 12% |
 | B2.2 | 55% | 25% | 8% | 12% |
 
+**Custom plan balance** (Settings → Plan balance, `StrandBalance`): the learner can replace this split with their own, in whole percentages in steps of 5 that always add up to 100. Moving one strand scales the others to fill the rest, keeping their proportions (evenly if they were all 0). The custom split is used for every deficit (`LearnerSnapshot.strandTargets`) until the learner switches back to Rumbo's. A strand at 0% never gets a new card (step 3 and the 10-minute single task skip it); classes/tutoring, the Duolingo warm-up, the mistake review and the travel mission are planned as usual. Tested in `StrandBalanceTests`.
+
 The trend: output grows and language-focused study shrinks as structured courses finish (R4, R5, R15). Why input stays above Nation's 25% is explained in [01-research.md](01-research.md#where-rumbo-deliberately-deviates).
 
 ## 2.3 Task catalog

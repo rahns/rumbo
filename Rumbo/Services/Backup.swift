@@ -61,6 +61,7 @@ struct BackupFile: Codable {
         var speakingStageCap: Int?
         var lessonSchedule: LessonSchedule?
         var pathHistory: PathLayout.PathHistory?
+        var strandBalance: StrandBalance?
     }
 
     struct LogData: Codable {
@@ -148,7 +149,8 @@ extension BackupFile.ProfileData {
             alwaysIncludeDuolingo: profile.alwaysIncludeDuolingo,
             speakingStageCap: profile.speakingStageCap,
             lessonSchedule: profile.lessonScheduleData == nil ? nil : profile.lessonSchedule,
-            pathHistory: profile.pathHistoryData == nil ? nil : profile.pathHistory
+            pathHistory: profile.pathHistoryData == nil ? nil : profile.pathHistory,
+            strandBalance: profile.strandBalance
         )
     }
 
@@ -185,6 +187,7 @@ extension BackupFile.ProfileData {
         profile.speakingStageCap = speakingStageCap ?? SpeakingStage.calls.rawValue
         if let lessonSchedule { profile.lessonSchedule = lessonSchedule }
         if let pathHistory { profile.pathHistory = pathHistory }
+        profile.strandBalance = strandBalance
         return profile
     }
 }

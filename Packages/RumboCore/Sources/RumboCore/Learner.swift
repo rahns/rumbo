@@ -62,6 +62,11 @@ public struct LearnerSnapshot: Sendable {
     public var alwaysIncludeDuolingo: Bool
     /// Tutoring or classroom lessons (Settings → Lessons).
     public var lessons: LessonSchedule
+    /// Settings → Plan balance: the learner's own split between the strands, or nil for the band's.
+    public var balance: StrandBalance?
+
+    /// What share of the day each strand should get: the custom balance, or the band's research-based split.
+    public var strandTargets: [Strand: Double] { balance?.targets ?? band.strandTargets }
 
     public init(
         band: Band,
@@ -77,8 +82,10 @@ public struct LearnerSnapshot: Sendable {
         isOnline: Bool = true,
         dsDifficulty: ClosedRange<Int> = 40...48,
         alwaysIncludeDuolingo: Bool = true,
-        lessons: LessonSchedule = LessonSchedule()
+        lessons: LessonSchedule = LessonSchedule(),
+        balance: StrandBalance? = nil
     ) {
+        self.balance = balance
         self.band = band
         self.enabledSources = enabledSources
         self.speakingStage = speakingStage

@@ -12,7 +12,7 @@ struct StatsView: View {
                     VStack(alignment: .leading, spacing: 18) {
                         levelCard(profile)
                         RaisedCard(accent: Palette.leaf) {
-                            StrandBalanceChart(minutes: model.strandMinutesThisWeek, targets: profile.band.strandTargets)
+                            StrandBalanceChart(minutes: model.strandMinutesThisWeek, targets: profile.strandTargets)
                         }
                         projectionCard(profile)
                         if profile.enabledSources.contains(.dreamingSpanish) {

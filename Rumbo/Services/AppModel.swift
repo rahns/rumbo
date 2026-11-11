@@ -147,7 +147,8 @@ final class AppModel {
             isOnline: isOnline,
             dsDifficulty: profile.dsDifficulty,
             alwaysIncludeDuolingo: profile.alwaysIncludeDuolingo,
-            lessons: profile.lessonSchedule
+            lessons: profile.lessonSchedule,
+            balance: profile.strandBalance
         )
     }
 

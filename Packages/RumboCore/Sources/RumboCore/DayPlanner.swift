@@ -185,8 +185,9 @@ private struct PlanBuilder {
         var exhausted: Set<Strand> = []
         // A lesson doesn't take one of the cards.
         while tasks.filter({ !$0.kind.isLesson }).count < DayPlanner.maxCards && remaining > 0 {
+            // A strand set to 0% in a custom balance never gets a card.
             let strands = Strand.allCases
-                .filter { !exhausted.contains($0) }
+                .filter { !exhausted.contains($0) && (learner.strandTargets[$0] ?? 0) > 0 }
                 .sorted { deficit($0) > deficit($1) }
             guard let strand = strands.first else { return }
 
@@ -224,7 +225,7 @@ private struct PlanBuilder {
     mutating func planSingleTask() {
         let left = remaining
         guard left > 0 else { return }
-        for strand in Strand.allCases.sorted(by: { deficit($0) > deficit($1) }) {
+        for strand in Strand.allCases.filter({ (learner.strandTargets[$0] ?? 0) > 0 }).sorted(by: { deficit($0) > deficit($1) }) {
             let fitting = candidates(for: strand).filter { kind in
                 (fixedMinutes(for: kind) ?? kind.minutes.min) <= left && !tasks.contains { $0.kind == kind }
             }
@@ -279,7 +280,7 @@ private struct PlanBuilder {
             if task.kind == .lessonMixed { return total + (strand == .fluency ? 0 : Double(task.minutes) / 3) }
             return total + (task.kind.strand == strand ? Double(task.minutes) : 0)
         }
-        let share = learner.band.strandTargets[strand] ?? 0
+        let share = learner.strandTargets[strand] ?? 0
         let target = share * Double(loggedTotal + budget)
         return target - Double(logged) - planned
     }

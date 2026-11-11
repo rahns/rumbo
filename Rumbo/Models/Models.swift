@@ -48,6 +48,8 @@ import SwiftData
     var lessonScheduleData: Data?
     /// Encoded `PathLayout.PathHistory`: each past day's path colour, saved once the day is over, so it never changes.
     var pathHistoryData: Data?
+    /// Encoded `StrandBalance` (Settings → Plan balance); nil = Rumbo's split for the level.
+    var strandBalanceData: Data?
 
     init() {}
 
@@ -76,6 +78,14 @@ import SwiftData
         get { lessonScheduleData.flatMap { try? JSONDecoder().decode(LessonSchedule.self, from: $0) } ?? LessonSchedule() }
         set { lessonScheduleData = try? JSONEncoder().encode(newValue) }
     }
+
+    var strandBalance: StrandBalance? {
+        get { strandBalanceData.flatMap { try? JSONDecoder().decode(StrandBalance.self, from: $0) } }
+        set { strandBalanceData = newValue.flatMap { try? JSONEncoder().encode($0) } }
+    }
+
+    /// The split the plan aims for: the custom balance, or the band's.
+    var strandTargets: [Strand: Double] { strandBalance?.targets ?? band.strandTargets }
 
     var pathHistory: PathLayout.PathHistory {
         get { pathHistoryData.flatMap { try? JSONDecoder().decode(PathLayout.PathHistory.self, from: $0) } ?? PathLayout.PathHistory() }

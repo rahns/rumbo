@@ -146,6 +146,16 @@ struct SettingsView: View {
         }
 
         Section {
+            NavigationLink {
+                PlanBalanceView()
+            } label: {
+                LabeledContent("Plan balance", value: profile.strandBalance == nil ? "Rumbo's" : "Custom")
+            }
+        } footer: {
+            Text("How each day's practice is split between listening, speaking & writing, grammar & vocab and fluency.")
+        }
+
+        Section {
             Toggle("Travel mode", isOn: Binding(get: { profile.travelMode }, set: { model.setTravelMode($0) }))
         } footer: {
             Text("Adds a real-world Spanish mission to every day's plan." + (model.canChangeBudget ? "" : " Today's plan has started, so this applies from tomorrow."))
@@ -165,14 +175,14 @@ struct SettingsView: View {
                 set: { profile.languageTransferLastTrack = $0; profile.languageTransferRepeatPending = false }
             ), in: 0...Course.languageTransferTracks)
             // Section and unit as two full steppers in one row, so they read as one Duolingo entry.
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 16) {
                 Text("Duolingo")
-                Stepper("Section \(profile.duolingoSection)", value: binding(
-                    get: { profile.duolingoSection }, set: { profile.duolingoSection = $0 }), in: 1...10)
-                    .foregroundStyle(Palette.secondaryText)
-                Stepper("Unit \(profile.duolingoUnit)", value: binding(
-                    get: { profile.duolingoUnit }, set: { profile.duolingoUnit = $0 }), in: 1...300)
-                    .foregroundStyle(Palette.secondaryText)
+                Stepper(value: binding(get: { profile.duolingoSection }, set: { profile.duolingoSection = $0 }), in: 1...10) {
+                    Text("Section \(profile.duolingoSection)").foregroundStyle(Palette.secondaryText)
+                }
+                Stepper(value: binding(get: { profile.duolingoUnit }, set: { profile.duolingoUnit = $0 }), in: 1...300) {
+                    Text("Unit \(profile.duolingoUnit)").foregroundStyle(Palette.secondaryText)
+                }
             }
             .padding(.vertical, 2)
             // One step = one part (each episode is two parts), so a half-watched episode can be set.
