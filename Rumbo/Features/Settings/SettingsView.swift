@@ -52,6 +52,25 @@ struct SettingsView: View {
 
     @ViewBuilder
     private func sections(_ profile: LearnerProfile) -> some View {
+        // Which language is being learned: first, above everything that belongs to it.
+        Section {
+            if LanguagePack.all.count > 1 {
+                // Each language has its own level, plan, goal and streak. One without a profile yet starts its setup.
+                Picker("Learning", selection: Binding(get: { model.languageCode }, set: { model.setLanguage($0, announce: true) })) {
+                    ForEach(LanguagePack.all) { pack in
+                        Text(pack.name).tag(pack.code)
+                    }
+                }
+            } else {
+                LabeledContent("Learning", value: profile.pack.name)
+            }
+        } header: {
+            Text("Language")
+        } footer: {
+            Text(LanguagePack.all.count > 1
+                 ? "Each language keeps its own level, plan, goal and streak."
+                 : "More languages are on the way\(LanguagePack.upcoming.first.map { ": \($0) is next" } ?? "").")
+        }
         // Settings for the language being learned: each language has its own.
         Section {
             ForEach(profile.pack.roles, id: \.self) { source in
@@ -289,31 +308,13 @@ struct SettingsView: View {
         }
         // Settings shared by every language.
         Section {
-            if LanguagePack.all.count > 1 {
-                // Each language has its own level, plan, goal and streak. One without a profile yet starts its setup.
-                Picker("Learning", selection: Binding(get: { model.languageCode }, set: { model.setLanguage($0, announce: true) })) {
-                    ForEach(LanguagePack.all) { pack in
-                        Text(pack.name).tag(pack.code)
-                    }
-                }
-            } else {
-                LabeledContent("Learning", value: profile.pack.name)
-            }
-        } header: {
-            GroupHeading(title: "Settings across all languages", section: "Language")
-        } footer: {
-            Text(LanguagePack.all.count > 1
-                 ? "Each language keeps its own level, plan, goal and streak."
-                 : "More languages are on the way\(LanguagePack.upcoming.first.map { ": \($0) is next" } ?? "").")
-        }
-        Section {
             NavigationLink {
                 GeminiSettingsView { _ in checkers = SettingsView.checkersText() }
             } label: {
                 LabeledContent("AI checkers", value: checkers)
             }
         } header: {
-            Text("Writing feedback")
+            GroupHeading(title: "Settings across all languages", section: "Writing feedback")
         } footer: {
             Text("Pico checks your writing with Gemini and/or GroqCloud, both free with your own keys: your default first, then the other. Without either, a basic checker is used.")
         }
