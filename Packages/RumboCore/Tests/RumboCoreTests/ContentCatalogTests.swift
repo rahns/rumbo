@@ -31,21 +31,27 @@ import Testing
         #expect(catalog.suggestions(for: .b2_2).next.isEmpty)
     }
 
-    @Test func theBundledCatalogDecodesAndCoversEveryBand() throws {
-        // Tests run from the package directory; the bundled catalog lives in the app's resources.
+    /// Each language's bundled list (the file its pack names).
+    @Test(arguments: LanguagePack.all)
+    func theBundledCatalogDecodesAndCoversEveryBand(pack: LanguagePack) throws {
+        // Tests run from the package directory; the bundled catalogs live in the app's resources.
         let url = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("Rumbo/Resources/catalog/content.json")
+            .appendingPathComponent("Rumbo/Resources/catalog/\(pack.catalog.resource).json")
         let catalog = try ContentCatalog.decode(Data(contentsOf: url))
+        #expect(catalog.version >= 1)
+        #expect(catalog.items.count >= 20, "\(pack.code): \(catalog.items.count) items")
         #expect(Set(catalog.items.map(\.id)).count == catalog.items.count, "ids are unique")
         for band in Band.allCases {
-            #expect(!catalog.suggestions(for: band).now.isEmpty, "\(band.rawValue) has suggestions")
+            #expect(catalog.suggestions(for: band).now.count >= 3, "\(pack.code) \(band.rawValue) has suggestions")
         }
         for item in catalog.items {
             #expect(item.from <= item.to)
             #expect(!item.why.isEmpty && !item.whereToFind.isEmpty)
+            if let link = item.url { #expect(URL(string: link)?.scheme == "https", "\(item.id)") }
         }
+        #expect(pack.catalog.remoteURL.hasSuffix("/\(pack.catalog.resource).json"))
     }
 }
 

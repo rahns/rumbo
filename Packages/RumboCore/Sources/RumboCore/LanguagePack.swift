@@ -24,7 +24,10 @@ public struct LanguagePack: Sendable, Identifiable {
     public let tutor: Tutor
     public let phrases: Phrasebook
     public let catalog: CatalogSource
-    /// Prompts and can-do statements that only make sense for this language, added to the shared lists.
+    /// Words for the places the language is spoken, for shared prompts: `region` ("Latin America"),
+    /// `regional` ("Latin American"), `places` ("Mexico, Colombia or Argentina"), `filmOrigin` ("Latin America or Spain").
+    public let wording: [String: String]
+    /// Travel missions that only make sense for this language, added to the shared list.
     public let extraTravelMissions: [String]
 
     public var id: String { code }
@@ -33,7 +36,8 @@ public struct LanguagePack: Sendable, Identifiable {
     public init(code: String, name: String, nativeName: String, localeIdentifier: String, levels: LevelScale,
                 sources: [SourceKind: SourceInfo], course: AudioCourse?, series: LearnerSeries?, graded: GradedVideo?,
                 drill: DrillApp?, anchors: [Band: AnchorTargets], tutor: Tutor, phrases: Phrasebook,
-                catalog: CatalogSource, extraTravelMissions: [String] = []) {
+                catalog: CatalogSource, wording: [String: String], extraTravelMissions: [String] = []) {
+        self.wording = wording
         self.code = code
         self.name = name
         self.nativeName = nativeName
@@ -52,9 +56,9 @@ public struct LanguagePack: Sendable, Identifiable {
     }
 
     /// Every language the app can teach.
-    public static let all: [LanguagePack] = [.spanish]
+    public static let all: [LanguagePack] = [.spanish, .french]
     /// Shown in the language picker as on the way.
-    public static let upcoming: [String] = ["French"]
+    public static let upcoming: [String] = []
     /// The language of records saved before languages were tagged.
     public static let defaultCode = "es"
 
@@ -71,9 +75,18 @@ public struct LanguagePack: Sendable, Identifiable {
 
     public func anchorTargets(for band: Band) -> AnchorTargets { anchors[band] ?? AnchorTargets() }
 
-    /// Fills `{language}` in shared wording ("Order food entirely in {language}").
+    /// The placeholders shared wording may use besides `{language}`.
+    public static let wordingKeys = ["region", "regional", "places", "filmOrigin"]
+
+    /// Fills `{language}` and the place words in shared wording ("Order food entirely in {language}",
+    /// "Describe a festival in {region}").
     public func fill(_ text: String) -> String {
-        text.replacingOccurrences(of: "{language}", with: name)
+        guard text.contains("{") else { return text }
+        var result = text.replacingOccurrences(of: "{language}", with: name)
+        for (key, value) in wording {
+            result = result.replacingOccurrences(of: "{\(key)}", with: value)
+        }
+        return result
     }
 
     /// The level's friendly name ("Explorador").

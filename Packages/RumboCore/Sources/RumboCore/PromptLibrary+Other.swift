@@ -50,7 +50,7 @@ extension Prompts {
         "Tell the story of a concert or match you went to.", "Describe the street where you grew up.",
         "Tell the story of a gift you gave or received.", "Explain what you do to stay healthy.",
         "Describe a market or a shop you love.", "Tell the story of a day at the beach or in the mountains.",
-        "Describe your ideal weekend in a Latin American city.", "Tell the story of the last time you cooked for friends.",
+        "Describe your ideal weekend in a {regional} city.", "Tell the story of the last time you cooked for friends.",
         "Explain how you learn new words in {language}.", "Describe a teacher who helped you.",
         "Tell the story of a surprise you had.", "Describe the place where you work or study.",
         "Tell the story of a long journey by bus, train or plane.", "Explain a tradition from your country.",
@@ -60,7 +60,7 @@ extension Prompts {
         "Tell the story of your best (or worst) holiday job.", "Describe the most beautiful place you've seen.",
         "Tell the story of how you met someone important to you.", "Explain what you would show a visitor in your town.",
         "Describe a hobby and how you got into it.", "Tell the story of a rainy day that turned out well.",
-        "Describe what you'll do when you arrive in Latin America.", "Tell the story of a decision you're glad you made.",
+        "Describe what you'll do when you arrive in {region}.", "Tell the story of a decision you're glad you made.",
         "Explain the steps of your evening routine.", "Describe your favourite photo and the story behind it.",
     ]
 

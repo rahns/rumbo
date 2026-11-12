@@ -1,6 +1,6 @@
 # 9. Supporting languages other than Spanish
 
-**Status: Phases 1 to 4 are built (§9.6); the French pack (Phase 5) is not.** Spanish is the only language that can be chosen. This doc is the design for teaching several languages and the record of what was decided. French is the second language. The app's own text stays in English.
+**Status: built. Spanish and French can both be chosen.** The French pack (§9.7) rests on a few judgements that are listed there. This doc is the design for teaching several languages and the record of what was decided. French is the second language. The app's own text stays in English.
 
 ## 9.1 Summary
 
@@ -47,7 +47,7 @@ A pack holds:
 | Prompts | Writing, exchange, quick-write, story and travel-mission lists | `Prompts` |
 | Catalog | Bundled file name and remote URL | `ContentLibrary` |
 
-Can-do statements and prompts are English text about everyday life and are nearly the same for every language. They move to a shared list with a `{language}` placeholder ("Order food or a drink entirely in {language}"), and a pack can add or remove items where culture matters.
+Can-do statements and prompts are English text about everyday life and are nearly the same for every language. They are shared lists with a `{language}` placeholder ("Order food or a drink entirely in {language}") and place words from the pack (`{region}`, `{regional}`, `{places}`, `{filmOrigin}`: "a festival in Latin America" or "in France"). A pack can add travel missions of its own.
 
 ### Roles instead of brands
 
@@ -149,36 +149,33 @@ The list the work followed, from a scan of all 15,700 lines. "Source names" mean
 | 2 | **Storage.** Language tag, a profile per language, filtered fetches, backup version 2, catalog per language | Built. Not yet run on a device: the app doesn't compile on Linux, so the first CI build is its test |
 | 3 | **App reads the pack.** Source names and info, task titles and instructions, links, reminders, the tutor, the decoration, Settings and Progress rows | Built |
 | 4 | **Choosing a language.** Onboarding's first step after the welcome ("What are you learning?", with French shown as coming soon); Settings → Language (a plain row while there is one language, a picker once there are two; picking a language with no profile starts its setup, and picking one that's already set up from within onboarding switches to it) | Built |
-| 5 | **French pack.** Content, not code (§9.7) | Not started |
+| 5 | **French pack.** `LanguagePack+French.swift`, `content.fr.json`, place words in shared prompts, Cancel when adding a language (§9.7) | Built. Engine tests cover its numbers, its words, its suggestions list and plans before and after its short course runs out |
 
-Still to do within Phases 1 to 4:
-- Test a version 1 backup restoring into the new build, and two languages side by side, on a device (the second needs a second pack).
-- A second language's setup can't be cancelled yet except by choosing the first language again on its first step; give it a Cancel when French arrives.
-- The widget gallery's sample and the Live Activity test in Diagnostics still show Spanish source names; they are samples.
+Still to check on a device (the app doesn't compile on Linux):
+- A version 1 backup restoring into this build.
+- Setting up French beside Spanish, switching between them in Settings → Language, and each keeping its own streak, plan and widgets.
+- The French words on screen, which no French speaker has read yet.
 
-## 9.7 What the French pack needs
+The widget gallery's sample and the Live Activity test in Diagnostics show Spanish source names; they are samples.
 
-Checked online in November 2026; what couldn't be confirmed is marked.
+## 9.7 The French pack
 
-| Role | French source | Compared with Spanish |
+`LanguagePack.french`. Where each part comes from, and how sure it is:
+
+| Part | French | Basis |
 | --- | --- | --- |
-| Graded video | **Dreaming French**: live at dreaming.com/french, library at app.dreaming.com/french, in the same site and app as Dreaming Spanish. It tracks input hours automatically and has the same levels (Superbeginner to Advanced) | A like-for-like swap. To confirm in the app: that videos carry the same 0–100 difficulty number (a learner's post mentions "difficulty level 20 or lower", which suggests so) and the app's URL scheme |
-| Audio course | **Language Transfer, "Introduction to French"**: at languagetransfer.org/french, in the Language Transfer app, on SoundCloud and YouTube, and as a download | Not like for like. It is an introduction, much shorter than Complete Spanish's 90 tracks, so it will run out early in A2 and grammar time will then come from Duolingo and the mistake deck (the planner handles this). The track count and each track's length weren't on the page; read them from the downloaded files |
-| Learner series | **Extr@ French** (Extra French): 13 episodes, the same sitcom with the same format (Sam, Sacha, Annie, Nico), rated A2–B1 | A like-for-like swap: same episode count and parts. On YouTube; no official channel found, so the link should be a search, as for Spanish |
-| Drill app | Duolingo French | Same |
-| Exchange partner | Tandem/HelloTalk | Same |
+| Graded video | **Dreaming French** (dreaming.com/french), same site and app as Dreaming Spanish; counts hours | Confirmed live. The 0–100 difficulty number is assumed from the shared platform (a learner's post mentions "difficulty level 20 or lower"); **check in the app**. Same `dreaming://` scheme |
+| Audio course | **Language Transfer, "Introduction to French"**: 40 tracks, 6 h 37 min | Track lengths measured from Language Transfer's own download (`downloads.languagetransfer.org/french/french.zip`). It is an introduction, so it ends early in A2; grammar & vocab time then comes from Duolingo and the mistake deck (tested) |
+| Learner series | **Extra French** (Extr@): 13 episodes, same sitcom, set in Paris | Confirmed (Channel 4 Learning; A2–B1). Opened by a YouTube search, as for Spanish; no official channel found |
+| Drill app, exchange partner | Duolingo, Tandem/HelloTalk | Same apps and schemes |
+| Level hours | 310 / 470 / 630 / 940 / 1250 / 1670 | **A judgement:** Spanish's hours plus 15%. No French roadmap is published; Dreaming's FAQ says the early phase "may be slightly longer if instead of Spanish or Italian you are learning Portuguese, or especially French". Change the six numbers in the pack if better figures appear |
+| Weekly anchors, source levels | Same as Spanish | The sources are used the same way |
+| Tutor | passé composé or imparfait, être or avoir and participle agreement, gender and number, articles and "de" after a negative, y and en, prepositions, subjunctive, elision; LanguageTool `fr`; explanations in French from B2.1 | Written for this pack |
+| Phrasebook | "Semaine", "Aujourd'hui", "C'est fait !", "Bonjour" / "Bonsoir", "Oui !" / "Pas encore", "Objectif atteint !", "7 jours d'affilée !", reminder title "On y va ?", Pico's "Allez !", "Bravo !", … Levels: Explorateur, Voyageur, Flâneur, Bavard, À l'aise, Habitué | Written for this pack, **not yet read by a French speaker**. A no-break space comes before "!" and "?" |
+| Suggested content | `Rumbo/Resources/catalog/content.fr.json`, 25 items, at least 5 per level | Learner-made ones (InnerFrench, Easy French, Alice Ayel, French Mornings, Français Authentique, Duolingo French Podcast, Journal en français facile) were found in several recommendation lists. Native ones (Peppa Pig, Trotro, Le Petit Nicolas, C'est pas sorcier, HugoDécrypte, Lupin, Dix pour cent, Plan Cœur, Au service de la France, Le Bureau des légendes, Transfert, Les Pieds sur terre, films) are from general knowledge: **levels and where to watch need a check**, as streaming catalogues vary by country. Most links are YouTube searches so they can't go stale |
+| Place words | "France", "French", "France, Quebec or Belgium", "France or Quebec" | For shared prompts that named Latin America (`LanguagePack.wording`; Spanish's read exactly as before) |
 
-**Level hours.** No French roadmap with hours was found (dreaming.com/french/roadmap doesn't exist). Dreaming's FAQ says the early phase "may be slightly longer if instead of Spanish or Italian you are learning Portuguese, or especially French". So French should start from the Spanish numbers raised a little, or from Dreaming's French figures if they are shown in the app.
-
-**Suggested shows and podcasts** (candidates for `content.fr.json`; each needs its level and where to watch checked, as was done for Spanish):
-- Made for learners, found in several recommendation lists: *InnerFrench* (podcast and YouTube, A2–B2, free transcripts), *Easy French* (street interviews with subtitles, all levels), *Alice Ayel* (stories told for beginners), *French Mornings with Elisa* (B1–B2), *Français Authentique* (B1), *Piece of French* (intermediate), *Coffee Break French* (upper A2).
-- Made for native speakers, from general knowledge and not yet checked: Peppa Pig in French and other children's series for A2; *HugoDécrypte* (news explained) and *Journal en français facile* (RFI) for B1; *Lupin*, *Dix pour cent*, *Plan Cœur*, *Au service de la France*, *Le Bureau des Légendes* and the podcast *Transfert* for B2.
-
-**The rest of the pack:**
-- **Tutor focus.** French error patterns in place of ser/estar and por/para: gender and agreement, passé composé against imparfait, être or avoir as auxiliary, partitive articles, y and en, subjunctive triggers, elision. LanguageTool code `fr`.
-- **Phrasebook**, 19 entries plus Pico's cheers and six level names, checked by a French speaker. French puts a space before "!", which `exclamationEnd` allows for.
-- **Prompts and can-do**: read through the shared lists for anything that assumes Spanish-speaking countries.
-- **Code that waits for the pack:** add it to `LanguagePack.all`, remove "French" from `upcoming`, add its URL schemes to `LSApplicationQueriesSchemes` in `project.yml`, and bundle `content.fr.json`.
+Adding French needed no change to `project.yml`: its sources open with the same URL schemes as Spanish's.
 
 ## 9.8 Risks
 

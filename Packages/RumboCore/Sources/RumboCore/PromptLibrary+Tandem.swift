@@ -105,7 +105,7 @@ extension Prompts {
         "Ask your partner what kind of music their parents listened to.",
         "Describe a place where you feel calm and ask about theirs.",
         "Ask your partner how they learned English and what helped most.",
-        "Tell your partner what you'd pack for a month in Latin America and ask what's missing.",
+        "Tell your partner what you'd pack for a month in {region} and ask what's missing.",
         "Ask your partner about a local legend or ghost story.",
         "Tell your partner about the most interesting person you met recently.",
         "Ask your partner what they think of tourists in their city.",

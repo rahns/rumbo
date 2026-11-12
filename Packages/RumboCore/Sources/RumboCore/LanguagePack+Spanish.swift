@@ -127,6 +127,8 @@ extension LanguagePack {
         catalog: CatalogSource(
             resource: "content",
             remoteURL: "https://raw.githubusercontent.com/rahns/rumbo/main/Rumbo/Resources/catalog/content.json",
-            cacheFile: "content-catalog.json")
+            cacheFile: "content-catalog.json"),
+        wording: ["region": "Latin America", "regional": "Latin American", "places": "Mexico, Colombia or Argentina",
+                  "filmOrigin": "Latin America or Spain"]
     )
 }

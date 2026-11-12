@@ -35,6 +35,14 @@ struct OnboardingView: View {
             footer
         }
         .background(Palette.background.ignoresSafeArea())
+        .onAppear {
+            // Adding a language (Settings → Language): skip the welcome and keep the learner's name.
+            if step == .welcome, let existing = model.profiles.first {
+                draft.name = existing.displayName
+                draft.weekStartsOnSunday = existing.weekStartsOnSunday
+                step = .language
+            }
+        }
         .animation(.spring(response: 0.45, dampingFraction: 0.85), value: step)
         .sheet(isPresented: $importing) {
             BackupImportPicker { result in
@@ -71,7 +79,15 @@ struct OnboardingView: View {
                     .foregroundStyle(Palette.secondaryText)
             }
             .accessibilityLabel("Back")
+            .opacity(step == .language && !model.profiles.isEmpty ? 0 : 1)
+            .disabled(step == .language && !model.profiles.isEmpty)
             ChunkyProgressBar(value: Double(step.rawValue) / Double(Step.allCases.count - 1), color: Palette.leaf)
+            // Setting up another language can be called off: back to the one already being learned.
+            if let existing = model.profiles.first {
+                Button("Cancel") { model.setLanguage(existing.languageCode) }
+                    .font(.rounded(.subheadline, weight: .bold))
+                    .foregroundStyle(Palette.secondaryText)
+            }
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)

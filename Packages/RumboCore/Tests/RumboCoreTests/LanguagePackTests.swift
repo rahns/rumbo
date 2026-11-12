@@ -60,7 +60,7 @@ import Testing
     @Test func sharedWordingNamesNoLanguage() {
         let shared = Band.allCases.flatMap(CanDo.shared) + Prompts.writingPrompts.values.flatMap { $0 }
             + Prompts.exchangePrompts.values.flatMap { $0 } + Prompts.quickWriteTopics + Prompts.fluencyStories + Prompts.travelMissions
-        for name in ["Spanish", "French", "German", "Italian"] {
+        for name in ["Spanish", "French", "German", "Italian", "Latin", "Mexico", "Spain", "France"] {
             #expect(shared.filter { $0.contains(name) }.isEmpty, "\(name) appears in shared wording")
         }
         #expect(shared.contains { $0.contains("{language}") })
@@ -76,6 +76,22 @@ import Testing
             #expect(prompts.allSatisfy { !$0.contains("{") })
         }
         #expect(CanDo.statements(for: .b1_1, pack: .spanish).contains("I can deal with most situations while travelling where Spanish is spoken."))
+        // Spanish reads exactly as it did before the wording was shared, so prompts already used still match.
+        let spanish = Prompts.writingPrompts.values.flatMap { $0 }.map(LanguagePack.spanish.fill)
+        for original in ["If you could live anywhere in Latin America for a year, where would it be and why?",
+                         "What would your perfect week of travel in Mexico, Colombia or Argentina look like?",
+                         "Review a film from Latin America or Spain: themes, acting, and what it says about society.",
+                         "Write the opening of a novel set in a Latin American city."] {
+            #expect(spanish.contains(original))
+        }
+        // Every pack fills every placeholder.
+        let all = Band.allCases.flatMap(CanDo.shared) + Prompts.writingPrompts.values.flatMap { $0 }
+            + Prompts.exchangePrompts.values.flatMap { $0 } + Prompts.quickWriteTopics + Prompts.fluencyStories + Prompts.travelMissions
+        for pack in LanguagePack.all {
+            #expect(Set(pack.wording.keys) == Set(LanguagePack.wordingKeys), "\(pack.code)")
+            #expect(all.map(pack.fill).allSatisfy { !$0.contains("{") && !$0.contains("}") }, "\(pack.code)")
+        }
+        #expect(LanguagePack.french.fill("Describe a festival in {region} you'd like to see, in {language}.") == "Describe a festival in France you'd like to see, in French.")
     }
 
     @Test func theTutorIsToldTheLanguageAndItsTraps() {
@@ -102,7 +118,7 @@ import Testing
         sources: LanguagePack.spanish.sources.filter { [.writing, .exchange, .suggestedContent].contains($0.key) },
         course: nil, series: nil, graded: nil, drill: nil,
         anchors: LanguagePack.spanish.anchors, tutor: Tutor(focus: "agreement", languageToolCode: nil, explainInLanguageFrom: nil),
-        phrases: LanguagePack.spanish.phrases, catalog: LanguagePack.spanish.catalog)
+        phrases: LanguagePack.spanish.phrases, catalog: LanguagePack.spanish.catalog, wording: LanguagePack.spanish.wording)
 
     @Test(arguments: Band.allCases)
     func aLanguageWithFewSourcesStillGetsAFullPlan(band: Band) {
@@ -131,5 +147,58 @@ import Testing
         let slower = projection.arrivalDates(hours: 600, weeklyHours: 5, from: today, levels: Self.bare.levels)
         #expect(spanish[.b1_1] == nil && slower[.b1_1] != nil)
         #expect(spanish[.b1_2]! < slower[.b1_2]!)
+    }
+
+    @Test func frenchHasItsOwnNumbersAndWords() {
+        let french = LanguagePack.french
+        #expect(LanguagePack.all.map(\.code) == ["es", "fr"])
+        #expect(LanguagePack.pack(for: "fr").name == "French")
+        // The audio course is Introduction to French: 40 tracks, planned at each track's real length.
+        #expect(french.course?.tracks == 40)
+        #expect(french.course?.minutes(track: 1) == 13)
+        #expect(french.course?.minutes(track: 13) == 7)
+        #expect(french.series?.episodes == 13)
+        // Levels start a little later than in Spanish.
+        for band in Band.allCases {
+            #expect(french.levels.threshold(band) > LanguagePack.spanish.levels.threshold(band))
+            #expect(french.levels.threshold(band).truncatingRemainder(dividingBy: 10) == 0)
+        }
+        #expect(french.levels.band(forHours: 600) == .a2_2)
+        // French puts a space before "!".
+        #expect(french.phrases.greeting(hour: 9, name: "Ana") == "Bonjour, Ana\u{00A0}!")
+        #expect(french.phrases.greeting(hour: 21, name: "") == "Bonsoir\u{00A0}!")
+        #expect(french.phrases.streak(days: 7) == "7 jours d'affilée\u{00A0}!")
+        #expect(french.levelName(.a2_1) == "Explorateur")
+        let tutor = french.tutor.instructions(language: french.name, band: .b1_1, maximumErrors: 8)
+        #expect(tutor.contains("French tutor") && tutor.contains("passé composé") && !tutor.contains("ser/estar"))
+        #expect(french.tutor.languageToolCode == "fr")
+        #expect(CanDo.statements(for: .b2_2, pack: french).contains("I can live day to day in a French-speaking country without switching to English."))
+        // No source's wording mentions the other language.
+        for info in french.sources.values {
+            #expect(!(info.what + info.whereToFind + info.name + (info.inYourPlan ?? "")).contains("Spanish") || info.name == "Dreaming French")
+        }
+    }
+
+    /// The French course is short: a learner who has finished it still gets grammar & vocab from the
+    /// drill app and the mistake deck, and a full day.
+    @Test func frenchPlansAreWellFormedBeforeAndAfterTheCourseRunsOut() {
+        let planner = DayPlanner(calendar: TestCalendar.utc)
+        let today = TestCalendar.day(2026, 10, 26)
+        for band in Band.allCases {
+            for track in [0, 12, 40] {
+                let learner = LearnerSnapshot(band: band, speakingStage: .calls, courseLastTrack: track, dueReviewCards: 8, pack: .french)
+                #expect(learner.courseFinished == (track == 40))
+                for budget in DayPlanner.budgetChoices {
+                    let plan = planner.plan(budget: budget, learner: learner, history: [], today: today)
+                    #expect(plan.totalMinutes <= budget && plan.totalMinutes >= budget - 4, "\(band.rawValue) \(budget) min, track \(track): \(plan.totalMinutes)")
+                    #expect(plan.tasks.allSatisfy { learner.isEligible($0.kind) })
+                    if track == 40 { #expect(plan.tasks.allSatisfy { $0.kind != .courseTrack }) }
+                    if let task = plan.tasks.first(where: { $0.kind == .courseTrack }) {
+                        #expect(task.detail == .track(track + 1))
+                        #expect(task.minutes == LanguagePack.french.course?.minutes(track: track + 1))
+                    }
+                }
+            }
+        }
     }
 }

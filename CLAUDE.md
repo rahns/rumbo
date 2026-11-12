@@ -1,6 +1,6 @@
 # Rumbo
 
-Native iOS app (SwiftUI, iOS 27+) that turns a learner's Spanish sources into one research-based daily plan. The spec lives in `docs/` and is the source of truth; update it when behavior changes.
+Native iOS app (SwiftUI, iOS 27+) that turns a language learner's sources into one research-based daily plan. It teaches Spanish and French; the app's own text is English. The spec lives in `docs/` and is the source of truth; update it when behavior changes.
 
 ## Layout
 - `project.yml`: XcodeGen spec. The `.xcodeproj` is generated and not committed.
@@ -14,7 +14,7 @@ Native iOS app (SwiftUI, iOS 27+) that turns a learner's Spanish sources into on
 - CI runs `swift test` on RumboCore, then archives an unsigned IPA, fake-signs it with `ldid` using the entitlements files, and uploads just the IPA (unzipped, no entitlements files) as an artifact. Tags `v*` publish a release.
 
 ## Languages
-- Spanish is one `LanguagePack` (RumboCore); everything specific to a language lives in its pack: sources and their numbers, level hours, the tutor's checklist, the phrasebook. Don't name a language or one of its sources outside a pack. See `docs/09-multi-language.md`.
+- Each language is one `LanguagePack` (RumboCore: `.spanish`, `.french`); everything specific to a language lives in its pack: sources and their numbers, level hours, the tutor's checklist, the phrasebook. Don't name a language or one of its sources outside a pack. See `docs/09-multi-language.md`.
 - Stored identifiers (`TaskKind` and `SourceKind` raw values, profile column names, backup field names) date from when Spanish was the only language. Never change them; a test pins them.
 - Every stored record has a `languageCode`; new records go through `AppModel.insert`.
 

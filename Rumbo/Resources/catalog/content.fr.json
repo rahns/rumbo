@@ -1,0 +1,280 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "peppa-fr",
+      "title": "Peppa Pig (French)",
+      "kind": "series",
+      "from": "A2.1",
+      "to": "A2.2",
+      "country": "France",
+      "whereToFind": "YouTube: search \"Peppa Pig Français\"",
+      "url": "https://www.youtube.com/results?search_query=Peppa+Pig+Fran%C3%A7ais+%C3%A9pisodes+complets",
+      "why": "Short, very clear episodes about everyday life. Easy input like this builds speed and confidence."
+    },
+    {
+      "id": "trotro",
+      "title": "Trotro",
+      "kind": "series",
+      "from": "A2.1",
+      "to": "A2.1",
+      "country": "France",
+      "whereToFind": "YouTube: search \"Trotro\"",
+      "url": "https://www.youtube.com/results?search_query=Trotro+%C3%A9pisodes+en+fran%C3%A7ais",
+      "why": "Three-minute episodes about a little donkey's day, in slow, simple sentences. Made for small children, so every word is everyday French."
+    },
+    {
+      "id": "alice-ayel",
+      "title": "Alice Ayel",
+      "kind": "youtube",
+      "from": "A2.1",
+      "to": "A2.2",
+      "country": "France",
+      "whereToFind": "YouTube",
+      "url": "https://www.youtube.com/results?search_query=Alice+Ayel+French+stories",
+      "why": "Stories told slowly with drawings, made to be understood without translating. A gentle way into listening to real French."
+    },
+    {
+      "id": "super-easy-french",
+      "title": "Super Easy French",
+      "kind": "youtube",
+      "from": "A2.1",
+      "to": "A2.2",
+      "country": "France",
+      "whereToFind": "YouTube: Easy French channel, \"Super Easy French\" playlist",
+      "url": "https://www.youtube.com/results?search_query=Super+Easy+French+Easy+French",
+      "why": "Simple street conversations on one topic at a time, spoken slowly, with French and English subtitles."
+    },
+    {
+      "id": "un-jour-une-question",
+      "title": "1 jour, 1 question",
+      "kind": "youtube",
+      "from": "A2.2",
+      "to": "B1.1",
+      "country": "France",
+      "whereToFind": "YouTube: search \"1 jour 1 question\"",
+      "url": "https://www.youtube.com/results?search_query=1+jour+1+question",
+      "why": "Ninety-second cartoons that answer a child's question about the world. Clear narration and pictures that explain every idea."
+    },
+    {
+      "id": "little-talk-slow-french",
+      "title": "Little Talk in Slow French",
+      "kind": "podcast",
+      "from": "A2.2",
+      "to": "B1.1",
+      "country": "France",
+      "whereToFind": "Any podcast app (Spotify, Apple Podcasts)",
+      "url": null,
+      "why": "Short episodes about daily life and culture, spoken slowly and clearly. Good for a walk or a commute."
+    },
+    {
+      "id": "duolingo-podcast-fr",
+      "title": "Duolingo French Podcast",
+      "kind": "podcast",
+      "from": "A2.2",
+      "to": "B1.2",
+      "country": "Various",
+      "whereToFind": "Any podcast app",
+      "url": "https://podcast.duolingo.com/french",
+      "why": "True stories told in clear French, with short English narration that keeps you on track."
+    },
+    {
+      "id": "petit-nicolas",
+      "title": "Le Petit Nicolas",
+      "kind": "series",
+      "from": "A2.2",
+      "to": "B1.1",
+      "country": "France",
+      "whereToFind": "YouTube: search \"Le Petit Nicolas dessin animé\"",
+      "url": "https://www.youtube.com/results?search_query=Le+Petit+Nicolas+dessin+anim%C3%A9+%C3%A9pisode",
+      "why": "A cartoon about a schoolboy and his friends, from the classic books. Everyday family and school French, with stories that are easy to follow."
+    },
+    {
+      "id": "ratatouille",
+      "title": "Ratatouille",
+      "kind": "film",
+      "from": "A2.2",
+      "to": "B1.1",
+      "country": "France",
+      "whereToFind": "Disney+ (French audio, French subtitles)",
+      "url": null,
+      "why": "You may know the story already, which makes the French easier to follow. Set in Paris, with lots of food and kitchen vocabulary."
+    },
+    {
+      "id": "innerfrench",
+      "title": "InnerFrench",
+      "kind": "podcast",
+      "from": "B1.1",
+      "to": "B1.2",
+      "country": "France",
+      "whereToFind": "Any podcast app or YouTube; free transcripts on the website",
+      "url": "https://innerfrench.com/podcast/",
+      "why": "Hugo talks about society, psychology and culture in clear, natural French, a little slower than normal. Made to take you from learner material to real content."
+    },
+    {
+      "id": "easy-french",
+      "title": "Easy French",
+      "kind": "youtube",
+      "from": "B1.1",
+      "to": "B1.2",
+      "country": "France",
+      "whereToFind": "YouTube",
+      "url": "https://www.youtube.com/@EasyFrench",
+      "why": "Street interviews with ordinary people in Paris. Real, unscripted French with subtitles in French and English."
+    },
+    {
+      "id": "french-mornings",
+      "title": "French Mornings with Elisa",
+      "kind": "youtube",
+      "from": "B1.1",
+      "to": "B1.2",
+      "country": "France",
+      "whereToFind": "YouTube",
+      "url": "https://www.youtube.com/results?search_query=French+Mornings+with+Elisa",
+      "why": "Short videos entirely in French about how people really speak: expressions, pronunciation and everyday situations."
+    },
+    {
+      "id": "francais-authentique",
+      "title": "Français Authentique",
+      "kind": "podcast",
+      "from": "B1.1",
+      "to": "B2.1",
+      "country": "France",
+      "whereToFind": "Any podcast app or YouTube",
+      "url": "https://www.francaisauthentique.com",
+      "why": "Johan talks about personal growth, French culture and learning, in clear French at a steady pace. Hundreds of episodes."
+    },
+    {
+      "id": "journal-francais-facile",
+      "title": "Journal en français facile",
+      "kind": "podcast",
+      "from": "B1.2",
+      "to": "B2.1",
+      "country": "France",
+      "whereToFind": "Any podcast app, or the RFI website with transcripts",
+      "url": "https://francaisfacile.rfi.fr",
+      "why": "Ten minutes of world news from RFI every day, in simpler French than a normal bulletin. The transcript helps you check what you missed."
+    },
+    {
+      "id": "cest-pas-sorcier",
+      "title": "C'est pas sorcier",
+      "kind": "youtube",
+      "from": "B1.2",
+      "to": "B2.1",
+      "country": "France",
+      "whereToFind": "YouTube: official channel",
+      "url": "https://www.youtube.com/results?search_query=C%27est+pas+sorcier+cha%C3%AEne+officielle",
+      "why": "A much-loved science show: two presenters explain how things work with models and experiments. Clear speech, and the pictures carry you."
+    },
+    {
+      "id": "les-choristes",
+      "title": "Les Choristes",
+      "kind": "film",
+      "from": "B1.2",
+      "to": "B2.1",
+      "country": "France",
+      "whereToFind": "Streaming and rental services (varies by country)",
+      "url": null,
+      "why": "A new teacher starts a choir in a strict boarding school. Clear dialogue, a simple story, and songs you'll remember."
+    },
+    {
+      "id": "intouchables",
+      "title": "Intouchables",
+      "kind": "film",
+      "from": "B1.2",
+      "to": "B2.1",
+      "country": "France",
+      "whereToFind": "Netflix in many countries, or rental",
+      "url": null,
+      "why": "The friendship between a wealthy man and his carer. Funny and warm, with a mix of formal and everyday spoken French."
+    },
+    {
+      "id": "hugodecrypte",
+      "title": "HugoDécrypte",
+      "kind": "youtube",
+      "from": "B2.1",
+      "to": "B2.2",
+      "country": "France",
+      "whereToFind": "YouTube and any podcast app",
+      "url": "https://www.youtube.com/@HugoDecrypte",
+      "why": "The day's news explained in ten minutes for a young French audience. Fast, natural speech on topics you may already know."
+    },
+    {
+      "id": "lupin",
+      "title": "Lupin",
+      "kind": "series",
+      "from": "B2.1",
+      "to": "B2.2",
+      "country": "France",
+      "whereToFind": "Netflix",
+      "url": null,
+      "why": "A gentleman thief in modern Paris. Gripping enough to keep you watching, with clear, contemporary French."
+    },
+    {
+      "id": "dix-pour-cent",
+      "title": "Dix pour cent (Call My Agent!)",
+      "kind": "series",
+      "from": "B2.1",
+      "to": "B2.2",
+      "country": "France",
+      "whereToFind": "Netflix",
+      "url": null,
+      "why": "A comedy set in a Paris talent agency. Fast office and everyday French, with lots of humour."
+    },
+    {
+      "id": "plan-coeur",
+      "title": "Plan Cœur (The Hook Up Plan)",
+      "kind": "series",
+      "from": "B2.1",
+      "to": "B2.2",
+      "country": "France",
+      "whereToFind": "Netflix",
+      "url": null,
+      "why": "A romantic comedy about friends in Paris. How young adults really talk: informal, quick and full of slang."
+    },
+    {
+      "id": "au-service-de-la-france",
+      "title": "Au service de la France (A Very Secret Service)",
+      "kind": "series",
+      "from": "B2.1",
+      "to": "B2.2",
+      "country": "France",
+      "whereToFind": "Netflix in many countries",
+      "url": null,
+      "why": "A dry comedy about French spies in the 1960s. Precise, formal French, so it's easier to follow than most series."
+    },
+    {
+      "id": "transfert",
+      "title": "Transfert",
+      "kind": "podcast",
+      "from": "B2.1",
+      "to": "B2.2",
+      "country": "France",
+      "whereToFind": "Any podcast app",
+      "url": null,
+      "why": "One person tells one true story from their life in each episode. Natural speech, one voice at a time, and stories that hold you."
+    },
+    {
+      "id": "les-pieds-sur-terre",
+      "title": "Les Pieds sur terre",
+      "kind": "podcast",
+      "from": "B2.2",
+      "to": "B2.2",
+      "country": "France",
+      "whereToFind": "Any podcast app (France Culture)",
+      "url": null,
+      "why": "Half-hour documentaries made only of ordinary people's voices, from all over France. Many accents and ways of speaking."
+    },
+    {
+      "id": "bureau-des-legendes",
+      "title": "Le Bureau des légendes (The Bureau)",
+      "kind": "series",
+      "from": "B2.2",
+      "to": "B2.2",
+      "country": "France",
+      "whereToFind": "Canal+; other services vary by country",
+      "url": null,
+      "why": "A spy drama inside French intelligence. Dense, fast dialogue: a real test once Netflix comedies feel comfortable."
+    }
+  ]
+}
