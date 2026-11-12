@@ -32,8 +32,25 @@ final class AppModel {
     private(set) var languageCode = ActiveLanguage.code
     var pack: LanguagePack { LanguagePack.pack(for: languageCode) }
 
+    /// A switch between two languages that are both set up, for the full-screen splash (`LanguageSwitchSplash`).
+    struct LanguageSwitch: Identifiable, Equatable {
+        let id = UUID()
+        let from: String
+        let to: String
+    }
+    private(set) var languageSwitch: LanguageSwitch?
+
+    func finishLanguageSwitch() {
+        languageSwitch = nil
+    }
+
     /// Switches to another language (one with a profile, or a new one about to be onboarded).
-    func setLanguage(_ code: String) {
+    /// `announce` shows the switch splash when both languages are already set up (Settings → Language).
+    func setLanguage(_ code: String, announce: Bool = false) {
+        let from = languageCode
+        if announce, code != from, profile != nil, profiles.contains(where: { $0.languageCode == code }) {
+            languageSwitch = LanguageSwitch(from: from, to: code)
+        }
         LiveActivities.endAll()
         ActiveLanguage.set(code)
         languageCode = ActiveLanguage.code

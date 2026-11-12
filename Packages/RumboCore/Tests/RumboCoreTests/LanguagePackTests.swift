@@ -44,6 +44,8 @@ import Testing
         #expect(Band.allCases.allSatisfy { pack.anchors[$0] != nil }, "\(pack.code) anchors")
         #expect(pack.phrases.allStrings.allSatisfy { !$0.isEmpty }, "\(pack.code) phrasebook")
         #expect(pack.phrases.daysInARow.contains("%d"))
+        // One flag emoji: two regional indicator letters.
+        #expect(pack.flag.unicodeScalars.count == 2 && pack.flag.unicodeScalars.allSatisfy { (0x1F1E6...0x1F1FF).contains($0.value) }, "\(pack.code) flag")
         #expect(!pack.phrases.squawks.isEmpty)
         #expect(URL(string: pack.catalog.remoteURL)?.scheme == "https")
         #expect(Locale.availableIdentifiers.contains(pack.localeIdentifier))
@@ -113,7 +115,7 @@ import Testing
     /// A language with only the roles every language has (writing, a partner, suggested content): no graded
     /// video, audio course, learner series or drill app. The planner still fills the day.
     static let bare = LanguagePack(
-        code: "xx", name: "Testish", nativeName: "Testish", localeIdentifier: "en",
+        code: "xx", name: "Testish", nativeName: "Testish", flag: "🏳️", localeIdentifier: "en",
         levels: LevelScale([.a2_1: 300, .a2_2: 500, .b1_1: 700, .b1_2: 1000, .b2_1: 1400, .b2_2: 1900]),
         sources: LanguagePack.spanish.sources.filter { [.writing, .exchange, .suggestedContent].contains($0.key) },
         course: nil, series: nil, graded: nil, drill: nil,

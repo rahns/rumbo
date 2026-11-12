@@ -64,7 +64,7 @@ struct RootView: View {
     var body: some View {
         Group {
             if model.profile == nil {
-                OnboardingView { draft in
+                OnboardingView(addingLanguage: !model.profiles.isEmpty) { draft in
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
                         model.completeOnboarding(with: draft)
                     }
@@ -73,6 +73,16 @@ struct RootView: View {
             } else {
                 MainTabView()
                     .transition(.opacity)
+            }
+        }
+        // Switching between two languages that are both set up: Pico and the new flag, briefly, over everything.
+        .overlay {
+            if let change = model.languageSwitch {
+                LanguageSwitchSplash(change: change) {
+                    withAnimation(.easeOut(duration: 0.35)) { model.finishLanguageSwitch() }
+                }
+                .id(change.id)
+                .transition(.opacity)
             }
         }
         .environment(model)

@@ -53,7 +53,7 @@ struct SettingsView: View {
         Section {
             if LanguagePack.all.count > 1 {
                 // Each language has its own level, plan, goal and streak. One without a profile yet starts its setup.
-                Picker("Learning", selection: Binding(get: { model.languageCode }, set: { model.setLanguage($0) })) {
+                Picker("Learning", selection: Binding(get: { model.languageCode }, set: { model.setLanguage($0, announce: true) })) {
                     ForEach(LanguagePack.all) { pack in
                         Text(pack.name).tag(pack.code)
                     }

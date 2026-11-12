@@ -3,13 +3,22 @@ import SwiftUI
 
 /// First launch, about 2 minutes. See docs/03-experience.md §3.4.
 struct OnboardingView: View {
+    /// Setting up a second language: the language is already chosen (Settings → Language) and the name
+    /// is known, so it starts at the sources, with a Cancel back to the language already set up.
+    let addingLanguage: Bool
     let onFinish: (OnboardingDraft) -> Void
+
+    init(addingLanguage: Bool = false, onFinish: @escaping (OnboardingDraft) -> Void) {
+        self.addingLanguage = addingLanguage
+        self.onFinish = onFinish
+        _step = State(initialValue: addingLanguage ? .sources : .welcome)
+    }
 
     @Environment(AppModel.self) private var model
     @State private var draft = OnboardingDraft()
     @State private var importing = false
     @State private var restoreError: String?
-    @State private var step = Step.welcome
+    @State private var step: Step
     @State private var canDoIndex = 0
 
     enum Step: Int, CaseIterable {
@@ -36,11 +45,12 @@ struct OnboardingView: View {
         }
         .background(Palette.background.ignoresSafeArea())
         .onAppear {
-            // Adding a language (Settings → Language): skip the welcome and keep the learner's name.
-            if step == .welcome, let existing = model.profiles.first {
+            // Adding a language (chosen in Settings → Language): the language is already picked and the
+            // learner's name is known, so setup starts at the sources.
+            if addingLanguage, let existing = model.profiles.first {
+                draft.languageCode = model.languageCode
                 draft.name = existing.displayName
                 draft.weekStartsOnSunday = existing.weekStartsOnSunday
-                step = .language
             }
         }
         .animation(.spring(response: 0.45, dampingFraction: 0.85), value: step)
@@ -79,11 +89,11 @@ struct OnboardingView: View {
                     .foregroundStyle(Palette.secondaryText)
             }
             .accessibilityLabel("Back")
-            .opacity(step == .language && !model.profiles.isEmpty ? 0 : 1)
-            .disabled(step == .language && !model.profiles.isEmpty)
+            .opacity(step == firstStep ? 0 : 1)
+            .disabled(step == firstStep)
             ChunkyProgressBar(value: Double(step.rawValue) / Double(Step.allCases.count - 1), color: Palette.leaf)
             // Setting up another language can be called off: back to the one already being learned.
-            if let existing = model.profiles.first {
+            if addingLanguage, let existing = model.profiles.first {
                 Button("Cancel") { model.setLanguage(existing.languageCode) }
                     .font(.rounded(.subheadline, weight: .bold))
                     .foregroundStyle(Palette.secondaryText)
@@ -123,6 +133,9 @@ struct OnboardingView: View {
         }
         go(to: Step(rawValue: step.rawValue + 1) ?? .habit)
     }
+
+    /// Where setup starts: the welcome on first launch, the sources when adding a language.
+    private var firstStep: Step { addingLanguage ? .sources : .welcome }
 
     private func go(to newStep: Step) {
         if newStep == .goal { draft.prepareGoal() }

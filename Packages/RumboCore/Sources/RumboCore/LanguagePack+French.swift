@@ -8,6 +8,7 @@ extension LanguagePack {
         code: "fr",
         name: "French",
         nativeName: "Français",
+        flag: "🇫🇷",
         localeIdentifier: "fr",
         // Spanish's hours raised by 15%, rounded to 10. Dreaming publishes no French roadmap; its FAQ says the
         // early phase "may be slightly longer if instead of Spanish or Italian you are learning Portuguese,

@@ -6,6 +6,7 @@ extension LanguagePack {
         code: "es",
         name: "Spanish",
         nativeName: "Español",
+        flag: "🇪🇸",
         localeIdentifier: "es",
         // The listening-hour milestones (150 / 225 / 300 / 450 / 600 / 800, Dreaming Spanish's roadmap) divided
         // by the plan's listening share, rounded to 10 (docs/02-learning-engine.md §2.1).

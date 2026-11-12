@@ -10,6 +10,8 @@ public struct LanguagePack: Sendable, Identifiable {
     public let name: String
     /// Its own name ("Español"), for the language picker.
     public let nativeName: String
+    /// A flag emoji for the language ("🇪🇸"), shown when switching languages.
+    public let flag: String
     /// Locale for day and month names on the path.
     public let localeIdentifier: String
     public let levels: LevelScale
@@ -33,7 +35,7 @@ public struct LanguagePack: Sendable, Identifiable {
     public var id: String { code }
     public var locale: Locale { Locale(identifier: localeIdentifier) }
 
-    public init(code: String, name: String, nativeName: String, localeIdentifier: String, levels: LevelScale,
+    public init(code: String, name: String, nativeName: String, flag: String, localeIdentifier: String, levels: LevelScale,
                 sources: [SourceKind: SourceInfo], course: AudioCourse?, series: LearnerSeries?, graded: GradedVideo?,
                 drill: DrillApp?, anchors: [Band: AnchorTargets], tutor: Tutor, phrases: Phrasebook,
                 catalog: CatalogSource, wording: [String: String], extraTravelMissions: [String] = []) {
@@ -41,6 +43,7 @@ public struct LanguagePack: Sendable, Identifiable {
         self.code = code
         self.name = name
         self.nativeName = nativeName
+        self.flag = flag
         self.localeIdentifier = localeIdentifier
         self.levels = levels
         self.sources = sources
