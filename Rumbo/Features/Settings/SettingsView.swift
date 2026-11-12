@@ -343,11 +343,19 @@ struct SettingsView: View {
 
         Section {
             NavigationLink("Diagnostics") { DiagnosticsView() }
-            Button("Start over", role: .destructive) { confirmingReset = true }
-            .confirmationDialog("Start over?", isPresented: $confirmingReset, titleVisibility: .visible) {
-                Button("Delete everything and start again", role: .destructive) { model.reset() }
+            // With another language set up, starting over deletes this one and switches back to that one.
+            let current = profile.pack.name
+            let fallback = model.profiles.first { $0.languageCode != profile.languageCode }?.pack.name
+            Button(fallback.map { "Delete \(current) progress and switch back to \($0)" } ?? "Start over", role: .destructive) {
+                confirmingReset = true
+            }
+            .confirmationDialog(fallback == nil ? "Start over?" : "Delete \(current) progress?", isPresented: $confirmingReset, titleVisibility: .visible) {
+                Button(fallback.map { "Delete \(current) and switch to \($0)" } ?? "Delete everything and start again", role: .destructive) {
+                    model.reset()
+                }
             } message: {
-                Text("Your streak, hours and history for \(model.pack.name) will be deleted. You'll go through onboarding again.")
+                Text(fallback.map { "Your \(current) streak, hours and history will be deleted. Your \($0) progress stays as it is." }
+                     ?? "Your streak, hours and history for \(current) will be deleted. You'll go through onboarding again.")
             }
         } footer: {
             VStack(spacing: 4) {
