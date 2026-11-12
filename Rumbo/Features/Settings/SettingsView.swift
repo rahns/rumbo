@@ -52,25 +52,8 @@ struct SettingsView: View {
 
     @ViewBuilder
     private func sections(_ profile: LearnerProfile) -> some View {
-        Section {
-            if LanguagePack.all.count > 1 {
-                // Each language has its own level, plan, goal and streak. One without a profile yet starts its setup.
-                Picker("Learning", selection: Binding(get: { model.languageCode }, set: { model.setLanguage($0, announce: true) })) {
-                    ForEach(LanguagePack.all) { pack in
-                        Text(pack.name).tag(pack.code)
-                    }
-                }
-            } else {
-                LabeledContent("Learning", value: profile.pack.name)
-            }
-        } header: {
-            Text("Language")
-        } footer: {
-            Text(LanguagePack.all.count > 1
-                 ? "Each language keeps its own level, plan, goal and streak."
-                 : "More languages are on the way\(LanguagePack.upcoming.first.map { ": \($0) is next" } ?? "").")
-        }
-
+        // Settings for the language being learned: each language has its own.
+        groupHeader("Settings for \(profile.pack.name) \(profile.pack.flag)", switcher: true)
         Section {
             ForEach(profile.pack.roles, id: \.self) { source in
                 HStack {
@@ -103,7 +86,6 @@ struct SettingsView: View {
         } footer: {
             Text("Tap a source to see what it is and where to find it.")
         }
-
         Section {
             NavigationLink {
                 GoalSettingsView()
@@ -121,19 +103,6 @@ struct SettingsView: View {
         } footer: {
             Text("Your level goal, weekly minutes and target date. Change the weekly goal and the date follows, or the other way round.")
         }
-
-        Section {
-            NavigationLink {
-                GeminiSettingsView { _ in checkers = SettingsView.checkersText() }
-            } label: {
-                LabeledContent("AI checkers", value: checkers)
-            }
-        } header: {
-            Text("Writing feedback")
-        } footer: {
-            Text("Pico checks your writing with Gemini and/or GroqCloud, both free with your own keys: your default first, then the other. Without either, a basic checker is used.")
-        }
-
         Section {
             NavigationLink {
                 LessonSettingsView()
@@ -145,7 +114,6 @@ struct SettingsView: View {
         } footer: {
             Text("A tutor or a class on set days: it's always in that day's plan, at its usual length.")
         }
-
         Section {
             Toggle("Custom plan balance", isOn: binding(
                 get: { profile.strandBalance != nil },
@@ -178,7 +146,6 @@ struct SettingsView: View {
                  ? "Rumbo splits each day between listening, grammar & vocab, speaking & writing and fluency by your level. Switch this on to set your own split."
                  : "Your own split between listening, grammar & vocab, speaking & writing and fluency (%).")
         }
-
         Section {
             Toggle("Travel mode", isOn: Binding(get: { profile.travelMode }, set: { model.setTravelMode($0) }))
         } footer: {
@@ -234,7 +201,6 @@ struct SettingsView: View {
                 Toggle("Keep a \(SourceCopy.name(.drillApp)) warm-up", isOn: binding(get: { profile.keepDuolingoInB2 }, set: { profile.keepDuolingoInB2 = $0 }))
             }
         }
-
         Section {
             Toggle("I'm ready for voice notes", isOn: binding(
                 get: { profile.speakingStage >= .voiceNotes },
@@ -250,7 +216,6 @@ struct SettingsView: View {
         } footer: {
             Text("Rumbo switches these on by itself as your hours and \(profile.pack.sources[.exchange]?.shortName ?? "partner") exchanges grow, and you can go early if you feel ready. Switch one off and it stays off until you switch it back on.")
         }
-
         Section("Habit") {
             if profile.pack.has(.drillApp) {
                 Toggle(isOn: binding(get: { profile.alwaysIncludeDuolingo }, set: { profile.alwaysIncludeDuolingo = $0; model.replanTodayIfNotStarted() })) {
@@ -298,46 +263,7 @@ struct SettingsView: View {
                 }
             }
         }
-
         Section {
-            Button("Save backup", systemImage: "square.and.arrow.down") { saveBackup() }
-            Button("Restore from a backup", systemImage: "arrow.counterclockwise") { importing = true }
-            .confirmationDialog("Restore this backup?", isPresented: Binding(get: { pendingRestore != nil }, set: { if !$0 { pendingRestore = nil } }), titleVisibility: .visible) {
-                Button("Replace my data with the backup", role: .destructive) {
-                    guard let data = pendingRestore else { return }
-                    pendingRestore = nil
-                    do {
-                        try model.restore(from: data)
-                        checkers = SettingsView.checkersText()
-                        message = "Backup restored."
-                    } catch {
-                        message = error.localizedDescription
-                    }
-                }
-            } message: {
-                Text("Everything in Rumbo now will be replaced by what's in the file.")
-            }
-        } header: {
-            Text("Backup")
-        } footer: {
-            Text("Saves one file you can keep in iCloud Drive. Restoring replaces everything in Rumbo with the file's contents.")
-        }
-
-        Section {
-            ShareLink(item: URL(string: "https://github.com/rahns/rumbo/releases/latest")!,
-                      subject: Text("Rumbo"),
-                      message: Text("I'm using Rumbo to plan my \(profile.pack.name). Download it here (you sign it with your own certificate):")) {
-                Label("Share Rumbo with a friend", systemImage: "square.and.arrow.up")
-            }
-            Link(destination: Self.feedbackEmail) {
-                Label("Report a bug or suggest something", systemImage: "envelope")
-            }
-        } header: {
-            Text("Share")
-        }
-
-        Section {
-            NavigationLink("Diagnostics") { DiagnosticsView() }
             // With another language set up, starting over deletes this one and switches back to that one.
             let current = profile.pack.name
             let fallback = model.profiles.first { $0.languageCode != profile.languageCode }?.pack.name
@@ -361,6 +287,75 @@ struct SettingsView: View {
             } message: {
                 Text(lossSummary(profile) + " This can't be undone. Save a backup first so you can bring it all back later.")
             }
+        }
+        // Settings shared by every language.
+        groupHeader("Settings across all languages", switcher: false)
+        Section {
+            if LanguagePack.all.count > 1 {
+                // Each language has its own level, plan, goal and streak. One without a profile yet starts its setup.
+                Picker("Learning", selection: Binding(get: { model.languageCode }, set: { model.setLanguage($0, announce: true) })) {
+                    ForEach(LanguagePack.all) { pack in
+                        Text(pack.name).tag(pack.code)
+                    }
+                }
+            } else {
+                LabeledContent("Learning", value: profile.pack.name)
+            }
+        } header: {
+            Text("Language")
+        } footer: {
+            Text(LanguagePack.all.count > 1
+                 ? "Each language keeps its own level, plan, goal and streak."
+                 : "More languages are on the way\(LanguagePack.upcoming.first.map { ": \($0) is next" } ?? "").")
+        }
+        Section {
+            NavigationLink {
+                GeminiSettingsView { _ in checkers = SettingsView.checkersText() }
+            } label: {
+                LabeledContent("AI checkers", value: checkers)
+            }
+        } header: {
+            Text("Writing feedback")
+        } footer: {
+            Text("Pico checks your writing with Gemini and/or GroqCloud, both free with your own keys: your default first, then the other. Without either, a basic checker is used.")
+        }
+        Section {
+            Button("Save backup", systemImage: "square.and.arrow.down") { saveBackup() }
+            Button("Restore from a backup", systemImage: "arrow.counterclockwise") { importing = true }
+            .confirmationDialog("Restore this backup?", isPresented: Binding(get: { pendingRestore != nil }, set: { if !$0 { pendingRestore = nil } }), titleVisibility: .visible) {
+                Button("Replace my data with the backup", role: .destructive) {
+                    guard let data = pendingRestore else { return }
+                    pendingRestore = nil
+                    do {
+                        try model.restore(from: data)
+                        checkers = SettingsView.checkersText()
+                        message = "Backup restored."
+                    } catch {
+                        message = error.localizedDescription
+                    }
+                }
+            } message: {
+                Text("Everything in Rumbo now will be replaced by what's in the file.")
+            }
+        } header: {
+            Text("Backup")
+        } footer: {
+            Text("Saves one file you can keep in iCloud Drive. Restoring replaces everything in Rumbo with the file's contents.")
+        }
+        Section {
+            ShareLink(item: URL(string: "https://github.com/rahns/rumbo/releases/latest")!,
+                      subject: Text("Rumbo"),
+                      message: Text("I'm using Rumbo to plan my \(profile.pack.name). Download it here (you sign it with your own certificate):")) {
+                Label("Share Rumbo with a friend", systemImage: "square.and.arrow.up")
+            }
+            Link(destination: Self.feedbackEmail) {
+                Label("Report a bug or suggest something", systemImage: "envelope")
+            }
+        } header: {
+            Text("Share")
+        }
+        Section {
+            NavigationLink("Diagnostics") { DiagnosticsView() }
         } footer: {
             VStack(spacing: 4) {
                 Text("Rumbo \(DiagnosticsModel.appVersion)")
@@ -370,6 +365,32 @@ struct SettingsView: View {
             .padding(.top, 8)
             // A little room between the credit and the tab bar.
             .padding(.bottom, 24)
+        }
+    }
+
+    /// A big heading over a group of sections. For the language being learned, a Switch menu beside it
+    /// changes language without scrolling down to the Language picker.
+    private func groupHeader(_ title: String, switcher: Bool) -> some View {
+        Section {
+        } header: {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title)
+                    .font(.rounded(.title2, weight: .black))
+                    .foregroundStyle(Palette.ink)
+                Spacer(minLength: 8)
+                if switcher, LanguagePack.all.count > 1 {
+                    Menu {
+                        ForEach(LanguagePack.all.filter { $0.code != model.languageCode }) { pack in
+                            Button("\(pack.flag) \(pack.name)") { model.setLanguage(pack.code, announce: true) }
+                        }
+                    } label: {
+                        Label("Switch", systemImage: "arrow.left.arrow.right")
+                            .font(.rounded(.subheadline, weight: .bold))
+                    }
+                }
+            }
+            .textCase(nil)
+            .padding(.top, 12)
         }
     }
 
