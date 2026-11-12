@@ -65,7 +65,7 @@ struct SettingsView: View {
             Text("Language")
         } footer: {
             Text(LanguagePack.all.count > 1
-                 ? "Each language keeps its own level, plan, goal and streak. Choosing one you haven't set up yet starts its setup."
+                 ? "Each language keeps its own level, plan, goal and streak."
                  : "More languages are on the way\(LanguagePack.upcoming.first.map { ": \($0) is next" } ?? "").")
         }
 
