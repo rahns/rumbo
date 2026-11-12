@@ -162,14 +162,14 @@ struct LevelTimeline: View {
     private func style(for stop: Stop, afterTarget: Bool) -> Style {
         switch stop {
         case .now:
-            return Style(symbol: "location.fill", color: Palette.coral, title: "Now · \(band.label)",
+            return Style(symbol: "location.fill", color: Palette.coral, title: "Now · \(ActiveLanguage.pack.levelName(band))",
                          date: "\(Int(hours)) h", subtitle: "\(band.rawValue), training hours so far")
         case .level(let level, let date):
             let isGoal = level == goalBand
             return Style(symbol: isGoal ? "star.fill" : "trophy.fill", color: afterTarget ? Palette.secondaryText : Palette.leaf,
-                         title: isGoal ? "\(level.label) · \(level.rawValue) · your \(goal) goal" : "\(level.label) · \(level.rawValue)",
+                         title: isGoal ? "\(ActiveLanguage.pack.levelName(level)) · \(level.rawValue) · your \(goal) goal" : "\(ActiveLanguage.pack.levelName(level)) · \(level.rawValue)",
                          date: date.formatted(.dateTime.month(.abbreviated).year()),
-                         subtitle: "At \(Int(level.hoursThreshold)) training hours · \(Self.distance(to: date))")
+                         subtitle: "At \(Int(ActiveLanguage.pack.levels.threshold(level))) training hours · \(Self.distance(to: date))")
         case .target(let date):
             return Style(symbol: "flag.fill", color: Palette.sun, title: "Your target: \(goal)",
                          date: date.formatted(.dateTime.month(.abbreviated).year()), subtitle: targetSubtitle, isTarget: true)
@@ -178,15 +178,15 @@ struct LevelTimeline: View {
 
     /// What the target is and where the current pace gets the learner by then.
     private var targetSubtitle: String {
-        let needed = Int(goalBand.hoursThreshold)
+        let needed = Int(ActiveLanguage.pack.levels.threshold(goalBand))
         // C1 is past the end of Rumbo's path, so measure against B2.2.
         let need = goal == "C1" ? "B2.2, the end of Rumbo's path, needs \(needed) training hours" : "\(goal) needs \(needed) training hours"
         guard let hours = hoursAtTarget else { return "\(need)." }
-        let expected = Band.forHours(hours)
-        if hours >= goalBand.hoursThreshold {
+        let expected = ActiveLanguage.pack.levels.band(forHours: hours)
+        if hours >= ActiveLanguage.pack.levels.threshold(goalBand) {
             return "\(need). At your pace you'll have about \(Int(hours)) h by then, so you're on track."
         }
-        return "\(need). At your pace you'll have about \(Int(hours)) h by then, which is \(expected.label) (\(expected.rawValue))."
+        return "\(need). At your pace you'll have about \(Int(hours)) h by then, which is \(ActiveLanguage.pack.levelName(expected)) (\(expected.rawValue))."
     }
 
     /// "in 4 months", "in 2 years".

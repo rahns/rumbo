@@ -303,6 +303,8 @@ public struct Phrasebook: Equatable, Sendable {
     public let exclamationEnd: String
     public let hello: String
     public let yes: String
+    /// The other answer to a can-do question ("Todavía no").
+    public let notYet: String
     public let congratulations: String
     public let letsGo: String
     public let wellDone: String
@@ -318,7 +320,7 @@ public struct Phrasebook: Equatable, Sendable {
 
     public init(week: String, weekComplete: String, weekCompleteGold: String, today: String, done: String,
                 goodMorning: String, goodAfternoon: String, goodEvening: String, exclamationEnd: String, hello: String,
-                yes: String, congratulations: String, letsGo: String, wellDone: String, amazing: String, goalReached: String,
+                yes: String, notYet: String, congratulations: String, letsGo: String, wellDone: String, amazing: String, goalReached: String,
                 daysInARow: String, reminderTitle: String, squawks: [String], levelNames: [Band: String]) {
         self.week = week
         self.weekComplete = weekComplete
@@ -331,6 +333,7 @@ public struct Phrasebook: Equatable, Sendable {
         self.exclamationEnd = exclamationEnd
         self.hello = hello
         self.yes = yes
+        self.notYet = notYet
         self.congratulations = congratulations
         self.letsGo = letsGo
         self.wellDone = wellDone
@@ -355,6 +358,6 @@ public struct Phrasebook: Equatable, Sendable {
     /// Every string, for checking that none is empty.
     public var allStrings: [String] {
         [week, weekComplete, weekCompleteGold, today, done, goodMorning, goodAfternoon, goodEvening, exclamationEnd, hello,
-         yes, congratulations, letsGo, wellDone, amazing, goalReached, daysInARow, reminderTitle] + squawks + Band.allCases.map { levelNames[$0] ?? "" }
+         yes, notYet, congratulations, letsGo, wellDone, amazing, goalReached, daysInARow, reminderTitle] + squawks + Band.allCases.map { levelNames[$0] ?? "" }
     }
 }

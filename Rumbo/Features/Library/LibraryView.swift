@@ -19,7 +19,7 @@ struct LibraryView: View {
                                 ContentCard(item: current, isWatching: true, toggle: { model.toggleWatching(current) }, open: open)
                             }
                         }
-                        section("For your level", subtitle: "\(profile.band.label) · \(profile.band.rawValue)") {
+                        section("For your level", subtitle: "\(ActiveLanguage.pack.levelName(profile.band)) · \(profile.band.rawValue)") {
                             let others = suggestions.now.filter { $0.id != model.currentContent?.id }
                             if others.isEmpty {
                                 Text("That's everything for your level right now. New suggestions arrive with app updates and when you level up.")
@@ -31,7 +31,7 @@ struct LibraryView: View {
                             }
                         }
                         if !suggestions.next.isEmpty, let next = profile.band.next {
-                            section("Coming up", subtitle: "For \(next.label) · \(next.rawValue). Try one early if it feels fun, not frustrating.") {
+                            section("Coming up", subtitle: "For \(ActiveLanguage.pack.levelName(next)) · \(next.rawValue). Try one early if it feels fun, not frustrating.") {
                                 ForEach(suggestions.next) { item in
                                     ContentCard(item: item, isWatching: item.id == model.currentContent?.id, toggle: { model.toggleWatching(item) }, open: open)
                                         .opacity(0.85)

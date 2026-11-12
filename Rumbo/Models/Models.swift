@@ -2,9 +2,20 @@ import Foundation
 import RumboCore
 import SwiftData
 
-/// The learner. One per install. See docs/04-data-model.md.
-@Model final class LearnerProfile {
+/// A record that belongs to one language being learned. Records saved before languages were tagged are Spanish.
+protocol LanguageTagged: AnyObject {
+    var languageCode: String { get set }
+}
+
+/// The learner in one language: one profile per language being learned, each with its own level, goal,
+/// sources and progress. The property names for source progress (`dsDifficultyLow`, `languageTransferLastTrack`, …)
+/// date from when Spanish was the only language; they are the stored column names, so they stay, and hold the
+/// same things for any language's graded video, audio course, learner series and drill app.
+/// See docs/04-data-model.md and docs/09-multi-language.md.
+@Model final class LearnerProfile: LanguageTagged {
     var id: UUID = UUID()
+    /// The language this profile is for (`LanguagePack.code`).
+    var languageCode: String = LanguagePack.defaultCode
     var createdAt: Date = Date.now
     var displayName: String = ""
     var goal: String = "B2"
@@ -53,11 +64,15 @@ import SwiftData
 
     init() {}
 
-    /// Dreaming Spanish ranges are always this wide (40–45); moving them slides the whole window.
-    static let dreamingRangeWidth = 5
+    var pack: LanguagePack { LanguagePack.pack(for: languageCode) }
+
+    /// Graded video ranges are always this wide (40–45 in Dreaming Spanish); moving them slides the whole window.
+    var gradedWindowWidth: Int { pack.graded?.windowWidth ?? 5 }
 
     /// The level the goal ("B1", "B2", "C1") is reached at. Rumbo's path ends at B2.2, so C1 maps there.
     var goalBand: Band { GoalEditor.goalBand(for: goal) }
+    /// Training hours the goal level starts at, in this profile's language.
+    var goalHours: Double { pack.levels.threshold(goalBand) }
 
     var band: Band {
         get { Band(rawValue: currentBandRaw) ?? .a2_1 }
@@ -97,23 +112,25 @@ import SwiftData
     var sourceProgress: SourceProgress {
         get {
             SourceProgress(
-                languageTransferLastTrack: languageTransferLastTrack,
-                languageTransferRepeatPending: languageTransferRepeatPending,
-                extraEpisodesWatched: extraEpisodesWatched,
-                extraPartsDoneInEpisode: extraPartsDoneInEpisode
+                courseLastTrack: languageTransferLastTrack,
+                courseRepeatPending: languageTransferRepeatPending,
+                seriesEpisodesWatched: extraEpisodesWatched,
+                seriesPartsDone: extraPartsDoneInEpisode
             )
         }
         set {
-            languageTransferLastTrack = newValue.languageTransferLastTrack
-            languageTransferRepeatPending = newValue.languageTransferRepeatPending
-            extraEpisodesWatched = newValue.extraEpisodesWatched
-            extraPartsDoneInEpisode = newValue.extraPartsDoneInEpisode
+            languageTransferLastTrack = newValue.courseLastTrack
+            languageTransferRepeatPending = newValue.courseRepeatPending
+            extraEpisodesWatched = newValue.seriesEpisodesWatched
+            extraPartsDoneInEpisode = newValue.seriesPartsDone
         }
     }
 }
 
 /// One logged block of practice.
-@Model final class ActivityLog {
+@Model final class ActivityLog: LanguageTagged {
+    /// The language it belongs to (`LanguagePack.code`).
+    var languageCode: String = LanguagePack.defaultCode
     var id: UUID = UUID()
     var date: Date = Date.now
     var taskRaw: String = TaskKind.gradedWatch.rawValue
@@ -152,7 +169,9 @@ import SwiftData
 }
 
 /// Today's plan, saved so it stays stable while the learner works through it.
-@Model final class DayPlanRecord {
+@Model final class DayPlanRecord: LanguageTagged {
+    /// The language it belongs to (`LanguagePack.code`).
+    var languageCode: String = LanguagePack.defaultCode
     var day: Date = Date.now
     var budgetMinutes: Int = 30
     var bandRaw: String = Band.a2_1.rawValue
@@ -264,7 +283,9 @@ enum TaskStatus: String {
 }
 
 /// Writing saved from `write.guided` / `write.quick`, with its correction and the learner's rewrite.
-@Model final class WritingEntry {
+@Model final class WritingEntry: LanguageTagged {
+    /// The language it belongs to (`LanguagePack.code`).
+    var languageCode: String = LanguagePack.defaultCode
     var id: UUID = UUID()
     var date: Date = Date.now
     var taskRaw: String = TaskKind.writeGuided.rawValue
@@ -283,7 +304,9 @@ enum TaskStatus: String {
 }
 
 /// A mistake-deck card, scheduled with FSRS. See docs/03-experience.md §3.4 "Mistake deck".
-@Model final class ReviewCard {
+@Model final class ReviewCard: LanguageTagged {
+    /// The language it belongs to (`LanguagePack.code`).
+    var languageCode: String = LanguagePack.defaultCode
     var id: UUID = UUID()
     var createdAt: Date = Date.now
     var front: String = ""

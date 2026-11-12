@@ -57,7 +57,11 @@ enum CorrectionService {
 
     /// The older checker: LanguageTool plus the on-device model, merged.
     private static func basicCheck(_ text: String, band: Band, prompt: String, notice: String?) async throws -> Result {
-        let matches = try? await LanguageTool.check(text)
+        // LanguageTool only where it covers the language being learned.
+        var matches: [LanguageTool.Match]?
+        if let code = ActiveLanguage.pack.tutor.languageToolCode {
+            matches = try? await LanguageTool.check(text, language: code)
+        }
         let toolCorrections = (matches ?? []).compactMap { $0.correction(in: text) }
 
         guard modelAvailable else {
@@ -83,16 +87,11 @@ enum CorrectionService {
         )
     }
 
-    /// Explanations in English up to B1, in simple Spanish from B2.
+    /// What every checker is told: the language's own checklist (`LanguagePack.tutor`), with explanations
+    /// in English at first and in the language itself from the level the pack names.
     static func instructions(for band: Band) -> String {
-        let language = band >= .b2_1 ? "in simple Spanish" : "in English"
-        return """
-            You are a warm, encouraging Spanish tutor for a \(band.rawValue) learner (CEFR). Find the real errors in the learner's text, \
-            most important first, at most \(Mistakes.maximumErrors). Check that verb tenses match time expressions (for example "ayer" \
-            needs the preterite), gender and number agreement, ser/estar, por/para, prepositions, and phrasing a native speaker \
-            wouldn't use. Use the grammar checker's hints when given. Never list something that is already correct. Copy the wrong words exactly as the learner wrote them. \
-            Explain each error in one short sentence \(language), at the learner's level. Also give one or two specific things they did well.
-            """
+        let pack = ActiveLanguage.pack
+        return pack.tutor.instructions(language: pack.name, band: band, maximumErrors: Mistakes.maximumErrors)
     }
 }
 
@@ -144,14 +143,15 @@ enum LanguageTool {
         let matches: [Match]
     }
 
-    static func check(_ text: String) async throws -> [Match] {
+    /// `code` is LanguageTool's code for the language being learned (`Tutor.languageToolCode`).
+    static func check(_ text: String, language code: String) async throws -> [Match] {
         var request = URLRequest(url: URL(string: "https://api.languagetool.org/v2/check")!)
         request.httpMethod = "POST"
         request.timeoutInterval = 15
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         var form = URLComponents()
         form.queryItems = [
-            URLQueryItem(name: "language", value: "es"),
+            URLQueryItem(name: "language", value: code),
             URLQueryItem(name: "text", value: text),
         ]
         request.httpBody = form.percentEncodedQuery?.data(using: .utf8)

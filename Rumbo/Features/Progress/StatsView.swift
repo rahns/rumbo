@@ -38,7 +38,7 @@ struct StatsView: View {
         let hours = model.trainingHours
         let band = profile.band
         let next = band.next
-        let progress = next.map { (hours - band.hoursThreshold) / ($0.hoursThreshold - band.hoursThreshold) } ?? 1
+        let progress = next.map { (hours - ActiveLanguage.pack.levels.threshold(band)) / (ActiveLanguage.pack.levels.threshold($0) - ActiveLanguage.pack.levels.threshold(band)) } ?? 1
         return RaisedCard(accent: Palette.coral) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
@@ -54,7 +54,7 @@ struct StatsView: View {
                     .foregroundStyle(Palette.secondaryText)
                 ChunkyProgressBar(value: progress, color: Palette.coral)
                 if let next {
-                    Text("\(max(0, Int((next.hoursThreshold - hours).rounded(.up)))) training hours to \(next.label) (\(next.rawValue)), which starts at \(Int(next.hoursThreshold)) h")
+                    Text("\(max(0, Int((ActiveLanguage.pack.levels.threshold(next) - hours).rounded(.up)))) training hours to \(ActiveLanguage.pack.levelName(next)) (\(next.rawValue)), which starts at \(Int(ActiveLanguage.pack.levels.threshold(next))) h")
                         .font(.rounded(.subheadline, weight: .semibold))
                         .foregroundStyle(Palette.secondaryText)
                 }
@@ -66,7 +66,7 @@ struct StatsView: View {
         let projection = Projection()
         // Until there's a week of history, forecast at the weekly goal rather than from one or two sessions.
         let (weekly, ownPace) = model.forecastWeeklyHours
-        let arrivals = projection.arrivalDates(hours: model.trainingHours, weeklyHours: weekly, from: .now)
+        let arrivals = projection.arrivalDates(hours: model.trainingHours, weeklyHours: weekly, from: .now, levels: model.pack.levels)
         return RaisedCard(accent: Palette.sky) {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Where you're heading")
@@ -90,7 +90,7 @@ struct StatsView: View {
                 }
                 if let target = profile.targetDate, target > .now {
                     let extra = projection.hours(by: target, from: .now, current: model.trainingHours, weeklyHours: weekly, extraMinutesPerDay: 10)
-                    Label("With 10 more minutes a day, you'd have about \(Int(extra)) h by \(target.formatted(.dateTime.month(.abbreviated).year())): \(Band.forHours(extra).label) (\(Band.forHours(extra).rawValue)).", systemImage: "bolt.fill")
+                    Label("With 10 more minutes a day, you'd have about \(Int(extra)) h by \(target.formatted(.dateTime.month(.abbreviated).year())): \(ActiveLanguage.pack.levels.band(forHours: extra).label) (\(ActiveLanguage.pack.levels.band(forHours: extra).rawValue)).", systemImage: "bolt.fill")
                         .font(.rounded(.subheadline, weight: .semibold))
                         .foregroundStyle(Palette.secondaryText)
                 }

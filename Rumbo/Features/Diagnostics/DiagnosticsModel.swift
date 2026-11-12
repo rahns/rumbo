@@ -147,7 +147,7 @@ final class DiagnosticsModel {
 
     private func checkLanguageTool() async -> CheckStatus {
         do {
-            let matches = try await LanguageTool.check("Ella son muy alto y yo tengo veinte año.")
+            let matches = try await LanguageTool.check("Ella son muy alto y yo tengo veinte año.", language: "es")
             let first = matches.first?.message ?? "none"
             return .pass("\(matches.count) errors found. First: \(first)")
         } catch {
@@ -156,7 +156,9 @@ final class DiagnosticsModel {
     }
 
     private func checkURLSchemes() -> CheckStatus {
-        let schemes = ["duolingo", "youtube", "dreamingspanish", "dreaming", "languagetransfer", "tandem", "spotify"]
+        // Every language's source apps, plus the video and podcast apps suggestions open in.
+        let sourceSchemes = LanguagePack.all.flatMap { $0.sources.values.compactMap { $0.appURL.flatMap { URL(string: $0)?.scheme } } }
+        let schemes = Array(Set(sourceSchemes + ["youtube", "spotify"])).sorted()
         let found = schemes.filter { UIApplication.shared.canOpenURL(URL(string: "\($0)://")!) }
         return found.isEmpty
             ? .warn("None of the tested URL schemes opened. Rumbo will use web links.")

@@ -34,8 +34,10 @@ struct GoalEditor: View {
     }
 
     private var goalBand: Band { Self.goalBand(for: goal) }
+    /// Training hours the goal level starts at, in the language being learned.
+    private var goalHours: Double { ActiveLanguage.pack.levels.threshold(goalBand) }
     private var weeklyHours: Double { Projection.weeklyHours(atGoalMinutes: weeklyMinutes) }
-    private var alreadyThere: Bool { currentHours >= goalBand.hoursThreshold }
+    private var alreadyThere: Bool { currentHours >= ActiveLanguage.pack.levels.threshold(goalBand) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -157,7 +159,7 @@ struct GoalEditor: View {
     }
 
     private var outOfReach: Bool {
-        GoalPace.isOutOfReach(goalBand, by: targetDate, currentHours: currentHours, from: .now)
+        GoalPace.isOutOfReach(hours: goalHours, by: targetDate, currentHours: currentHours, from: .now)
     }
 
     private var dateNote: String {
@@ -167,13 +169,13 @@ struct GoalEditor: View {
             return "That's sooner than even \(GoalPace.minutes.upperBound) min a week can get you there. Try a later date."
         }
         let span = months < 18 ? "\(months) months" : "about \(Int((Double(months) / 12).rounded())) years"
-        return "\(span) from now. \(goal) needs \(Int(goalBand.hoursThreshold)) training hours; you have \(Int(currentHours))."
+        return "\(span) from now. \(goal) needs \(Int(ActiveLanguage.pack.levels.threshold(goalBand))) training hours; you have \(Int(currentHours))."
     }
 
     /// The road at this pace, as on Progress.
     private var preview: some View {
         let projection = Projection()
-        let arrivals = projection.arrivalDates(hours: currentHours, weeklyHours: weeklyHours, from: .now)
+        let arrivals = projection.arrivalDates(hours: currentHours, weeklyHours: weeklyHours, from: .now, levels: ActiveLanguage.pack.levels)
         let atTarget = projection.hours(by: targetDate, from: .now, current: currentHours, weeklyHours: weeklyHours)
         return VStack(alignment: .leading, spacing: 10) {
             Text("At this pace")
@@ -188,7 +190,7 @@ struct GoalEditor: View {
     // MARK: Keeping the two in step
 
     private func dateFromMinutes() {
-        let date = GoalPace.arrival(of: goalBand, currentHours: currentHours, weeklyMinutes: weeklyMinutes, from: .now)
+        let date = GoalPace.arrival(atHours: goalHours, currentHours: currentHours, weeklyMinutes: weeklyMinutes, from: .now)
         let clamped = max(date, tomorrow)
         guard !Calendar.current.isDate(clamped, inSameDayAs: targetDate) else { return }
         syncing = true
@@ -196,7 +198,7 @@ struct GoalEditor: View {
     }
 
     private func minutesFromDate() {
-        let minutes = GoalPace.weeklyMinutes(toReach: goalBand, by: targetDate, currentHours: currentHours, from: .now)
+        let minutes = GoalPace.weeklyMinutes(toReachHours: goalHours, by: targetDate, currentHours: currentHours, from: .now)
         guard minutes != weeklyMinutes else { return }
         syncing = true
         weeklyMinutes = minutes
@@ -244,7 +246,7 @@ struct GoalSettingsView: View {
         goal = profile.goal
         weeklyMinutes = profile.weeklyGoalMinutes
         // Older profiles may have no date: start from where the weekly goal leads.
-        targetDate = profile.targetDate ?? GoalPace.arrival(of: GoalEditor.goalBand(for: profile.goal), currentHours: model.trainingHours,
+        targetDate = profile.targetDate ?? GoalPace.arrival(atHours: profile.goalHours, currentHours: model.trainingHours,
                                                            weeklyMinutes: profile.weeklyGoalMinutes, from: .now)
         loaded = true
     }

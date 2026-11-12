@@ -106,6 +106,8 @@ enum Reminders {
         guard profile.reminderEnabled else { return }
 
         let now = Date.now
+        // Reminders are for the language being learned: its name and its own words.
+        let pack = profile.pack
         for offset in 0..<dailyDaysAhead {
             guard let day = calendar.date(byAdding: .day, value: offset, to: now),
                   let fireDate = calendar.date(bySettingHour: profile.reminderHour, minute: profile.reminderMinute, second: 0, of: day),
@@ -113,9 +115,9 @@ enum Reminders {
             let daily = UNMutableNotificationContent()
             if let note = freezeNote(fireDate) {
                 daily.title = "🧊 Streak freeze used"
-                daily.body = "Your \(note.streak)-day streak is safe. A little Spanish today keeps it going."
+                daily.body = "Your \(note.streak)-day streak is safe. A little \(pack.name) today keeps it going."
             } else {
-                daily.title = "¿Rumbo a dónde?"
+                daily.title = pack.phrases.reminderTitle
                 daily.body = "Pico has today's plan ready. Even 10 minutes counts."
             }
             daily.sound = .default
@@ -157,7 +159,7 @@ enum Reminders {
     static func sendTest() async -> Bool {
         guard await requestPermission() else { return false }
         let content = UNMutableNotificationContent()
-        content.title = "¡Hola! 🐦"
+        content.title = "\(ActiveLanguage.phrases.hello) 🐦"
         content.body = "Notifications from Rumbo are working."
         content.sound = .default
         try? await UNUserNotificationCenter.current().add(
@@ -181,38 +183,28 @@ final class NotificationPresenter: NSObject, UNUserNotificationCenterDelegate {
     }
 }
 
-/// Opens the source app for a task, falling back to the web. Schemes confirmed on device in M0.
+/// Opens the source app for a task, falling back to the web. Each language's sources say how they open
+/// (`SourceInfo.appURL`, `webURL`); the Spanish schemes were confirmed on device in M0.
 enum DeepLinks {
     static func url(for task: TaskKind, detail: TaskDetail) -> URL? {
+        let pack = ActiveLanguage.pack
         switch task {
-        case .gradedWatch, .gradedEasy:
-            return URL(string: "dreaming://")
-        case .courseTrack:
-            return URL(string: "languagetransfer://")
-        case .drillLesson:
-            return URL(string: "duolingo://")
-        case .exchangeText, .exchangeVoice, .exchangeCall:
-            return URL(string: "tandem://")
         case .seriesIntensive, .seriesExtensive:
+            // The learner series is on YouTube: search for the episode.
+            guard let series = pack.series else { return nil }
             let episode: Int = switch detail {
             case .seriesPart(let episode, _), .seriesEpisode(let episode): episode
             default: 1
             }
-            let query = "Extra en Español episodio \(episode)".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+            let query = "\(series.searchPrefix) \(episode)".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
             return URL(string: "https://www.youtube.com/results?search_query=\(query)")
         default:
-            return nil
+            return task.source.flatMap { pack.sources[$0]?.appURL }.flatMap(URL.init(string:))
         }
     }
 
     static func webFallback(for task: TaskKind) -> URL? {
-        switch task {
-        case .gradedWatch, .gradedEasy: URL(string: "https://www.dreaming.com/spanish")
-        case .courseTrack: URL(string: "https://www.languagetransfer.org")
-        case .drillLesson: URL(string: "https://www.duolingo.com")
-        case .exchangeText, .exchangeVoice, .exchangeCall: URL(string: "https://www.tandem.net")
-        default: nil
-        }
+        task.source.flatMap { ActiveLanguage.pack.sources[$0]?.webURL }.flatMap(URL.init(string:))
     }
 
     @MainActor

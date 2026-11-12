@@ -111,6 +111,7 @@ extension LanguagePack {
             exclamationEnd: "!",
             hello: "¡Hola!",
             yes: "¡Sí!",
+            notYet: "Todavía no",
             congratulations: "¡Felicidades!",
             letsGo: "¡Vamos!",
             wellDone: "¡Muy bien!",

@@ -6,8 +6,11 @@ import UniformTypeIdentifiers
 
 /// Manual backup: Settings → Save backup writes one JSON file; Restore reads one back.
 /// Today's plan isn't included; it's rebuilt from the restored history.
+/// Version 2 holds every language being learned: each profile, and a language on every log, writing entry
+/// and card. A version 1 file (one profile, no languages) restores as Spanish. The field names for source
+/// progress date from when Spanish was the only language and stay as they are.
 struct BackupFile: Codable {
-    static let currentVersion = 1
+    static let currentVersion = 2
 
     var version: Int
     var exportedAt: Date
@@ -17,6 +20,10 @@ struct BackupFile: Codable {
     var writing: [WritingData]
     /// Added after version 1 shipped; optional so older backups still restore.
     var cards: [CardData]?
+    /// Version 2: every language's profile (`profile` is the one being learned, kept for older readers).
+    var profiles: [ProfileData]?
+    /// Version 2: the language being learned when the backup was saved.
+    var activeLanguage: String?
     /// The Gemini key and thinking level (Keychain and UserDefaults on the phone). Optional: older backups have none.
     var gemini: GeminiData?
 
@@ -62,6 +69,8 @@ struct BackupFile: Codable {
         var lessonSchedule: LessonSchedule?
         var pathHistory: PathLayout.PathHistory?
         var strandBalance: StrandBalance?
+        /// Version 2: the language this profile is for. Missing means Spanish.
+        var language: String?
     }
 
     struct LogData: Codable {
@@ -74,6 +83,8 @@ struct BackupFile: Codable {
         var difficultyLow: Int?
         var difficultyHigh: Int?
         var levelWatched: Int?
+        /// Version 2. Missing means Spanish.
+        var language: String?
     }
 
     struct WritingData: Codable {
@@ -85,6 +96,8 @@ struct BackupFile: Codable {
         var rewrite: String?
         var feedback: Data?
         var id: UUID?
+        /// Version 2. Missing means Spanish.
+        var language: String?
     }
 
     struct CardData: Codable {
@@ -101,6 +114,8 @@ struct BackupFile: Codable {
         var lapses: Int
         var state: Int
         var lastReview: Date?
+        /// Version 2. Missing means Spanish.
+        var language: String?
     }
 
     static func encoder() -> JSONEncoder {
@@ -150,12 +165,14 @@ extension BackupFile.ProfileData {
             speakingStageCap: profile.speakingStageCap,
             lessonSchedule: profile.lessonScheduleData == nil ? nil : profile.lessonSchedule,
             pathHistory: profile.pathHistoryData == nil ? nil : profile.pathHistory,
-            strandBalance: profile.strandBalance
+            strandBalance: profile.strandBalance,
+            language: profile.languageCode
         )
     }
 
     func makeProfile() -> LearnerProfile {
         let profile = LearnerProfile()
+        profile.languageCode = language ?? LanguagePack.defaultCode
         profile.createdAt = createdAt
         profile.displayName = displayName
         profile.goal = goal
@@ -196,11 +213,13 @@ extension BackupFile.CardData {
     init(_ card: ReviewCard) {
         self.init(createdAt: card.createdAt, front: card.front, back: card.back, explanation: card.explanation, origin: card.origin,
                   writingID: card.writingID, due: card.due, stability: card.stability, difficulty: card.difficulty,
-                  reps: card.reps, lapses: card.lapses, state: card.stateRaw, lastReview: card.lastReview)
+                  reps: card.reps, lapses: card.lapses, state: card.stateRaw, lastReview: card.lastReview,
+                  language: card.languageCode)
     }
 
     func makeCard() -> ReviewCard {
         let card = ReviewCard(front: front, back: back, explanation: explanation, origin: origin)
+        card.languageCode = language ?? LanguagePack.defaultCode
         card.createdAt = createdAt
         card.writingID = writingID
         card.due = due
@@ -218,12 +237,13 @@ extension BackupFile.LogData {
     init(_ log: ActivityLog) {
         self.init(date: log.date, task: log.taskRaw, minutes: log.minutes, comprehension: log.comprehension,
                   rating: log.rating, isBonus: log.isBonus, difficultyLow: log.difficultyLow, difficultyHigh: log.difficultyHigh,
-                  levelWatched: log.levelWatched)
+                  levelWatched: log.levelWatched, language: log.languageCode)
     }
 
     func makeLog() -> ActivityLog {
         let log = ActivityLog(date: date, task: .gradedWatch, minutes: minutes)
         log.taskRaw = task
+        log.languageCode = language ?? LanguagePack.defaultCode
         log.comprehension = comprehension
         log.rating = rating
         log.isBonus = isBonus

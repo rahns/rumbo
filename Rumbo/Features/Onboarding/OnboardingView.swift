@@ -14,7 +14,7 @@ struct OnboardingView: View {
 
     enum Step: Int, CaseIterable {
         // The goal comes after placement, so the weekly goal and target date can be worked out from your hours.
-        case welcome, name, sources, progress, canDo, placement, goal, feedback, habit
+        case welcome, language, name, sources, progress, canDo, placement, goal, feedback, habit
     }
 
     var body: some View {
@@ -114,6 +114,7 @@ struct OnboardingView: View {
     private var content: some View {
         switch step {
         case .welcome: welcome
+        case .language: language
         case .name: name
         case .goal: goal
         case .sources: sources
@@ -129,13 +130,13 @@ struct OnboardingView: View {
         VStack(spacing: 24) {
             Spacer(minLength: 40)
             // Pico introduces himself, so new learners know who the toucan is.
-            PicoSpeechBubble(text: "¡Hola! I'm Pico 👋 I'll turn the Spanish you already do into one simple plan each day, and cheer you on.")
+            PicoSpeechBubble(text: "¡Hola! I'm Pico 👋 I'll turn the language learning you already do into one simple plan each day, and cheer you on.")
                 .padding(.horizontal, 12)
             PicoBadge(size: 110)
             Text("¿Rumbo a dónde?")
                 .font(.rounded(.largeTitle, weight: .black))
                 .foregroundStyle(Palette.ink)
-            Text("Rumbo turns the Spanish sources you already use into one plan, and tells you exactly what to do each day.")
+            Text("Rumbo turns the apps, courses and shows you already use into one plan, and tells you exactly what to do each day.")
                 .font(.rounded(.title3, weight: .medium))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Palette.secondaryText)
@@ -148,6 +149,51 @@ struct OnboardingView: View {
                 .padding(.top, 8)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// What's being learned. Everything after this step follows the choice: the sources offered, the hours
+    /// each level needs, and the app's wording.
+    private var language: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            StepTitle("What are you learning?")
+            Text("Rumbo builds your plan around the best sources for that language.")
+                .font(.rounded(.subheadline, weight: .medium))
+                .foregroundStyle(Palette.secondaryText)
+            ForEach(LanguagePack.all) { pack in
+                let chosen = draft.languageCode == pack.code
+                Button {
+                    draft.languageCode = pack.code
+                } label: {
+                    HStack(spacing: 14) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(pack.name).font(.rounded(.headline, weight: .bold))
+                            Text(pack.nativeName).font(.rounded(.caption, weight: .medium)).foregroundStyle(Palette.secondaryText)
+                        }
+                        .foregroundStyle(Palette.ink)
+                        Spacer(minLength: 0)
+                        Image(systemName: chosen ? "checkmark.circle.fill" : "circle")
+                            .font(.title)
+                            .foregroundStyle(chosen ? Palette.leaf : Palette.secondaryText)
+                    }
+                    .padding(14)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Palette.card))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(chosen ? "\(pack.name), chosen" : pack.name)
+            }
+            ForEach(LanguagePack.upcoming, id: \.self) { name in
+                HStack {
+                    Text(name).font(.rounded(.headline, weight: .bold))
+                    Spacer()
+                    Text("Coming soon").font(.rounded(.caption, weight: .bold))
+                }
+                .foregroundStyle(Palette.secondaryText)
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: 16).fill(Palette.card.opacity(0.5)))
+            }
+        }
+        .sensoryFeedback(.selection, trigger: draft.languageCode)
     }
 
     private var name: some View {
@@ -178,7 +224,7 @@ struct OnboardingView: View {
             Text("Tick what you use; Rumbo fills the time with those. Not sure what one is? Tap it.")
                 .font(.rounded(.subheadline, weight: .medium))
                 .foregroundStyle(Palette.secondaryText)
-            ForEach(SourceKind.allCases, id: \.self) { source in
+            ForEach(draft.pack.roles, id: \.self) { source in
                 SourceToggleRow(source: source, isOn: Binding(
                     get: { draft.sources.contains(source) },
                     set: { on in
@@ -195,42 +241,44 @@ struct OnboardingView: View {
             Text("Check each app for these numbers. They're what Rumbo uses to place you.")
                 .font(.rounded(.subheadline, weight: .medium))
                 .foregroundStyle(Palette.secondaryText)
-            if draft.sources.contains(.gradedVideo) {
+            let pack = draft.pack
+            if draft.importsHours, let graded = pack.graded {
                 RaisedCard(accent: Palette.coral) {
                     VStack(alignment: .leading, spacing: 10) {
                         SourceHeading(source: .gradedVideo)
                         NumberStepper(title: "Total hours watched", value: $draft.dreamingHours, range: 0...3000, step: 5)
-                        NumberStepper(title: "Difficulty you're watching: \(draft.dreamingDifficultyLow)–\(draft.dreamingDifficultyLow + LearnerProfile.dreamingRangeWidth)",
-                                      value: $draft.dreamingDifficultyLow, range: 0...(100 - LearnerProfile.dreamingRangeWidth), step: 1)
+                        NumberStepper(title: "Difficulty you're watching: \(draft.dreamingDifficultyLow)–\(draft.dreamingDifficultyLow + graded.windowWidth)",
+                                      value: $draft.dreamingDifficultyLow,
+                                      range: graded.scale.lowerBound...(graded.scale.upperBound - graded.windowWidth), step: 1)
                     }
                 }
             } else {
                 RaisedCard(accent: Palette.coral) {
-                    NumberStepper(title: "Hours of Spanish you've listened to or watched (roughly)", value: $draft.otherListeningHours, range: 0...3000, step: 10)
+                    NumberStepper(title: "Hours of \(pack.name) you've listened to or watched (roughly)", value: $draft.otherListeningHours, range: 0...3000, step: 10)
                 }
             }
-            if draft.sources.contains(.audioCourse) {
+            if draft.sources.contains(.audioCourse), let course = pack.course {
                 RaisedCard(accent: Palette.leaf) {
                     VStack(alignment: .leading, spacing: 10) {
                         SourceHeading(source: .audioCourse)
-                        NumberStepper(title: "Last track finished", value: $draft.languageTransferLastTrack, range: 0...Course.languageTransferTracks, step: 1)
+                        NumberStepper(title: "Last track finished", value: $draft.languageTransferLastTrack, range: 0...course.tracks, step: 1)
                     }
                 }
             }
-            if draft.sources.contains(.drillApp) {
+            if draft.sources.contains(.drillApp), let drill = pack.drill {
                 RaisedCard(accent: Palette.leaf) {
                     VStack(alignment: .leading, spacing: 10) {
                         SourceHeading(source: .drillApp)
-                        NumberStepper(title: "Section", value: $draft.duolingoSection, range: 1...10, step: 1)
-                        NumberStepper(title: "Unit", value: $draft.duolingoUnit, range: 1...300, step: 1)
+                        NumberStepper(title: "Section", value: $draft.duolingoSection, range: drill.sections, step: 1)
+                        NumberStepper(title: "Unit", value: $draft.duolingoUnit, range: drill.units, step: 1)
                     }
                 }
             }
-            if draft.sources.contains(.learnerSeries) {
+            if draft.sources.contains(.learnerSeries), let series = pack.series {
                 RaisedCard(accent: Palette.coral) {
                     VStack(alignment: .leading, spacing: 10) {
                         SourceHeading(source: .learnerSeries)
-                        NumberStepper(title: "Episodes watched", value: $draft.extraEpisodesWatched, range: 0...Course.extraEpisodes, step: 1)
+                        NumberStepper(title: "Episodes watched", value: $draft.extraEpisodesWatched, range: 0...series.episodes, step: 1)
                     }
                 }
             }
@@ -240,7 +288,7 @@ struct OnboardingView: View {
     private var canDo: some View {
         let statements = draft.canDoStatements
         return VStack(alignment: .leading, spacing: 20) {
-            StepTitle("Can you do this in Spanish?")
+            StepTitle("Can you do this in \(draft.pack.name)?")
             Text("\(min(canDoIndex + 1, statements.count)) of \(statements.count)")
                 .font(.rounded(.subheadline, weight: .bold))
                 .foregroundStyle(Palette.secondaryText)
@@ -257,9 +305,9 @@ struct OnboardingView: View {
                 .transition(.asymmetric(insertion: .scale(scale: 0.9).combined(with: .opacity),
                                         removal: .move(edge: .leading).combined(with: .opacity)))
                 HStack(spacing: 12) {
-                    Button("Todavía no") { answer(statement.text, false) }
+                    Button(draft.pack.phrases.notYet) { answer(statement.text, false) }
                         .buttonStyle(ChunkySecondaryButtonStyle())
-                    Button("¡Sí!") { answer(statement.text, true) }
+                    Button(draft.pack.phrases.yes) { answer(statement.text, true) }
                         .buttonStyle(ChunkyButtonStyle(color: Palette.leaf))
                 }
             }
@@ -317,7 +365,7 @@ struct OnboardingView: View {
     private var habit: some View {
         VStack(alignment: .leading, spacing: 18) {
             StepTitle("When should Pico remind you?")
-            Text("Pick the time you usually have for Spanish. A regular time makes the habit stick.")
+            Text("Pick the time you usually have for \(draft.pack.name). A regular time makes the habit stick.")
                 .font(.rounded(.subheadline, weight: .medium))
                 .foregroundStyle(Palette.secondaryText)
             Toggle(isOn: $draft.reminderEnabled.animation()) {
@@ -363,7 +411,7 @@ struct BandBadge: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            Text(band.label)
+            Text(ActiveLanguage.pack.levelName(band))
                 .font(.rounded(.largeTitle, weight: .black))
             Text(band.rawValue)
                 .font(.rounded(.headline, weight: .heavy))
@@ -477,42 +525,13 @@ struct FlowChips: View {
     }
 }
 
+/// How the language being learned names each source (`LanguagePack.sources`).
 enum SourceCopy {
-    static func name(_ source: SourceKind) -> String {
-        switch source {
-        case .gradedVideo: "Dreaming Spanish"
-        case .audioCourse: "Language Transfer"
-        case .learnerSeries: "Extra en Español"
-        case .drillApp: "Duolingo"
-        case .writing: "Writing"
-        case .exchange: "Tandem/HelloTalk partner"
-        case .suggestedContent: "Suggested shows & podcasts"
-        }
-    }
+    private static func info(_ source: SourceKind) -> SourceInfo? { ActiveLanguage.pack.sources[source] }
 
-    static func role(_ source: SourceKind) -> String {
-        switch source {
-        case .gradedVideo: "Your main listening engine"
-        case .audioCourse: "Grammar skeleton, A2 to early B1"
-        case .learnerSeries: "Sitcom with subtitles and shadowing"
-        case .drillApp: "Short daily warm-up"
-        case .writing: "Short writing tasks in Rumbo"
-        case .exchange: "I have a language exchange partner"
-        case .suggestedContent: "Native shows in your plan once Extra is done"
-        }
-    }
-
-    static func symbol(_ source: SourceKind) -> String {
-        switch source {
-        case .gradedVideo: "play.tv.fill"
-        case .audioCourse: "headphones"
-        case .learnerSeries: "film.fill"
-        case .drillApp: "bolt.fill"
-        case .writing: "pencil.and.scribble"
-        case .exchange: "bubble.left.and.bubble.right.fill"
-        case .suggestedContent: "sparkles.tv.fill"
-        }
-    }
+    static func name(_ source: SourceKind) -> String { info(source)?.name ?? "" }
+    static func role(_ source: SourceKind) -> String { info(source)?.role ?? "" }
+    static func symbol(_ source: SourceKind) -> String { info(source)?.symbol ?? "questionmark.circle" }
 }
 
 /// A big speech bubble with its tail pointing down at Pico, in a fixed dark ink on white so it reads in both modes.

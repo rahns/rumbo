@@ -26,6 +26,33 @@ final class AppModel {
         save()
     }
     private(set) var isOnline = true
+
+    /// The language being learned now. Each language has its own profile, history, plan and streak; every
+    /// fetch below is for this language only. See docs/09-multi-language.md.
+    private(set) var languageCode = ActiveLanguage.code
+    var pack: LanguagePack { LanguagePack.pack(for: languageCode) }
+
+    /// Switches to another language (one with a profile, or a new one about to be onboarded).
+    func setLanguage(_ code: String) {
+        LiveActivities.endAll()
+        ActiveLanguage.set(code)
+        languageCode = ActiveLanguage.code
+        selectedPlanDay = nil
+        weekStartsOnSunday = profile?.weekStartsOnSunday ?? false
+        catalog = ContentLibrary.load(pack)
+        revision += 1
+        if profile != nil {
+            bringProfileUpToDate()
+            refreshReminders()
+        }
+        publishWidgets()
+    }
+
+    /// Saves a new record as belonging to the language being learned.
+    private func insert<Record: PersistentModel & LanguageTagged>(_ record: Record) {
+        record.languageCode = languageCode
+        context.insert(record)
+    }
     /// Bumped after every change so views depending on fetched data refresh.
     private(set) var revision = 0
     /// A one-off message shown on Today, e.g. a new speaking stage.
@@ -53,7 +80,7 @@ final class AppModel {
 
     private let pathMonitor = NWPathMonitor()
     /// Library suggestions; the bundled list, replaced by a newer download when there is one.
-    private(set) var catalog = ContentLibrary.load()
+    private(set) var catalog = ContentLibrary.load(ActiveLanguage.pack)
 
     struct Banner: Identifiable, Equatable {
         let id = UUID()
@@ -67,6 +94,12 @@ final class AppModel {
             Task { @MainActor in self?.isOnline = path.status == .satisfied }
         }
         pathMonitor.start(queue: DispatchQueue(label: "rumbo.network"))
+        // If the remembered language has no profile but another does (a restored phone, say), use that one.
+        if profile == nil, let other = profiles.first {
+            ActiveLanguage.set(other.languageCode)
+            languageCode = ActiveLanguage.code
+            catalog = ContentLibrary.load(pack)
+        }
         weekStartsOnSunday = profile?.weekStartsOnSunday ?? false
         bringProfileUpToDate()
         // No task screen is open at launch, so any timer still showing is left over from a closed app.
@@ -76,14 +109,22 @@ final class AppModel {
 
     // MARK: - Reading
 
-    var profile: LearnerProfile? {
+    /// Every language's profile, oldest first.
+    var profiles: [LearnerProfile] {
         _ = revision
-        return try? context.fetch(FetchDescriptor<LearnerProfile>()).first
+        return (try? context.fetch(FetchDescriptor<LearnerProfile>(sortBy: [SortDescriptor(\.createdAt)]))) ?? []
+    }
+
+    /// The profile for the language being learned; nil until it has been onboarded.
+    var profile: LearnerProfile? {
+        let code = languageCode
+        return profiles.first { $0.languageCode == code }
     }
 
     var logs: [ActivityLog] {
         _ = revision
-        return (try? context.fetch(FetchDescriptor<ActivityLog>(sortBy: [SortDescriptor(\.date)]))) ?? []
+        let code = languageCode
+        return (try? context.fetch(FetchDescriptor<ActivityLog>(predicate: #Predicate { $0.languageCode == code }, sortBy: [SortDescriptor(\.date)]))) ?? []
     }
 
     var history: [ActivityRecord] { logs.map(\.record) }
@@ -116,7 +157,8 @@ final class AppModel {
     /// Every day's plan, oldest first. `day` is the start of the calendar day the plan is for.
     var sessions: [DayPlanRecord] {
         _ = revision
-        return (try? context.fetch(FetchDescriptor<DayPlanRecord>(sortBy: [SortDescriptor(\.day)]))) ?? []
+        let code = languageCode
+        return (try? context.fetch(FetchDescriptor<DayPlanRecord>(predicate: #Predicate { $0.languageCode == code }, sortBy: [SortDescriptor(\.day)]))) ?? []
     }
 
     func session(for day: Date) -> DayPlanRecord? {
@@ -137,18 +179,19 @@ final class AppModel {
             band: profile.band,
             enabledSources: profile.enabledSources,
             speakingStage: profile.speakingStage,
-            languageTransferLastTrack: profile.languageTransferLastTrack,
-            languageTransferRepeatPending: profile.languageTransferRepeatPending,
-            extraEpisodesWatched: profile.extraEpisodesWatched,
-            extraPartsDoneInEpisode: profile.extraPartsDoneInEpisode,
-            keepDuolingoInB2: profile.keepDuolingoInB2,
+            courseLastTrack: profile.languageTransferLastTrack,
+            courseRepeatPending: profile.languageTransferRepeatPending,
+            seriesEpisodesWatched: profile.extraEpisodesWatched,
+            seriesPartsDone: profile.extraPartsDoneInEpisode,
+            keepDrillAppLate: profile.keepDuolingoInB2,
             dueReviewCards: dueCards.count,
             travelMode: profile.travelMode,
             isOnline: isOnline,
-            dsDifficulty: profile.dsDifficulty,
-            alwaysIncludeDuolingo: profile.alwaysIncludeDuolingo,
+            gradedDifficulty: profile.dsDifficulty,
+            alwaysIncludeDrillApp: profile.alwaysIncludeDuolingo,
             lessons: profile.lessonSchedule,
-            balance: profile.strandBalance
+            balance: profile.strandBalance,
+            pack: profile.pack
         )
     }
 
@@ -191,20 +234,40 @@ final class AppModel {
     // MARK: - Onboarding
 
     func completeOnboarding(with draft: OnboardingDraft) {
+        // The language chosen in onboarding becomes the one being learned.
+        ActiveLanguage.set(draft.languageCode)
+        languageCode = ActiveLanguage.code
+        catalog = ContentLibrary.load(pack)
         let profile = LearnerProfile()
         draft.apply(to: profile)
-        context.insert(profile)
+        insert(profile)
         weekStartsOnSunday = profile.weekStartsOnSunday
         save()
         refreshReminders()
     }
 
+    /// Start over: removes everything for the language being learned. Another language's profile, if there
+    /// is one, becomes the active one; otherwise onboarding starts again.
     func reset() {
         LiveActivities.endAll()
         Reminders.cancel()
-        deleteAll()
+        deleteActiveLanguage()
         weekStartsOnSunday = false
+        try? context.save()
+        if let other = profiles.first {
+            setLanguage(other.languageCode)
+        }
         save()
+    }
+
+    private func deleteActiveLanguage() {
+        let code = languageCode
+        // One by one (not a batch delete), so each plan takes its tasks with it.
+        sessions.forEach(context.delete)
+        logs.forEach(context.delete)
+        allCards.forEach(context.delete)
+        ((try? context.fetch(FetchDescriptor<WritingEntry>(predicate: #Predicate { $0.languageCode == code }))) ?? []).forEach(context.delete)
+        profiles.filter { $0.languageCode == code }.forEach(context.delete)
     }
 
     private func deleteAll() {
@@ -220,18 +283,23 @@ final class AppModel {
 
     func makeBackup() throws -> BackupDocument {
         guard let profile else { throw BackupError.unreadable }
+        // A backup holds every language, not only the one being learned.
+        let everyLog = (try? context.fetch(FetchDescriptor<ActivityLog>(sortBy: [SortDescriptor(\.date)]))) ?? []
         let writing = (try? context.fetch(FetchDescriptor<WritingEntry>(sortBy: [SortDescriptor(\.date)]))) ?? []
+        let cards = (try? context.fetch(FetchDescriptor<ReviewCard>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)]))) ?? []
         let file = BackupFile(
             version: BackupFile.currentVersion,
             exportedAt: .now,
             appVersion: DiagnosticsModel.appVersion,
             profile: BackupFile.ProfileData(profile),
-            logs: logs.map(BackupFile.LogData.init),
+            logs: everyLog.map(BackupFile.LogData.init),
             writing: writing.map {
                 BackupFile.WritingData(date: $0.date, task: $0.taskRaw, prompt: $0.prompt, text: $0.text,
-                                       rewrite: $0.rewrite, feedback: $0.feedbackJSON, id: $0.id)
+                                       rewrite: $0.rewrite, feedback: $0.feedbackJSON, id: $0.id, language: $0.languageCode)
             },
-            cards: allCards.map(BackupFile.CardData.init),
+            cards: cards.map(BackupFile.CardData.init),
+            profiles: profiles.map(BackupFile.ProfileData.init),
+            activeLanguage: languageCode,
             gemini: BackupFile.GeminiData(apiKey: GeminiKey.current, thinkingLevel: GeminiKey.thinkingLevel.rawValue,
                                           groqAPIKey: GroqKey.current, defaultChecker: WritingCheckers.defaultChecker.rawValue)
         )
@@ -255,9 +323,13 @@ final class AppModel {
         if let level = file.gemini?.thinkingLevel.flatMap(Gemini.ThinkingLevel.init(rawValue:)) { GeminiKey.thinkingLevel = level }
         if let checker = file.gemini?.defaultChecker.flatMap(WritingChecker.init(rawValue:)) { WritingCheckers.defaultChecker = checker }
         if let key = file.gemini?.groqAPIKey, !key.isEmpty { GroqKey.save(key) }
-        let profile = file.profile.makeProfile()
-        context.insert(profile)
-        weekStartsOnSunday = profile.weekStartsOnSunday
+        // Version 2 lists every language's profile; version 1 has the one (Spanish) profile.
+        for data in file.profiles ?? [file.profile] {
+            context.insert(data.makeProfile())
+        }
+        ActiveLanguage.set(file.activeLanguage ?? file.profile.language ?? LanguagePack.defaultCode)
+        languageCode = ActiveLanguage.code
+        catalog = ContentLibrary.load(pack)
         for log in file.logs {
             context.insert(log.makeLog())
         }
@@ -266,11 +338,14 @@ final class AppModel {
             restored.rewrite = entry.rewrite ?? ""
             restored.feedbackJSON = entry.feedback
             if let id = entry.id { restored.id = id }
+            restored.languageCode = entry.language ?? LanguagePack.defaultCode
             context.insert(restored)
         }
         for card in file.cards ?? [] {
             context.insert(card.makeCard())
         }
+        try? context.save()
+        weekStartsOnSunday = profile?.weekStartsOnSunday ?? false
         save()
         bringProfileUpToDate()
         refreshReminders()
@@ -297,7 +372,7 @@ final class AppModel {
             today: today
         )
         let record = DayPlanRecord(day: today, budgetMinutes: budget, band: profile.band)
-        context.insert(record)
+        insert(record)
         for (index, task) in plan.tasks.enumerated() {
             let taskRecord = PlannedTaskRecord(task: task, order: index, prompt: prompt(for: task.kind, band: profile.band, focus: plan.focus, on: today))
             context.insert(taskRecord)
@@ -315,11 +390,11 @@ final class AppModel {
         var text: String
         switch kind {
         // Prompts already given in earlier plans are skipped until the list is used up.
-        case .writeGuided: text = Prompts.writing(for: band, on: date, used: usedPrompts, calendar: calendar)
-        case .exchangeText, .exchangeVoice, .exchangeCall: text = Prompts.exchange(for: band, on: date, used: usedPrompts, calendar: calendar)
-        case .writeQuick: text = Prompts.quickWrite(on: date, used: usedPrompts, calendar: calendar)
-        case .fluency432: text = Prompts.fluencyStory(on: date, used: usedPrompts, calendar: calendar)
-        case .missionTravel: text = Prompts.travelMission(on: date, used: usedPrompts, calendar: calendar)
+        case .writeGuided: text = Prompts.writing(for: band, on: date, used: usedPrompts, pack: pack, calendar: calendar)
+        case .exchangeText, .exchangeVoice, .exchangeCall: text = Prompts.exchange(for: band, on: date, used: usedPrompts, pack: pack, calendar: calendar)
+        case .writeQuick: text = Prompts.quickWrite(on: date, used: usedPrompts, pack: pack, calendar: calendar)
+        case .fluency432: text = Prompts.fluencyStory(on: date, used: usedPrompts, pack: pack, calendar: calendar)
+        case .missionTravel: text = Prompts.travelMission(on: date, used: usedPrompts, pack: pack, calendar: calendar)
         default: return ""
         }
         // Output reuses today's structure (R4).
@@ -448,12 +523,12 @@ final class AppModel {
         if task.task == .gradedWatch {
             log.levelWatched = completion.levelWatched
         }
-        context.insert(log)
+        insert(log)
         task.status = .done
         task.logID = log.id
         task.splitLogIDs = parts.dropFirst().map { part in
             let extra = ActivityLog(date: loggedAt, task: part.kind, minutes: part.minutes)
-            context.insert(extra)
+            insert(extra)
             return extra.id
         }
 
@@ -461,7 +536,7 @@ final class AppModel {
             let entry = WritingEntry(date: .now, task: task.task, prompt: task.prompt, text: text)
             entry.feedbackJSON = completion.feedback.flatMap { try? JSONEncoder().encode($0) }
             entry.rewrite = completion.rewrite?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            context.insert(entry)
+            insert(entry)
             task.writingID = entry.id
             task.draftText = ""
             task.draftRewrite = ""
@@ -471,17 +546,17 @@ final class AppModel {
                 let content = Mistakes.card(from: text, correction: correction)
                 let card = ReviewCard(front: content.front, back: content.back, explanation: content.explanation, origin: "writing")
                 card.writingID = entry.id
-                context.insert(card)
+                insert(card)
             }
         }
 
         task.progressBefore = try? JSONEncoder().encode(profile.sourceProgress)
         var progress = profile.sourceProgress
-        progress.record(task.task, trackRating: completion.trackRating)
+        progress.record(task.task, trackRating: completion.trackRating, pack: profile.pack)
         if let next = completion.languageTransferNextTrack {
             // The learner says where they are, which beats the automatic +1 (and replaces "shaky, repeat it").
-            progress.languageTransferLastTrack = min(max(next - 1, 0), Course.languageTransferTracks)
-            progress.languageTransferRepeatPending = false
+            progress.courseLastTrack = min(max(next - 1, 0), profile.pack.course?.tracks ?? 0)
+            progress.courseRepeatPending = false
         }
         profile.sourceProgress = progress
 
@@ -594,7 +669,7 @@ final class AppModel {
         for part in parts {
             let log = ActivityLog(date: date, task: part.kind, minutes: part.minutes)
             log.isBonus = true
-            context.insert(log)
+            insert(log)
         }
         save()
         refreshReminders()
@@ -606,17 +681,17 @@ final class AppModel {
     func bringProfileUpToDate() {
         guard let profile else { return }
         var changed = false
-        if profile.dsDifficultyHigh - profile.dsDifficultyLow != LearnerProfile.dreamingRangeWidth {
-            profile.dsDifficultyHigh = profile.dsDifficultyLow + LearnerProfile.dreamingRangeWidth
+        if profile.dsDifficultyHigh - profile.dsDifficultyLow != profile.gradedWindowWidth {
+            profile.dsDifficultyHigh = profile.dsDifficultyLow + profile.gradedWindowWidth
             changed = true
         }
         if profile.targetDate == nil {
-            profile.targetDate = GoalPace.arrival(of: profile.goalBand, currentHours: trainingHours,
+            profile.targetDate = GoalPace.arrival(atHours: profile.goalHours, currentHours: trainingHours,
                                                   weeklyMinutes: profile.weeklyGoalMinutes, from: .now)
             changed = true
         } else if let date = profile.targetDate, Self.once("goal-model-training-hours") {
             // Levels moved to training hours: keep the chosen date and work out the weekly goal again.
-            profile.weeklyGoalMinutes = GoalPace.weeklyMinutes(toReach: profile.goalBand, by: date, currentHours: trainingHours, from: .now)
+            profile.weeklyGoalMinutes = GoalPace.weeklyMinutes(toReachHours: profile.goalHours, by: date, currentHours: trainingHours, from: .now)
             changed = true
         }
         if changed { try? context.save() }
@@ -636,7 +711,7 @@ final class AppModel {
         if after.streak > before.streak, Self.streakMilestones.contains(after.streak),
            Self.once("streak-\(after.streak)-\(Self.dayKey(calendar.startOfDay(for: .now)))") {
             streakMilestone = StreakMilestone(days: after.streak)
-            banner = Banner(title: "🔥 ¡\(after.streak) días seguidos!", message: Self.streakMessage(after.streak))
+            banner = Banner(title: "🔥 " + pack.phrases.streak(days: after.streak), message: streakMessage(after.streak))
         }
     }
 
@@ -662,18 +737,20 @@ final class AppModel {
         return day
     }
 
-    private static func streakMessage(_ days: Int) -> String {
+    private func streakMessage(_ days: Int) -> String {
         switch days {
         case 7: "A whole week, every day. Pico is impressed."
-        case 30: "A month of Spanish, every single day. That's a real habit now."
-        case 100: "100 days. Most people never get here. ¡Increíble!"
-        default: "A full year of Spanish, every day. Pico has no words. (In any language.)"
+        case 30: "A month of \(pack.name), every single day. That's a real habit now."
+        case 100: "100 days. Most people never get here. \(pack.phrases.amazing)"
+        default: "A full year of \(pack.name), every day. Pico has no words. (In any language.)"
         }
     }
 
     /// True the first time it's called for `key` on this device.
     private static func once(_ key: String) -> Bool {
         let defaults = UserDefaults.standard
+        // Moments are per language; Spanish keeps the plain keys it has always had.
+        let key = ActiveLanguage.code == LanguagePack.defaultCode ? key : "\(ActiveLanguage.code).\(key)"
         var seen = Set(defaults.stringArray(forKey: "moments.seen") ?? [])
         guard seen.insert(key).inserted else { return false }
         defaults.set(Array(seen), forKey: "moments.seen")
@@ -763,14 +840,18 @@ final class AppModel {
 
     var allCards: [ReviewCard] {
         _ = revision
-        return (try? context.fetch(FetchDescriptor<ReviewCard>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)]))) ?? []
+        let code = languageCode
+        return (try? context.fetch(FetchDescriptor<ReviewCard>(predicate: #Predicate { $0.languageCode == code },
+                                                               sortBy: [SortDescriptor(\.createdAt, order: .reverse)]))) ?? []
     }
 
     /// Cards due now, most overdue first.
     var dueCards: [ReviewCard] {
         _ = revision
         let now = Date.now
-        return (try? context.fetch(FetchDescriptor<ReviewCard>(predicate: #Predicate { $0.due <= now }, sortBy: [SortDescriptor(\.due)]))) ?? []
+        let code = languageCode
+        return (try? context.fetch(FetchDescriptor<ReviewCard>(predicate: #Predicate { $0.due <= now && $0.languageCode == code },
+                                                               sortBy: [SortDescriptor(\.due)]))) ?? []
     }
 
     func review(_ card: ReviewCard, rating: FSRS.Rating) {
@@ -790,7 +871,7 @@ final class AppModel {
         let wrong = wrong.trimmingCharacters(in: .whitespacesAndNewlines)
         let right = right.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !wrong.isEmpty, !right.isEmpty else { return }
-        context.insert(ReviewCard(front: "Fix it: \(wrong)", back: right, explanation: note.trimmingCharacters(in: .whitespacesAndNewlines), origin: origin))
+        insert(ReviewCard(front: "Fix it: \(wrong)", back: right, explanation: note.trimmingCharacters(in: .whitespacesAndNewlines), origin: origin))
         save()
     }
 
@@ -803,7 +884,8 @@ final class AppModel {
 
     var isGateOpen: Bool {
         guard let profile else { return false }
-        return LevelGate.isOpen(band: profile.band, hours: trainingHours, lastFailedAttempt: profile.lastFailedGate, today: .now, calendar: calendar)
+        return LevelGate.isOpen(band: profile.band, hours: trainingHours, lastFailedAttempt: profile.lastFailedGate, today: .now,
+                                levels: profile.pack.levels, calendar: calendar)
     }
 
     func passGate() {
@@ -850,7 +932,10 @@ final class AppModel {
         defer { checkingCatalog = false }
         // Runs in its own task, so leaving the Library mid-download doesn't cancel it.
         let current = catalog
-        let result = await Task.detached { await ContentLibrary.check(against: current) }.value
+        let pack = pack
+        let result = await Task.detached { await ContentLibrary.check(against: current, pack: pack) }.value
+        // The language was switched while it downloaded: this list isn't the one on screen.
+        guard pack.code == languageCode else { return }
         let time = Date.now.formatted(date: .omitted, time: .shortened)
         switch result {
         case .updated(let newer):
@@ -921,6 +1006,8 @@ final class AppModel {
     /// days so far, the forecast pace for days ahead. Nil without a profile.
     struct GoalCountdown {
         let band: Band
+        /// Training hours the goal level starts at, in this language.
+        fileprivate let goalHours: Double
         fileprivate let baseline: Double
         fileprivate let logs: [(date: Date, minutes: Int)]
         fileprivate let now: Date
@@ -940,17 +1027,17 @@ final class AppModel {
             guard let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: day)) else { return (0, false) }
             if end <= now {
                 let minutes = logs.filter { $0.date < end }.reduce(0) { $0 + $1.minutes }
-                return (max(0, band.hoursThreshold - baseline - Double(minutes) / 60), false)
+                return (max(0, goalHours - baseline - Double(minutes) / 60), false)
             }
             let weeks = end.timeIntervalSince(now) / (7 * 24 * 3600)
             let projected = calendar.isDate(day, inSameDayAs: now) ? hoursNow : hoursNow + weeklyHours * weeks
-            return (max(0, band.hoursThreshold - projected), !calendar.isDate(day, inSameDayAs: now))
+            return (max(0, goalHours - projected), !calendar.isDate(day, inSameDayAs: now))
         }
     }
 
     var goalCountdown: GoalCountdown? {
         guard let profile else { return nil }
-        return GoalCountdown(band: profile.goalBand, baseline: Band.trainingHours(fromListening: profile.baselineInputHours),
+        return GoalCountdown(band: profile.goalBand, goalHours: profile.goalHours, baseline: Band.trainingHours(fromListening: profile.baselineInputHours),
                              logs: logs.map { ($0.date, $0.minutes) }, now: .now, hoursNow: trainingHours,
                              weeklyHours: forecastWeeklyHours.hours, calendar: calendar)
     }
@@ -958,7 +1045,7 @@ final class AppModel {
     var pathMap: PathMap {
         guard let profile else { return PathMap(units: [], milestones: []) }
         let days = pathDays()
-        var arrivals = Projection(calendar: calendar).arrivalDates(hours: trainingHours, weeklyHours: forecastWeeklyHours.hours, from: .now)
+        var arrivals = Projection(calendar: calendar).arrivalDates(hours: trainingHours, weeklyHours: forecastWeeklyHours.hours, from: .now, levels: profile.pack.levels)
         arrivals = arrivals.filter { $0.key > profile.band }
         let status = streak
         let calculator = StreakCalculator(weeklyGoalMinutes: profile.weeklyGoalMinutes, calendar: calendar)
@@ -1100,7 +1187,7 @@ final class AppModel {
         }
         var snapshot = WidgetSnapshot(
             updated: .now, day: today, streak: status.streak, minutesThisWeek: status.minutesThisWeek,
-            weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.band.label) · \(profile.band.rawValue)",
+            weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.pack.levelName(profile.band)) · \(profile.band.rawValue)",
             dayComplete: plan?.isComplete ?? false, hasPlan: plan != nil, tasks: tasks, mood: mood,
             suggestedMinutes: suggested, minutesToday: minutesToday,
             upcoming: (1...3).compactMap { calendar.date(byAdding: .day, value: $0, to: today) }.map { upcomingSnapshot(for: $0, profile: profile) }
@@ -1133,7 +1220,7 @@ final class AppModel {
         let preview = suggestedPreview(for: day, profile: profile)
         return WidgetSnapshot(
             updated: day, day: day, streak: status.streak, minutesThisWeek: status.minutesThisWeek,
-            weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.band.label) · \(profile.band.rawValue)",
+            weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.pack.levelName(profile.band)) · \(profile.band.rawValue)",
             dayComplete: false, hasPlan: false, tasks: preview.tasks, mood: profile.travelMode ? "backpacker" : "hovering",
             suggestedMinutes: preview.minutes, minutesToday: 0
         )

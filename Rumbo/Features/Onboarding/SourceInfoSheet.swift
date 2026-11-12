@@ -5,54 +5,14 @@ extension SourceKind: @retroactive Identifiable {
     public var id: String { rawValue }
 }
 
-/// What each source is, for someone who hasn't heard of it: what it is and where to find it. Opened by tapping a source in onboarding or Settings → Sources.
+/// What each source is in the language being learned, for someone who hasn't heard of it: what it is and where to find it. Opened by tapping a source in onboarding or Settings → Sources.
 struct SourceInfoSheet: View {
     let source: SourceKind
 
-    private struct Info {
-        let what: String
-        let whereToFind: String
-        let links: [(title: String, url: URL)]
-        /// What switching the source on adds to the plan, when that isn't obvious.
-        var inYourPlan: String? = nil
-    }
-
-    private var info: Info {
-        switch source {
-        case .gradedVideo:
-            Info(what: "A video library of Spanish made to be understood: thousands of videos where native speakers explain, chat and tell stories, using pictures and gestures at the easy levels. Every video has a difficulty from 0 to 100, and it counts your hours of listening. It's built on comprehensible input: you pick up Spanish by understanding lots of it.",
-                 whereToFind: "The Dreaming Spanish app and dreaming.com.",
-                 links: [("Open dreaming.com", URL(string: "https://www.dreaming.com/spanish")!)])
-        case .audioCourse:
-            Info(what: "\"Complete Spanish\": a free audio course of 90 short tracks. A teacher guides a student to build sentences by thinking, not memorising, and you answer out loud before the student does. It gives you the skeleton of Spanish grammar from A2 to early B1.",
-                 whereToFind: "The free Language Transfer app or languagetransfer.org.",
-                 links: [("Open languagetransfer.org", URL(string: "https://www.languagetransfer.org")!)])
-        case .learnerSeries:
-            Info(what: "A sitcom made for Spanish learners: 13 episodes about flatmates in Spain and an American friend who arrives knowing little Spanish. The speech is clear and slow at first, and it's funny.",
-                 whereToFind: "Free on YouTube: search \"Extra en Español\".",
-                 links: [("Search on YouTube", URL(string: "https://www.youtube.com/results?search_query=Extra%20en%20Espa%C3%B1ol")!)])
-        case .drillApp:
-            Info(what: "The green-owl app of short, game-like lessons and a daily streak.",
-                 whereToFind: "The Duolingo app and duolingo.com.",
-                 links: [("Open duolingo.com", URL(string: "https://www.duolingo.com")!)])
-        case .writing:
-            Info(what: "Short writing tasks inside Rumbo: guided writing with a prompt, and quick timed writes. Pico checks your writing with AI using your own Gemini or GroqCloud key, which are both free to get (Settings → Writing feedback).",
-                 whereToFind: "Right here in Rumbo; there's nothing else to install.",
-                 links: [])
-        case .exchange:
-            Info(what: "Language-exchange apps where you chat with native Spanish speakers who are learning your language: you help each other.",
-                 whereToFind: "The Tandem and HelloTalk apps.",
-                 links: [("Open tandem.net", URL(string: "https://www.tandem.net")!), ("Open hellotalk.com", URL(string: "https://www.hellotalk.com")!)])
-        case .suggestedContent:
-            Info(what: "Real shows, series, podcasts and YouTube channels made for native speakers, picked for each level in Rumbo's Library.",
-                 whereToFind: "The Library tab: each suggestion says where to find it (YouTube, Netflix, Spotify, …).",
-                 links: [],
-                 inYourPlan: "With this switched on, your plan includes watching one of these from B1, once Extra en Español is done (or at any level if you don't use Dreaming Spanish). Switch it off to keep your listening to your courses; the Library is there either way.")
-        }
-    }
+    /// The wording comes from the language being learned (`LanguagePack.sources`).
+    private var info: SourceInfo? { ActiveLanguage.pack.sources[source] }
 
     var body: some View {
-        let info = info
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 HStack(spacing: 14) {
@@ -70,16 +30,20 @@ struct SourceInfoSheet: View {
                             .foregroundStyle(Palette.secondaryText)
                     }
                 }
-                section("What it is", info.what, symbol: "questionmark.circle.fill")
-                section("Where to find it", info.whereToFind, symbol: "mappin.circle.fill")
-                if let inYourPlan = info.inYourPlan {
-                    section("In your plan", inYourPlan, symbol: "calendar.circle.fill")
-                }
-                ForEach(info.links.indices, id: \.self) { index in
-                    Link(destination: info.links[index].url) {
-                        Label(info.links[index].title, systemImage: "arrow.up.right.square.fill")
+                if let info {
+                    section("What it is", info.what, symbol: "questionmark.circle.fill")
+                    section("Where to find it", info.whereToFind, symbol: "mappin.circle.fill")
+                    if let inYourPlan = info.inYourPlan {
+                        section("In your plan", inYourPlan, symbol: "calendar.circle.fill")
                     }
-                    .buttonStyle(ChunkySecondaryButtonStyle())
+                    ForEach(info.links.indices, id: \.self) { index in
+                        if let url = URL(string: info.links[index].url) {
+                            Link(destination: url) {
+                                Label(info.links[index].title, systemImage: "arrow.up.right.square.fill")
+                            }
+                            .buttonStyle(ChunkySecondaryButtonStyle())
+                        }
+                    }
                 }
             }
             .padding(24)

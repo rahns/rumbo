@@ -240,14 +240,14 @@ struct PathView: View {
     private func leftChips(fullLevel: Bool, doneText: String?, todayDone: Bool) -> some View {
         HStack(spacing: 8) {
             if let profile = model.profile {
-                Text(fullLevel ? "\(profile.band.label) · \(profile.band.rawValue)" : profile.band.rawValue)
+                Text(fullLevel ? "\(ActiveLanguage.pack.levelName(profile.band)) · \(profile.band.rawValue)" : profile.band.rawValue)
                     .font(.rounded(.subheadline, weight: .heavy))
                     .foregroundStyle(.white)
                     .padding(.vertical, 6)
                     .padding(.horizontal, 12)
                     .background(Capsule().fill(Palette.coral))
                     .fixedSize()
-                    .accessibilityLabel("\(profile.band.label), \(profile.band.rawValue)")
+                    .accessibilityLabel("\(ActiveLanguage.pack.levelName(profile.band)), \(profile.band.rawValue)")
             }
             if todayDone {
                 Group {
@@ -713,7 +713,7 @@ struct MilestoneRow: View {
                 .background(Circle().fill(Palette.sun.opacity(0.75)))
                 .background(Circle().fill(Palette.sun.edge()).opacity(0.75).offset(y: 5))
             VStack(spacing: 2) {
-                Text("\(milestone.band.label) · \(milestone.band.rawValue)")
+                Text("\(ActiveLanguage.pack.levelName(milestone.band)) · \(milestone.band.rawValue)")
                     .font(.rounded(.headline, weight: .black))
                     .foregroundStyle(Palette.ink)
                 Text("around \(milestone.expectedDate.formatted(.dateTime.month(.wide).year()))")
@@ -739,7 +739,7 @@ struct FurtherAheadCard: View {
                     .foregroundStyle(Palette.ink)
                 ForEach(milestones) { milestone in
                     HStack {
-                        Text("\(milestone.band.label) · \(milestone.band.rawValue)")
+                        Text("\(ActiveLanguage.pack.levelName(milestone.band)) · \(milestone.band.rawValue)")
                         Spacer()
                         Text("around \(milestone.expectedDate.formatted(.dateTime.month(.abbreviated).year()))")
                             .foregroundStyle(Palette.secondaryText)

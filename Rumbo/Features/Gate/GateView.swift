@@ -20,7 +20,7 @@ struct GateView: View {
 
     /// Fixed when the check opens: after passing, the profile's band already is this one.
     @State private var next: Band = .a2_2
-    private var statements: [String] { CanDo.statements(for: next) }
+    private var statements: [String] { CanDo.statements(for: next, pack: model.pack) }
 
     var body: some View {
         ZStack {
@@ -70,11 +70,11 @@ struct GateView: View {
         VStack(spacing: 20) {
             Spacer()
             PicoView(mood: .hovering, size: 120)
-            Text("Ready for \(next.label)?")
+            Text("Ready for \(ActiveLanguage.pack.levelName(next))?")
                 .font(.rounded(.largeTitle, weight: .black))
                 .foregroundStyle(Palette.ink)
                 .multilineTextAlignment(.center)
-            Text("You've reached \(Int(next.hoursThreshold)) training hours. Answer 10 quick questions honestly. Seven \"¡Sí!\" and you level up.")
+            Text("You've reached \(Int(ActiveLanguage.pack.levels.threshold(next))) training hours. Answer 10 quick questions honestly. Seven \"\(model.pack.phrases.yes)\" and you level up.")
                 .font(.rounded(.body, weight: .medium))
                 .foregroundStyle(Palette.secondaryText)
                 .multilineTextAlignment(.center)
@@ -86,7 +86,7 @@ struct GateView: View {
 
     private var questions: some View {
         VStack(alignment: .leading, spacing: 20) {
-            StepTitle("Can you do this in Spanish?")
+            StepTitle("Can you do this in \(model.pack.name)?")
             if index < statements.count {
                 RaisedCard(accent: Palette.sun) {
                     Text(statements[index])
@@ -100,9 +100,9 @@ struct GateView: View {
             }
             Spacer()
             HStack(spacing: 12) {
-                Button("Todavía no") { answer(false) }
+                Button(model.pack.phrases.notYet) { answer(false) }
                     .buttonStyle(ChunkySecondaryButtonStyle())
-                Button("¡Sí!") { answer(true) }
+                Button(model.pack.phrases.yes) { answer(true) }
                     .buttonStyle(ChunkyButtonStyle(color: Palette.leaf))
             }
         }
@@ -112,7 +112,7 @@ struct GateView: View {
         VStack(spacing: 20) {
             Spacer()
             PicoView(mood: .proud, size: 130, celebrate: confetti)
-            Text("¡Felicidades!")
+            Text(model.pack.phrases.congratulations)
                 .font(.rounded(.largeTitle, weight: .black))
                 .foregroundStyle(Palette.ink)
             BandBadge(band: next)
@@ -121,7 +121,7 @@ struct GateView: View {
                 .foregroundStyle(Palette.secondaryText)
                 .multilineTextAlignment(.center)
             Spacer()
-            Button("¡Vamos!") { dismiss() }
+            Button(model.pack.phrases.letsGo) { dismiss() }
                 .buttonStyle(ChunkyButtonStyle(color: Palette.leaf))
         }
         .sensoryFeedback(.success, trigger: stage)

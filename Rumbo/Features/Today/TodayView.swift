@@ -73,7 +73,7 @@ struct TodayView: View {
                         .font(.rounded(.title2, weight: .black))
                         .foregroundStyle(Palette.ink)
                     if let profile = model.profile {
-                        Text("\(profile.band.label) · \(profile.band.rawValue)")
+                        Text("\(ActiveLanguage.pack.levelName(profile.band)) · \(profile.band.rawValue)")
                             .font(.rounded(.subheadline, weight: .bold))
                             .foregroundStyle(Palette.secondaryText)
                     }
@@ -142,7 +142,7 @@ struct TodayView: View {
     @ViewBuilder
     private var banners: some View {
         if model.isGateOpen, let next = model.profile?.band.next {
-            BannerCard(title: "Level-up check ready", message: "You've reached the hours for \(next.label). Ten quick questions and you could move up.", color: Palette.sun) {
+            BannerCard(title: "Level-up check ready", message: "You've reached the hours for \(ActiveLanguage.pack.levelName(next)). Ten quick questions and you could move up.", color: Palette.sun) {
                 Button("Check now") { showingGate = true }
                     .buttonStyle(ChunkyButtonStyle(color: Palette.sun, foreground: Palette.inkOnBright, fullWidth: false))
             }
