@@ -5,6 +5,8 @@ import UIKit
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @State private var confirmingReset = false
+    /// The second, final check before a language's progress is deleted.
+    @State private var confirmingDeleteForGood = false
     @State private var backupDocument: BackupDocument?
     @State private var exporting = false
     @State private var importing = false
@@ -298,14 +300,7 @@ struct SettingsView: View {
         }
 
         Section {
-            Button("Save backup", systemImage: "square.and.arrow.down") {
-                do {
-                    backupDocument = try model.makeBackup()
-                    exporting = true
-                } catch {
-                    message = error.localizedDescription
-                }
-            }
+            Button("Save backup", systemImage: "square.and.arrow.down") { saveBackup() }
             Button("Restore from a backup", systemImage: "arrow.counterclockwise") { importing = true }
             .confirmationDialog("Restore this backup?", isPresented: Binding(get: { pendingRestore != nil }, set: { if !$0 { pendingRestore = nil } }), titleVisibility: .visible) {
                 Button("Replace my data with the backup", role: .destructive) {
@@ -351,11 +346,19 @@ struct SettingsView: View {
             }
             .confirmationDialog(fallback == nil ? "Start over?" : "Delete \(current) progress?", isPresented: $confirmingReset, titleVisibility: .visible) {
                 Button(fallback.map { "Delete \(current) and switch to \($0)" } ?? "Delete everything and start again", role: .destructive) {
-                    model.reset()
+                    // Once the sheet has gone, one last check that says exactly what will be lost.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { confirmingDeleteForGood = true }
                 }
             } message: {
                 Text(fallback.map { "Your \(current) streak, hours and history will be deleted. Your \($0) progress stays as it is." }
                      ?? "Your streak, hours and history for \(current) will be deleted. You'll go through onboarding again.")
+            }
+            .alert("Are you sure?", isPresented: $confirmingDeleteForGood) {
+                Button("Save a backup first") { saveBackup() }
+                Button("Delete \(current) for good", role: .destructive) { model.reset() }
+                Button("Keep it", role: .cancel) {}
+            } message: {
+                Text(lossSummary(profile) + " This can't be undone. Save a backup first so you can bring it all back later.")
             }
         } footer: {
             VStack(spacing: 4) {
@@ -382,6 +385,32 @@ struct SettingsView: View {
     }
 
     static func checkersText() -> String { WritingCheckers.summary }
+
+    private func saveBackup() {
+        do {
+            backupDocument = try model.makeBackup()
+            exporting = true
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    /// What deleting the language being learned loses: "You'll lose your 12-day streak, 34 hours over
+    /// 41 days of French, your A2.2 level and 18 mistake cards."
+    private func lossSummary(_ profile: LearnerProfile) -> String {
+        let logs = model.logs
+        let days = Set(logs.map { model.calendar.startOfDay(for: $0.date) }).count
+        let hours = Int((Double(logs.reduce(0) { $0 + $1.minutes }) / 60).rounded())
+        let streak = model.streak.streak
+        let cards = model.allCards.count
+        var parts: [String] = []
+        if streak > 0 { parts.append("your \(streak)-day streak") }
+        parts.append(days == 0 ? "your setup" : "\(hours) \(hours == 1 ? "hour" : "hours") logged over \(days) \(days == 1 ? "day" : "days")")
+        parts.append("your \(profile.band.rawValue) level and plan history")
+        if cards > 0 { parts.append("\(cards) mistake \(cards == 1 ? "card" : "cards")") }
+        let list = parts.count > 1 ? parts.dropLast().joined(separator: ", ") + " and " + parts.last! : parts[0]
+        return "You'll lose all your \(profile.pack.name) progress: \(list)."
+    }
 
     /// The last part seen: "Extra en Español: seen Ep 3 Part 2" (or "not started").
     private func seriesProgressLabel(_ profile: LearnerProfile, _ series: LearnerSeries) -> String {
