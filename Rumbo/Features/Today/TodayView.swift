@@ -338,7 +338,7 @@ struct TodayView: View {
                 Label("Keep going", systemImage: "plus.circle.fill")
                     .font(.rounded(.title3, weight: .black))
                     .foregroundStyle(Palette.ink)
-                Text("Today's plan is done. Want more? The ones at the top help where your week is lightest. Extra time counts toward your weekly goal, streak and training hours.")
+                Text("Today's plan is done. Want more? The ones at the top help where your week is lightest.")
                     .font(.rounded(.subheadline, weight: .medium))
                     .foregroundStyle(Palette.secondaryText)
             }
