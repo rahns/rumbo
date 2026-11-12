@@ -35,7 +35,7 @@ final class OnboardingDraft {
 
     /// Listening hours before Rumbo (Dreaming Spanish's counter, or an estimate).
     var inputHours: Double {
-        Double(sources.contains(.dreamingSpanish) ? dreamingHours : otherListeningHours)
+        Double(sources.contains(.gradedVideo) ? dreamingHours : otherListeningHours)
     }
 
     /// Listening before Rumbo as training hours (÷ the listening share), which is what levels are measured in.

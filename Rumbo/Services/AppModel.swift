@@ -316,7 +316,7 @@ final class AppModel {
         switch kind {
         // Prompts already given in earlier plans are skipped until the list is used up.
         case .writeGuided: text = Prompts.writing(for: band, on: date, used: usedPrompts, calendar: calendar)
-        case .tandemText, .tandemVoice, .tandemCall: text = Prompts.tandem(for: band, on: date, used: usedPrompts, calendar: calendar)
+        case .exchangeText, .exchangeVoice, .exchangeCall: text = Prompts.exchange(for: band, on: date, used: usedPrompts, calendar: calendar)
         case .writeQuick: text = Prompts.quickWrite(on: date, used: usedPrompts, calendar: calendar)
         case .fluency432: text = Prompts.fluencyStory(on: date, used: usedPrompts, calendar: calendar)
         case .missionTravel: text = Prompts.travelMission(on: date, used: usedPrompts, calendar: calendar)
@@ -441,11 +441,11 @@ final class AppModel {
         let log = ActivityLog(date: loggedAt, task: parts.first?.kind ?? task.task, minutes: parts.first?.minutes ?? completion.minutes)
         log.comprehension = completion.comprehension?.rawValue
         log.rating = completion.trackRating?.rawValue ?? completion.tandemFeeling
-        if task.task == .dsWatch {
+        if task.task == .gradedWatch {
             log.difficultyLow = profile.dsDifficultyLow
             log.difficultyHigh = profile.dsDifficultyHigh
         }
-        if task.task == .dsWatch {
+        if task.task == .gradedWatch {
             log.levelWatched = completion.levelWatched
         }
         context.insert(log)
@@ -746,7 +746,7 @@ final class AppModel {
 
     /// Card subtitle: the planner's detail, or the learner's Duolingo position for the warm-up.
     func detailText(for task: PlannedTaskRecord) -> String? {
-        if task.task == .duoLesson, let profile {
+        if task.task == .drillLesson, let profile {
             return "Section \(profile.duolingoSection) · Unit \(profile.duolingoUnit)"
         }
         if task.task == .contentWatch, let current = currentContent {
@@ -1022,8 +1022,8 @@ final class AppModel {
     /// Unlocks voice notes / calls when the evidence supports it (§2.4).
     private func updateSpeakingStage() {
         guard let profile else { return }
-        let tandemLogs = logs.filter(\.task.isTandemExchange)
-        let textLogs = tandemLogs.filter { $0.task == .tandemText }
+        let tandemLogs = logs.filter(\.task.isExchange)
+        let textLogs = tandemLogs.filter { $0.task == .exchangeText }
         let span = textLogs.first.flatMap { first in
             textLogs.last.map { calendar.dateComponents([.day], from: first.date, to: $0.date).day ?? 0 }
         } ?? 0
@@ -1032,7 +1032,7 @@ final class AppModel {
             textExchanges: textLogs.count,
             textExchangeSpanDays: span,
             comfortableWithText: ["easy", "ok"].contains(textLogs.last?.rating ?? ""),
-            voiceNotes: tandemLogs.filter { $0.task == .tandemVoice }.count
+            voiceNotes: tandemLogs.filter { $0.task == .exchangeVoice }.count
         )
         let stage = SpeakingProgress.stage(for: evidence, current: profile.speakingStage)
         let capped = SpeakingStage(rawValue: min(stage.rawValue, profile.speakingStageCap)) ?? .text

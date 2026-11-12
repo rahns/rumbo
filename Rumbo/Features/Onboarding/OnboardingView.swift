@@ -195,10 +195,10 @@ struct OnboardingView: View {
             Text("Check each app for these numbers. They're what Rumbo uses to place you.")
                 .font(.rounded(.subheadline, weight: .medium))
                 .foregroundStyle(Palette.secondaryText)
-            if draft.sources.contains(.dreamingSpanish) {
+            if draft.sources.contains(.gradedVideo) {
                 RaisedCard(accent: Palette.coral) {
                     VStack(alignment: .leading, spacing: 10) {
-                        SourceHeading(source: .dreamingSpanish)
+                        SourceHeading(source: .gradedVideo)
                         NumberStepper(title: "Total hours watched", value: $draft.dreamingHours, range: 0...3000, step: 5)
                         NumberStepper(title: "Difficulty you're watching: \(draft.dreamingDifficultyLow)–\(draft.dreamingDifficultyLow + LearnerProfile.dreamingRangeWidth)",
                                       value: $draft.dreamingDifficultyLow, range: 0...(100 - LearnerProfile.dreamingRangeWidth), step: 1)
@@ -209,27 +209,27 @@ struct OnboardingView: View {
                     NumberStepper(title: "Hours of Spanish you've listened to or watched (roughly)", value: $draft.otherListeningHours, range: 0...3000, step: 10)
                 }
             }
-            if draft.sources.contains(.languageTransfer) {
+            if draft.sources.contains(.audioCourse) {
                 RaisedCard(accent: Palette.leaf) {
                     VStack(alignment: .leading, spacing: 10) {
-                        SourceHeading(source: .languageTransfer)
+                        SourceHeading(source: .audioCourse)
                         NumberStepper(title: "Last track finished", value: $draft.languageTransferLastTrack, range: 0...Course.languageTransferTracks, step: 1)
                     }
                 }
             }
-            if draft.sources.contains(.duolingo) {
+            if draft.sources.contains(.drillApp) {
                 RaisedCard(accent: Palette.leaf) {
                     VStack(alignment: .leading, spacing: 10) {
-                        SourceHeading(source: .duolingo)
+                        SourceHeading(source: .drillApp)
                         NumberStepper(title: "Section", value: $draft.duolingoSection, range: 1...10, step: 1)
                         NumberStepper(title: "Unit", value: $draft.duolingoUnit, range: 1...300, step: 1)
                     }
                 }
             }
-            if draft.sources.contains(.extraEnEspanol) {
+            if draft.sources.contains(.learnerSeries) {
                 RaisedCard(accent: Palette.coral) {
                     VStack(alignment: .leading, spacing: 10) {
-                        SourceHeading(source: .extraEnEspanol)
+                        SourceHeading(source: .learnerSeries)
                         NumberStepper(title: "Episodes watched", value: $draft.extraEpisodesWatched, range: 0...Course.extraEpisodes, step: 1)
                     }
                 }
@@ -480,36 +480,36 @@ struct FlowChips: View {
 enum SourceCopy {
     static func name(_ source: SourceKind) -> String {
         switch source {
-        case .dreamingSpanish: "Dreaming Spanish"
-        case .languageTransfer: "Language Transfer"
-        case .extraEnEspanol: "Extra en Español"
-        case .duolingo: "Duolingo"
+        case .gradedVideo: "Dreaming Spanish"
+        case .audioCourse: "Language Transfer"
+        case .learnerSeries: "Extra en Español"
+        case .drillApp: "Duolingo"
         case .writing: "Writing"
-        case .tandem: "Tandem/HelloTalk partner"
+        case .exchange: "Tandem/HelloTalk partner"
         case .suggestedContent: "Suggested shows & podcasts"
         }
     }
 
     static func role(_ source: SourceKind) -> String {
         switch source {
-        case .dreamingSpanish: "Your main listening engine"
-        case .languageTransfer: "Grammar skeleton, A2 to early B1"
-        case .extraEnEspanol: "Sitcom with subtitles and shadowing"
-        case .duolingo: "Short daily warm-up"
+        case .gradedVideo: "Your main listening engine"
+        case .audioCourse: "Grammar skeleton, A2 to early B1"
+        case .learnerSeries: "Sitcom with subtitles and shadowing"
+        case .drillApp: "Short daily warm-up"
         case .writing: "Short writing tasks in Rumbo"
-        case .tandem: "I have a language exchange partner"
+        case .exchange: "I have a language exchange partner"
         case .suggestedContent: "Native shows in your plan once Extra is done"
         }
     }
 
     static func symbol(_ source: SourceKind) -> String {
         switch source {
-        case .dreamingSpanish: "play.tv.fill"
-        case .languageTransfer: "headphones"
-        case .extraEnEspanol: "film.fill"
-        case .duolingo: "bolt.fill"
+        case .gradedVideo: "play.tv.fill"
+        case .audioCourse: "headphones"
+        case .learnerSeries: "film.fill"
+        case .drillApp: "bolt.fill"
         case .writing: "pencil.and.scribble"
-        case .tandem: "bubble.left.and.bubble.right.fill"
+        case .exchange: "bubble.left.and.bubble.right.fill"
         case .suggestedContent: "sparkles.tv.fill"
         }
     }

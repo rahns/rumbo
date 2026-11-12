@@ -33,7 +33,7 @@ extension DayPlan {
 /// The author's starting point: 154 h, Language Transfer track 12 done, one Extra episode watched.
 let authorAtStart = LearnerSnapshot(
     band: .a2_1,
-    languageTransferLastTrack: 12,
-    extraEpisodesWatched: 1,
-    dsDifficulty: 40...48
+    courseLastTrack: 12,
+    seriesEpisodesWatched: 1,
+    gradedDifficulty: 40...48
 )

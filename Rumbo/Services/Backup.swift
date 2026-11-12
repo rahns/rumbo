@@ -222,7 +222,7 @@ extension BackupFile.LogData {
     }
 
     func makeLog() -> ActivityLog {
-        let log = ActivityLog(date: date, task: .dsWatch, minutes: minutes)
+        let log = ActivityLog(date: date, task: .gradedWatch, minutes: minutes)
         log.taskRaw = task
         log.comprehension = comprehension
         log.rating = rating

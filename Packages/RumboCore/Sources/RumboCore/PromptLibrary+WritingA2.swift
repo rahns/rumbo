@@ -44,7 +44,7 @@ extension Prompts {
         "What is in your fridge right now? What could you cook with it?",
         "Describe how you get to work or to the shops: transport, time, what you see.",
         "Write about a song you like. When do you listen to it?",
-        "Write an email to a language school asking about Spanish classes: times and price.",
+        "Write an email to a language school asking about {language} classes: times and price.",
         "Describe a friend's house you have visited.",
         "Write about three things you like and three things you don't like about mornings.",
         "Describe the people in a photo you like (a family photo or a holiday photo).",
@@ -98,7 +98,7 @@ extension Prompts {
         "Write a message to a friend planning a picnic: where, when and what to bring.",
         "Describe what a perfect Saturday morning looks like for you.",
         "Write about a time you tried a new food. Did you like it?",
-        "Describe the place where you study Spanish.",
+        "Describe the place where you study {language}.",
         "Write about what you're going to do next summer.",
         "Describe a hotel or hostel you stayed in: the room, the staff, the breakfast.",
     ]

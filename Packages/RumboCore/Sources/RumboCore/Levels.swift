@@ -14,8 +14,9 @@ public enum Placement {
     ///   - nextBandYes: "Sí" answers to the statements for the band above it.
     ///   - statementsPerBand: how many statements of each band were shown (10, or 5 in onboarding).
     /// Moves up if ≥ 80% of the next band's statements are ticked, down if < 50% of the own band's.
-    public static func place(hours: Double, ownBandYes: Int, nextBandYes: Int, statementsPerBand: Int = CanDo.perBand) -> Result {
-        let byHours = Band.forHours(hours)
+    public static func place(hours: Double, ownBandYes: Int, nextBandYes: Int, statementsPerBand: Int = CanDo.perBand,
+                             levels: LevelScale) -> Result {
+        let byHours = levels.band(forHours: hours)
         let total = Double(max(statementsPerBand, 1))
         var band = byHours
         var adjustment = 0
@@ -41,9 +42,10 @@ public enum LevelGate {
         hours: Double,
         lastFailedAttempt: Date?,
         today: Date,
+        levels: LevelScale,
         calendar: Calendar = .current
     ) -> Bool {
-        guard let next = band.next, hours >= next.hoursThreshold else { return false }
+        guard let next = band.next, hours >= levels.threshold(next) else { return false }
         guard let lastFailedAttempt else { return true }
         let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: lastFailedAttempt), to: calendar.startOfDay(for: today)).day ?? 0
         return days >= retryDays
@@ -87,7 +89,7 @@ public enum SpeakingProgress {
     }
 }
 
-/// Keeps Dreaming Spanish input comprehensible. See docs/02-learning-engine.md §2.6 (R3).
+/// Keeps graded video input comprehensible (for a library with a difficulty scale, like Dreaming Spanish). See docs/02-learning-engine.md §2.6 (R3).
 public enum ComprehensionTuner {
     public enum Rating: Int, Codable, Sendable {
         case lost = 1

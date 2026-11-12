@@ -34,7 +34,7 @@ struct TaskSessionView: View {
     private var color: Color { kind.color }
     private var isWriting: Bool { kind == .writeGuided || kind == .writeQuick }
     /// Asks "What level did you watch?". Easy Dreaming is below level on purpose, so it isn't charted or asked.
-    private var isDreaming: Bool { kind == .dsWatch }
+    private var isDreaming: Bool { kind == .gradedWatch }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -107,7 +107,7 @@ struct TaskSessionView: View {
 
     private var titleBlock: some View {
         HStack(spacing: 14) {
-            if kind.strand == .input || kind == .ltTrack {
+            if kind.strand == .input || kind == .courseTrack {
                 PicoView(mood: .listening, size: 64)
             }
             Image(systemName: TaskCopy.symbol(for: kind))
@@ -183,7 +183,7 @@ struct TaskSessionView: View {
 
     private var openLabel: String {
         switch kind {
-        case .extraIntensive, .extraExtensive: "Find it on YouTube"
+        case .seriesIntensive, .seriesExtensive: "Find it on YouTube"
         default: "Open \(TaskCopy.title(for: kind).replacingOccurrences(of: " warm-up", with: ""))"
         }
     }
@@ -226,7 +226,7 @@ struct TaskSessionView: View {
                     .background(RoundedRectangle(cornerRadius: 14).fill(Palette.cream))
             }
             // Only questions whose answers change something are asked (docs/03-experience.md §3.3).
-            if kind == .dsWatch {
+            if kind == .gradedWatch {
                 question("How much did you understand?",
                          explanation: "Rumbo looks at your last 5 answers: mostly \"Lost\" suggests easier videos, mostly \"Easy\" suggests harder ones.") {
                     ChoiceRow(options: [
@@ -257,7 +257,7 @@ struct TaskSessionView: View {
                     }
                 }
             }
-            if kind == .ltTrack {
+            if kind == .courseTrack {
                 question("Which track are you up to now?",
                          explanation: "Rumbo plans this track next. Did more than one? Move it on. Want to repeat one? Set it back.") {
                     RaisedCard {
@@ -274,7 +274,7 @@ struct TaskSessionView: View {
                     }
                 }
             }
-            if kind == .duoLesson {
+            if kind == .drillLesson {
                 question("Where are you in Duolingo now?",
                          explanation: "Keeps your place up to date, so the warm-up card shows where to pick up.") {
                     RaisedCard {
@@ -285,14 +285,14 @@ struct TaskSessionView: View {
                     }
                 }
             }
-            if kind == .tandemText {
+            if kind == .exchangeText {
                 question("How did it feel?",
                          explanation: "Voice notes unlock once texting feels comfortable: your latest message needs to be Easy or OK.") {
                     // Hard on the left, easy on the right, like "How much did you understand?".
                     ChoiceRow(options: [("hard", "😬", "Hard"), ("ok", "🙂", "OK"), ("easy", "😎", "Easy")], selection: $tandemFeeling)
                 }
             }
-            if kind.isTandemExchange {
+            if kind.isExchange {
                 Button {
                     addingCorrection = true
                 } label: {
@@ -391,7 +391,7 @@ struct TaskSessionView: View {
 
     private var canSave: Bool {
         switch kind {
-        case .dsWatch: comprehension != nil
+        case .gradedWatch: comprehension != nil
         default: true
         }
     }
@@ -407,13 +407,13 @@ struct TaskSessionView: View {
         duolingoSection = model.profile?.duolingoSection ?? 1
         duolingoUnit = model.profile?.duolingoUnit ?? 1
         // The track just done, plus one: finishing 13 suggests 14.
-        if case .languageTransferTrack(let track) = task.detail {
+        if case .track(let track) = task.detail {
             ltNextTrack = min(track + 1, Course.languageTransferTracks + 1)
         } else {
             ltNextTrack = (model.profile?.languageTransferLastTrack ?? 0) + 1
         }
         // The middle of the planned range: 40–45 suggests 43.
-        let range: ClosedRange<Int> = if case .dreamingDifficulty(let planned) = task.detail { planned } else { model.profile?.dsDifficulty ?? 40...45 }
+        let range: ClosedRange<Int> = if case .difficulty(let planned) = task.detail { planned } else { model.profile?.dsDifficulty ?? 40...45 }
         levelWatched = (range.lowerBound + range.upperBound + 1) / 2
         lessonType = switch kind {
         case .lessonInput: .input
@@ -433,8 +433,8 @@ struct TaskSessionView: View {
             writing: isWriting ? writing : nil,
             feedback: kind == .writeGuided ? feedback : nil,
             rewrite: kind == .writeGuided ? rewrite : nil,
-            duolingoPosition: kind == .duoLesson ? (section: duolingoSection, unit: duolingoUnit) : nil,
-            languageTransferNextTrack: kind == .ltTrack ? ltNextTrack : nil,
+            duolingoPosition: kind == .drillLesson ? (section: duolingoSection, unit: duolingoUnit) : nil,
+            languageTransferNextTrack: kind == .courseTrack ? ltNextTrack : nil,
             lessonType: kind.isLesson ? lessonType : nil,
             levelWatched: isDreaming ? levelWatched : nil
         ))

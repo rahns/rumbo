@@ -37,8 +37,8 @@ import Testing
     @Test func theCustomBalanceDrivesThePlan() {
         let planner = DayPlanner(calendar: TestCalendar.utc)
         let today = TestCalendar.day(2026, 10, 26)
-        var learner = LearnerSnapshot(band: .b1_1, speakingStage: .voiceNotes, languageTransferLastTrack: 60, extraEpisodesWatched: 5)
-        learner.alwaysIncludeDuolingo = false
+        var learner = LearnerSnapshot(band: .b1_1, speakingStage: .voiceNotes, courseLastTrack: 60, seriesEpisodesWatched: 5)
+        learner.alwaysIncludeDrillApp = false
         learner.balance = StrandBalance(shares: [.input: 0, .output: 60, .languageFocused: 40, .fluency: 0])
         #expect(learner.strandTargets[.output] == 0.6)
         for budget in DayPlanner.budgetChoices {
@@ -54,7 +54,7 @@ import Testing
         let planner = DayPlanner(calendar: TestCalendar.utc)
         let today = TestCalendar.day(2026, 10, 26)
         // No grammar & vocab source (Language Transfer, Duolingo) and no mistake cards due.
-        var learner = LearnerSnapshot(band: .a2_2, enabledSources: Set(SourceKind.allCases).subtracting([.languageTransfer, .duolingo]))
+        var learner = LearnerSnapshot(band: .a2_2, enabledSources: Set(SourceKind.allCases).subtracting([.audioCourse, .drillApp]))
         #expect(!learner.canPlan(.languageFocused))
 
         // A split with some grammar: its 20 goes to the others in proportion (50 : 20 : 10).

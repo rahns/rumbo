@@ -116,7 +116,7 @@ import SwiftData
 @Model final class ActivityLog {
     var id: UUID = UUID()
     var date: Date = Date.now
-    var taskRaw: String = TaskKind.dsWatch.rawValue
+    var taskRaw: String = TaskKind.gradedWatch.rawValue
     var minutes: Int = 0
     /// 1 lost, 2 mostly, 3 easy (input tasks only).
     var comprehension: Int?
@@ -135,7 +135,7 @@ import SwiftData
         self.minutes = minutes
     }
 
-    var task: TaskKind { TaskKind(rawValue: taskRaw) ?? .dsWatch }
+    var task: TaskKind { TaskKind(rawValue: taskRaw) ?? .gradedWatch }
 
     var record: ActivityRecord {
         ActivityRecord(date: date, kind: task, minutes: minutes)
@@ -144,7 +144,7 @@ import SwiftData
     /// The level watched, for the Progress chart. Older Dreaming Spanish logs without an answer use the middle of their range.
     var watchedLevel: WatchedLevel.Session? {
         // Easy Dreaming is watched below level on purpose (fluency practice), so it would pull the line down.
-        guard task == .dsWatch else { return nil }
+        guard task == .gradedWatch else { return nil }
         if let levelWatched { return WatchedLevel.Session(date: date, level: Double(levelWatched), minutes: minutes) }
         guard let low = difficultyLow, let high = difficultyHigh else { return nil }
         return WatchedLevel.Session(date: date, level: Double(low + high) / 2, minutes: minutes)
@@ -192,7 +192,7 @@ import SwiftData
 }
 
 @Model final class PlannedTaskRecord {
-    var taskRaw: String = TaskKind.dsWatch.rawValue
+    var taskRaw: String = TaskKind.gradedWatch.rawValue
     var order: Int = 0
     var minutesPlanned: Int = 0
     var isAnchor: Bool = false
@@ -235,7 +235,7 @@ import SwiftData
         self.prompt = prompt
     }
 
-    var task: TaskKind { TaskKind(rawValue: taskRaw) ?? .dsWatch }
+    var task: TaskKind { TaskKind(rawValue: taskRaw) ?? .gradedWatch }
     var detail: TaskDetail { TaskDetailCoding.decode(detailRaw) }
 
     var isPaused: Bool { pausedAt != nil }
@@ -336,10 +336,10 @@ enum TaskDetailCoding {
     static func encode(_ detail: TaskDetail) -> String {
         switch detail {
         case .none: ""
-        case .languageTransferTrack(let track): "lt:\(track)"
-        case .extraPart(let episode, let part): "extra:\(episode):\(part)"
-        case .extraEpisode(let episode): "extra:\(episode)"
-        case .dreamingDifficulty(let range): "ds:\(range.lowerBound):\(range.upperBound)"
+        case .track(let track): "lt:\(track)"
+        case .seriesPart(let episode, let part): "extra:\(episode):\(part)"
+        case .seriesEpisode(let episode): "extra:\(episode)"
+        case .difficulty(let range): "ds:\(range.lowerBound):\(range.upperBound)"
         }
     }
 
@@ -347,10 +347,10 @@ enum TaskDetailCoding {
         let parts = raw.split(separator: ":").map(String.init)
         let numbers = parts.dropFirst().compactMap(Int.init)
         switch (parts.first, numbers.count) {
-        case ("lt", 1): return .languageTransferTrack(numbers[0])
-        case ("extra", 2): return .extraPart(episode: numbers[0], part: numbers[1])
-        case ("extra", 1): return .extraEpisode(numbers[0])
-        case ("ds", 2) where numbers[0] <= numbers[1]: return .dreamingDifficulty(numbers[0]...numbers[1])
+        case ("lt", 1): return .track(numbers[0])
+        case ("extra", 2): return .seriesPart(episode: numbers[0], part: numbers[1])
+        case ("extra", 1): return .seriesEpisode(numbers[0])
+        case ("ds", 2) where numbers[0] <= numbers[1]: return .difficulty(numbers[0]...numbers[1])
         default: return .none
         }
     }

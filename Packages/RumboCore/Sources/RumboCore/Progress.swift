@@ -150,11 +150,11 @@ public struct Projection: Sendable {
     }
 
     /// The date each remaining band threshold is reached at `weeklyHours`, or nil if the pace is zero.
-    public func arrivalDates(hours: Double, weeklyHours: Double, from today: Date) -> [Band: Date] {
+    public func arrivalDates(hours: Double, weeklyHours: Double, from today: Date, levels: LevelScale) -> [Band: Date] {
         guard weeklyHours > 0 else { return [:] }
         var dates: [Band: Date] = [:]
-        for band in Band.allCases where band.hoursThreshold > hours {
-            let weeks = (band.hoursThreshold - hours) / weeklyHours
+        for band in Band.allCases where levels.threshold(band) > hours {
+            let weeks = (levels.threshold(band) - hours) / weeklyHours
             dates[band] = calendar.date(byAdding: .day, value: Int((weeks * 7).rounded(.up)), to: today)
         }
         return dates
@@ -170,16 +170,17 @@ public struct Projection: Sendable {
 
 /// Links the weekly goal and the target date (docs/02-learning-engine.md §2.9): at a weekly goal, when the
 /// goal level is reached; for a target date, the weekly goal that gets there. Every minute of the weekly
-/// goal counts toward level hours.
+/// goal counts toward level hours. `goalHours` is the training hours the goal level starts at
+/// (`LevelScale.threshold`), which depends on the language.
 public enum GoalPace {
     /// The weekly goal moves in 10-minute steps.
     public static let step = 10
     public static let minutes = 30...900
 
     /// When `goal` is reached at `weeklyMinutes`; `today` if it already has been.
-    public static func arrival(of goal: Band, currentHours: Double, weeklyMinutes: Int,
+    public static func arrival(atHours goalHours: Double, currentHours: Double, weeklyMinutes: Int,
                                from today: Date, calendar: Calendar = .current) -> Date {
-        let remaining = goal.hoursThreshold - currentHours
+        let remaining = goalHours - currentHours
         let weekly = Projection.weeklyHours(atGoalMinutes: weeklyMinutes)
         guard remaining > 0, weekly > 0 else { return calendar.startOfDay(for: today) }
         let days = Int((remaining / weekly * 7).rounded(.up))
@@ -187,9 +188,9 @@ public enum GoalPace {
     }
 
     /// The weekly goal (rounded up to a step, within `minutes`) that reaches `goal` by `date`.
-    public static func weeklyMinutes(toReach goal: Band, by date: Date, currentHours: Double,
+    public static func weeklyMinutes(toReachHours goalHours: Double, by date: Date, currentHours: Double,
                                      from today: Date, calendar: Calendar = .current) -> Int {
-        let remaining = goal.hoursThreshold - currentHours
+        let remaining = goalHours - currentHours
         guard remaining > 0 else { return minutes.lowerBound }
         let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: today), to: calendar.startOfDay(for: date)).day ?? 0
         let weeks = max(Double(days) / 7, 1)
@@ -199,9 +200,9 @@ public enum GoalPace {
     }
 
     /// Whether `date` needs more than the largest weekly goal.
-    public static func isOutOfReach(_ goal: Band, by date: Date, currentHours: Double,
+    public static func isOutOfReach(hours goalHours: Double, by date: Date, currentHours: Double,
                                     from today: Date, calendar: Calendar = .current) -> Bool {
-        arrival(of: goal, currentHours: currentHours, weeklyMinutes: minutes.upperBound, from: today, calendar: calendar)
+        arrival(atHours: goalHours, currentHours: currentHours, weeklyMinutes: minutes.upperBound, from: today, calendar: calendar)
             > calendar.startOfDay(for: date)
     }
 }

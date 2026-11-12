@@ -1,6 +1,6 @@
 import Foundation
 
-/// Prompts for output tasks (PromptLibrary+*.swift). Each pick skips prompts already used (`used`: earlier
+/// Prompts for output tasks (PromptLibrary+*.swift), shared by every language. Each pick skips prompts already used (`used`: earlier
 /// prompts, which may have a reuse hint appended), so nothing repeats until a list has been used up;
 /// among the rest, the date decides, so the same day always shows the same prompt.
 public enum Prompts {
@@ -25,24 +25,30 @@ public enum Prompts {
         }
     }
 
-    public static func writing(for band: Band, on date: Date, used: [String] = [], calendar: Calendar = .current) -> String {
-        pick(writingPrompts[Level(band)]!, on: date, used: used, calendar: calendar)
+    public static func writing(for band: Band, on date: Date, used: [String] = [], pack: LanguagePack, calendar: Calendar = .current) -> String {
+        pick(writingPrompts[Level(band)]!, on: date, used: used, pack: pack, calendar: calendar)
     }
 
-    public static func tandem(for band: Band, on date: Date, used: [String] = [], calendar: Calendar = .current) -> String {
-        pick(tandemPrompts[Level(band)]!, on: date, used: used, calendar: calendar)
+    public static func exchange(for band: Band, on date: Date, used: [String] = [], pack: LanguagePack, calendar: Calendar = .current) -> String {
+        pick(exchangePrompts[Level(band)]!, on: date, used: used, pack: pack, calendar: calendar)
     }
 
-    public static func quickWrite(on date: Date, used: [String] = [], calendar: Calendar = .current) -> String {
-        pick(quickWriteTopics, on: date, used: used, calendar: calendar)
+    public static func quickWrite(on date: Date, used: [String] = [], pack: LanguagePack, calendar: Calendar = .current) -> String {
+        pick(quickWriteTopics, on: date, used: used, pack: pack, calendar: calendar)
     }
 
-    public static func fluencyStory(on date: Date, used: [String] = [], calendar: Calendar = .current) -> String {
-        pick(fluencyStories, on: date, used: used, calendar: calendar)
+    public static func fluencyStory(on date: Date, used: [String] = [], pack: LanguagePack, calendar: Calendar = .current) -> String {
+        pick(fluencyStories, on: date, used: used, pack: pack, calendar: calendar)
     }
 
-    public static func travelMission(on date: Date, used: [String] = [], calendar: Calendar = .current) -> String {
-        pick(travelMissions, on: date, used: used, calendar: calendar)
+    public static func travelMission(on date: Date, used: [String] = [], pack: LanguagePack, calendar: Calendar = .current) -> String {
+        pick(travelMissions + pack.extraTravelMissions, on: date, used: used, pack: pack, calendar: calendar)
+    }
+
+    /// The lists are shared by every language, with `{language}` standing for its name; it's filled in
+    /// before picking, so `used` (what the learner was shown) matches.
+    static func pick(_ list: [String], on date: Date, used: [String] = [], pack: LanguagePack, calendar: Calendar) -> String {
+        pick(list.map(pack.fill), on: date, used: used, calendar: calendar)
     }
 
     static func pick(_ list: [String], on date: Date, used: [String] = [], calendar: Calendar) -> String {
@@ -53,5 +59,5 @@ public enum Prompts {
     }
 
     static let writingPrompts: [Level: [String]] = [.a2: writingA2, .b1: writingB1, .b2: writingB2]
-    static let tandemPrompts: [Level: [String]] = [.a2: tandemA2, .b1: tandemB1, .b2: tandemB2]
+    static let exchangePrompts: [Level: [String]] = [.a2: tandemA2, .b1: tandemB1, .b2: tandemB2]
 }

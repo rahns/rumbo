@@ -1,4 +1,5 @@
-/// How Language Transfer and Extra en Español move forward as tasks are logged.
+/// How the audio course and the learner series move forward as tasks are logged.
+/// Stored with each planned task (for undo), under the names from when Spanish was the only language.
 /// See docs/02-learning-engine.md §2.3 (`lt.track`, `extra.intensive`, `extra.extensive`).
 public struct SourceProgress: Equatable, Codable, Sendable {
     public enum TrackRating: String, Codable, Sendable {
@@ -6,36 +7,43 @@ public struct SourceProgress: Equatable, Codable, Sendable {
         case shaky
     }
 
-    public var languageTransferLastTrack: Int
-    public var languageTransferRepeatPending: Bool
-    public var extraEpisodesWatched: Int
-    public var extraPartsDoneInEpisode: Int
+    public var courseLastTrack: Int
+    public var courseRepeatPending: Bool
+    public var seriesEpisodesWatched: Int
+    public var seriesPartsDone: Int
 
-    public init(languageTransferLastTrack: Int = 0, languageTransferRepeatPending: Bool = false, extraEpisodesWatched: Int = 0, extraPartsDoneInEpisode: Int = 0) {
-        self.languageTransferLastTrack = languageTransferLastTrack
-        self.languageTransferRepeatPending = languageTransferRepeatPending
-        self.extraEpisodesWatched = extraEpisodesWatched
-        self.extraPartsDoneInEpisode = extraPartsDoneInEpisode
+    enum CodingKeys: String, CodingKey {
+        case courseLastTrack = "languageTransferLastTrack"
+        case courseRepeatPending = "languageTransferRepeatPending"
+        case seriesEpisodesWatched = "extraEpisodesWatched"
+        case seriesPartsDone = "extraPartsDoneInEpisode"
+    }
+
+    public init(courseLastTrack: Int = 0, courseRepeatPending: Bool = false, seriesEpisodesWatched: Int = 0, seriesPartsDone: Int = 0) {
+        self.courseLastTrack = courseLastTrack
+        self.courseRepeatPending = courseRepeatPending
+        self.seriesEpisodesWatched = seriesEpisodesWatched
+        self.seriesPartsDone = seriesPartsDone
     }
 
     /// Updates progress after a task is logged. Other task kinds don't move a course forward.
-    public mutating func record(_ kind: TaskKind, trackRating: TrackRating? = nil) {
+    public mutating func record(_ kind: TaskKind, trackRating: TrackRating? = nil, pack: LanguagePack) {
         switch kind {
-        case .ltTrack:
-            if languageTransferRepeatPending {
+        case .courseTrack:
+            if courseRepeatPending {
                 // That was the one repeat; move on whatever the rating.
-                languageTransferRepeatPending = false
+                courseRepeatPending = false
             } else {
-                languageTransferLastTrack = min(languageTransferLastTrack + 1, Course.languageTransferTracks)
-                languageTransferRepeatPending = trackRating == .shaky
+                courseLastTrack = min(courseLastTrack + 1, pack.course?.tracks ?? 0)
+                courseRepeatPending = trackRating == .shaky
             }
-        case .extraIntensive:
-            extraPartsDoneInEpisode += 1
-            if extraPartsDoneInEpisode >= Course.extraIntensivePartsPerEpisode {
-                finishExtraEpisode()
+        case .seriesIntensive:
+            seriesPartsDone += 1
+            if seriesPartsDone >= (pack.series?.intensiveParts ?? 1) {
+                finishEpisode(pack)
             }
-        case .extraExtensive:
-            finishExtraEpisode()
+        case .seriesExtensive:
+            finishEpisode(pack)
         default:
             break
         }
@@ -45,19 +53,19 @@ public struct SourceProgress: Equatable, Codable, Sendable {
     /// so undoing one task doesn't roll back progress made by another task since.
     public mutating func undo(_ kind: TaskKind, before: SourceProgress) {
         switch kind {
-        case .ltTrack:
-            languageTransferLastTrack = before.languageTransferLastTrack
-            languageTransferRepeatPending = before.languageTransferRepeatPending
-        case .extraIntensive, .extraExtensive:
-            extraEpisodesWatched = before.extraEpisodesWatched
-            extraPartsDoneInEpisode = before.extraPartsDoneInEpisode
+        case .courseTrack:
+            courseLastTrack = before.courseLastTrack
+            courseRepeatPending = before.courseRepeatPending
+        case .seriesIntensive, .seriesExtensive:
+            seriesEpisodesWatched = before.seriesEpisodesWatched
+            seriesPartsDone = before.seriesPartsDone
         default:
             break
         }
     }
 
-    private mutating func finishExtraEpisode() {
-        extraEpisodesWatched = min(extraEpisodesWatched + 1, Course.extraEpisodes)
-        extraPartsDoneInEpisode = 0
+    private mutating func finishEpisode(_ pack: LanguagePack) {
+        seriesEpisodesWatched = min(seriesEpisodesWatched + 1, pack.series?.episodes ?? 0)
+        seriesPartsDone = 0
     }
 }

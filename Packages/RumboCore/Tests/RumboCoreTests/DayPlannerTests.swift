@@ -14,7 +14,7 @@ import Testing
 
     @Test(arguments: Band.allCases, DayPlanner.budgetChoices)
     func plansAreWellFormed(band: Band, budget: Int) {
-        let learner = LearnerSnapshot(band: band, speakingStage: .calls, languageTransferLastTrack: 40, dueReviewCards: 8)
+        let learner = LearnerSnapshot(band: band, speakingStage: .calls, courseLastTrack: 40, dueReviewCards: 8)
         let plan = plan(budget, learner)
 
         #expect(plan.tasks.count <= DayPlanner.maxCards)
@@ -29,11 +29,11 @@ import Testing
     }
 
     @Test func tasksFollowSessionOrder() {
-        let learner = LearnerSnapshot(band: .b1_1, speakingStage: .voiceNotes, languageTransferLastTrack: 60, dueReviewCards: 6)
+        let learner = LearnerSnapshot(band: .b1_1, speakingStage: .voiceNotes, courseLastTrack: 60, dueReviewCards: 6)
         for budget in DayPlanner.budgetChoices {
             let ranks = plan(budget, learner).tasks.map { task -> Int in
                 switch task.kind {
-                case .duoLesson: 0
+                case .drillLesson: 0
                 case .reviewMistakes: 1
                 default: [Strand.languageFocused: 2, .input: 3, .output: 4, .fluency: 5][task.kind.strand]!
                 }
@@ -47,17 +47,17 @@ import Testing
     @Test func duolingoEveryDayForTheStreak() {
         // One lesson (3 min) every day, first, including busy 10-minute days.
         for budget in DayPlanner.budgetChoices {
-            #expect(plan(budget).kinds.first == .duoLesson, "\(budget) min")
+            #expect(plan(budget).kinds.first == .drillLesson, "\(budget) min")
         }
-        #expect(plan(15).task(.duoLesson)?.minutes == 3)
-        #expect(plan(10).task(.duoLesson)?.minutes == 3)
+        #expect(plan(15).task(.drillLesson)?.minutes == 3)
+        #expect(plan(10).task(.drillLesson)?.minutes == 3)
     }
 
     @Test func duolingoFadesOutAtB2() {
-        #expect(plan(30, LearnerSnapshot(band: .b1_2)).task(.duoLesson) != nil)
-        #expect(plan(30, LearnerSnapshot(band: .b2_1)).task(.duoLesson) == nil)
-        #expect(plan(30, LearnerSnapshot(band: .b2_1, keepDuolingoInB2: true)).task(.duoLesson) != nil)
-        #expect(plan(30, LearnerSnapshot(band: .b2_2, keepDuolingoInB2: true)).task(.duoLesson) == nil)
+        #expect(plan(30, LearnerSnapshot(band: .b1_2)).task(.drillLesson) != nil)
+        #expect(plan(30, LearnerSnapshot(band: .b2_1)).task(.drillLesson) == nil)
+        #expect(plan(30, LearnerSnapshot(band: .b2_1, keepDrillAppLate: true)).task(.drillLesson) != nil)
+        #expect(plan(30, LearnerSnapshot(band: .b2_2, keepDrillAppLate: true)).task(.drillLesson) == nil)
     }
 
     @Test func mistakeReviewWarmUpNeedsFiveDueCardsAndTwentyMinutes() {
@@ -74,7 +74,7 @@ import Testing
 
     @Test func tenMinuteDayIsDuolingoAndOneTask() {
         let plan = plan(10)
-        #expect(plan.kinds.first == .duoLesson)
+        #expect(plan.kinds.first == .drillLesson)
         #expect(plan.tasks.count == 2)
         #expect(plan.totalMinutes == 10)
         #expect(plan.tasks.last?.kind.strand == .input, "with no history, input has the biggest deficit")
@@ -86,15 +86,15 @@ import Testing
 
     @Test func balancesAcrossTheWeek() {
         // Six days of only Dreaming Spanish: today should skip input entirely.
-        let history = (1...6).map { ActivityRecord(date: TestCalendar.adding(days: -$0, to: today), kind: .dsWatch, minutes: 30) }
+        let history = (1...6).map { ActivityRecord(date: TestCalendar.adding(days: -$0, to: today), kind: .gradedWatch, minutes: 30) }
         let plan = plan(30, history: history)
         #expect(plan.minutes(in: .input) == 0)
         #expect(plan.minutes(in: .languageFocused) > 0)
     }
 
     @Test func ignoresHistoryOlderThanSixDaysAndTodaysOwnLogs() {
-        let old = ActivityRecord(date: TestCalendar.adding(days: -7, to: today), kind: .dsWatch, minutes: 600)
-        let todayLog = ActivityRecord(date: today, kind: .dsWatch, minutes: 600)
+        let old = ActivityRecord(date: TestCalendar.adding(days: -7, to: today), kind: .gradedWatch, minutes: 600)
+        let todayLog = ActivityRecord(date: today, kind: .gradedWatch, minutes: 600)
         #expect(plan(30, history: [old, todayLog]) == plan(30))
     }
 
@@ -106,7 +106,7 @@ import Testing
             let day = TestCalendar.adding(days: offset, to: today)
             let plan = planner.plan(budget: budget, learner: learner, history: history, today: day)
             history += plan.tasks.map { ActivityRecord(date: day, kind: $0.kind, minutes: $0.minutes) }
-            if plan.task(.ltTrack) != nil { learner.languageTransferLastTrack += 1 }
+            if plan.task(.courseTrack) != nil { learner.courseLastTrack += 1 }
         }
         return history
     }
@@ -114,10 +114,10 @@ import Testing
     static let irregularFortnight = [15, 45, 20, 30, 10, 45, 30, 30, 15, 45, 20, 30, 10, 45]
 
     @Test(arguments: [
-        LearnerSnapshot(band: .a2_1, languageTransferLastTrack: 12, extraEpisodesWatched: 1),
-        LearnerSnapshot(band: .b1_1, speakingStage: .voiceNotes, languageTransferLastTrack: 60, extraEpisodesWatched: 5),
+        LearnerSnapshot(band: .a2_1, courseLastTrack: 12, seriesEpisodesWatched: 1),
+        LearnerSnapshot(band: .b1_1, speakingStage: .voiceNotes, courseLastTrack: 60, seriesEpisodesWatched: 5),
         // By B2.2 the courses are done, so language-focused time comes from the mistake deck.
-        LearnerSnapshot(band: .b2_2, speakingStage: .calls, languageTransferLastTrack: 90, extraEpisodesWatched: 13, dueReviewCards: 8),
+        LearnerSnapshot(band: .b2_2, speakingStage: .calls, courseLastTrack: 90, seriesEpisodesWatched: 13, dueReviewCards: 8),
     ])
     func irregularDaysLandNearTheTargets(learner: LearnerSnapshot) {
         let history = simulate(learner, budgets: Self.irregularFortnight)
@@ -132,29 +132,29 @@ import Testing
     @Test func aFortnightAtA2CoversEveryRegularTask() {
         let history = simulate(authorAtStart, budgets: Self.irregularFortnight)
         func days(_ kind: TaskKind) -> Int { history.filter { $0.kind == kind }.count }
-        #expect(days(.ltTrack) >= 4, "Language Transfer is the A2 grammar backbone")
-        #expect((1...3).contains(days(.extraIntensive)), "about one Extra part a week, for variety")
+        #expect(days(.courseTrack) >= 4, "Language Transfer is the A2 grammar backbone")
+        #expect((1...3).contains(days(.seriesIntensive)), "about one Extra part a week, for variety")
         #expect(days(.writeGuided) >= 2, "1 guided writing a week")
-        #expect(history.filter(\.kind.isTandemExchange).count >= 3, "about 2 Tandem exchanges a week at A2")
-        #expect(days(.dsWatch) >= 7)
+        #expect(history.filter(\.kind.isExchange).count >= 3, "about 2 Tandem exchanges a week at A2")
+        #expect(days(.gradedWatch) >= 7)
     }
 
     // MARK: Progression details
 
     @Test func languageTransferTakesTheTracksRealLength() {
-        #expect(Course.languageTransferTrackSeconds.count == Course.languageTransferTracks)
+        #expect(LanguagePack.spanish.course?.trackSeconds.count == 90)
         // Track 13 is 9:38, so 10 minutes; track 14 is 15:10, so 16.
-        #expect(Course.languageTransferMinutes(track: 13) == 10)
-        #expect(Course.languageTransferMinutes(track: 14) == 16)
+        #expect(LanguagePack.spanish.course?.minutes(track: 13) == 10)
+        #expect(LanguagePack.spanish.course?.minutes(track: 14) == 16)
         for budget in [30, 45, 60] {
-            if let task = plan(budget).task(.ltTrack) {
+            if let task = plan(budget).task(.courseTrack) {
                 #expect(task.minutes == 10, "\(budget) min: track 13 planned for \(task.minutes)")
             }
         }
         var learner = authorAtStart
-        learner.languageTransferLastTrack = 13
+        learner.courseLastTrack = 13
         let extras = planner.extraTasks(learner: learner, history: [], today: today, excluding: [])
-        #expect(extras.first { $0.kind == .ltTrack }?.minutes == 16)
+        #expect(extras.first { $0.kind == .courseTrack }?.minutes == 16)
     }
 
     @Test func travelModeAlwaysPlansAMissionOnlineOrNot() {
@@ -184,26 +184,26 @@ import Testing
     }
 
     @Test func languageTransferPlansTheNextTrackOrRepeatsAShakyOne() {
-        let fresh = plan(45).task(.ltTrack)
-        #expect(fresh?.detail == .languageTransferTrack(13))
+        let fresh = plan(45).task(.courseTrack)
+        #expect(fresh?.detail == .track(13))
 
         var learner = authorAtStart
-        learner.languageTransferRepeatPending = true
-        #expect(plan(45, learner).task(.ltTrack)?.detail == .languageTransferTrack(12))
+        learner.courseRepeatPending = true
+        #expect(plan(45, learner).task(.courseTrack)?.detail == .track(12))
 
-        learner.languageTransferLastTrack = Course.languageTransferTracks
-        #expect(plan(45, learner).task(.ltTrack) == nil)
+        learner.courseLastTrack = 90
+        #expect(plan(45, learner).task(.courseTrack) == nil)
     }
 
     @Test func extraIsIntensiveAtA2AndExtensiveAtB1() {
         let a2 = plan(45)
-        #expect(a2.task(.extraIntensive)?.detail == .extraPart(episode: 2, part: 1))
-        #expect(a2.task(.extraIntensive)?.isAnchor == true)
-        #expect(a2.task(.extraExtensive) == nil)
+        #expect(a2.task(.seriesIntensive)?.detail == .seriesPart(episode: 2, part: 1))
+        #expect(a2.task(.seriesIntensive)?.isAnchor == true)
+        #expect(a2.task(.seriesExtensive) == nil)
 
-        let b1 = plan(45, LearnerSnapshot(band: .b1_1, extraEpisodesWatched: 4))
-        #expect(b1.task(.extraExtensive)?.detail == .extraEpisode(5))
-        #expect(b1.task(.extraIntensive) == nil)
+        let b1 = plan(45, LearnerSnapshot(band: .b1_1, seriesEpisodesWatched: 4))
+        #expect(b1.task(.seriesExtensive)?.detail == .seriesEpisode(5))
+        #expect(b1.task(.seriesIntensive) == nil)
     }
 
     // MARK: Keep going (§2.5 step 8)
@@ -220,7 +220,7 @@ import Testing
 
     @Test func keepGoingLeadsWithTheMostBehindStrand() {
         // A week of nothing but listening, today included: study and output come before more input.
-        let history = (0...6).map { ActivityRecord(date: TestCalendar.adding(days: -$0, to: today), kind: .dsWatch, minutes: 30) }
+        let history = (0...6).map { ActivityRecord(date: TestCalendar.adding(days: -$0, to: today), kind: .gradedWatch, minutes: 30) }
         let extras = planner.extraTasks(learner: authorAtStart, history: history, today: today, excluding: [])
         #expect(extras.first?.kind.strand != .input)
         #expect(extras.last?.kind.strand == .input)
@@ -228,89 +228,89 @@ import Testing
 
     @Test func keepGoingPointsAtTheNextLessonAndEpisode() {
         let extras = planner.extraTasks(learner: authorAtStart, history: [], today: today, excluding: [])
-        #expect(extras.first { $0.kind == .ltTrack }?.detail == .languageTransferTrack(13))
-        #expect(extras.first { $0.kind == .extraIntensive }?.detail == .extraPart(episode: 2, part: 1))
+        #expect(extras.first { $0.kind == .courseTrack }?.detail == .track(13))
+        #expect(extras.first { $0.kind == .seriesIntensive }?.detail == .seriesPart(episode: 2, part: 1))
     }
 
     @Test func duolingoIsNeverMoreThanFiveMinutes() {
         for budget in DayPlanner.budgetChoices {
-            #expect((plan(budget).task(.duoLesson)?.minutes ?? 0) <= 5, "\(budget) min")
+            #expect((plan(budget).task(.drillLesson)?.minutes ?? 0) <= 5, "\(budget) min")
         }
         // Even when only Duolingo is left in the language strand.
         var learner = authorAtStart
-        learner.languageTransferLastTrack = Course.languageTransferTracks
+        learner.courseLastTrack = 90
         for budget in DayPlanner.budgetChoices {
-            #expect((plan(budget, learner).task(.duoLesson)?.minutes ?? 0) <= 5, "\(budget) min, LT finished")
+            #expect((plan(budget, learner).task(.drillLesson)?.minutes ?? 0) <= 5, "\(budget) min, LT finished")
         }
     }
 
     @Test func dreamingSpanishLeadsAndExtraIsOccasional() {
         // Short days are Dreaming Spanish, even with Extra due.
-        #expect(plan(15).task(.extraIntensive) == nil)
-        #expect(plan(15).task(.dsWatch) != nil)
+        #expect(plan(15).task(.seriesIntensive) == nil)
+        #expect(plan(15).task(.gradedWatch) != nil)
         // Over a fortnight, Dreaming Spanish clearly outnumbers Extra.
         let history = simulate(authorAtStart, budgets: Self.irregularFortnight)
-        let ds = history.filter { $0.kind == .dsWatch }.count
-        let extra = history.filter { $0.kind == .extraIntensive }.count
+        let ds = history.filter { $0.kind == .gradedWatch }.count
+        let extra = history.filter { $0.kind == .seriesIntensive }.count
         #expect(ds >= 3 * extra && extra >= 1, "DS \(ds), Extra \(extra)")
     }
 
     @Test func extraAnchorStopsOnceThisWeeksPartsAreDone() {
-        let history = [1, 3].map { ActivityRecord(date: TestCalendar.adding(days: -$0, to: today), kind: .extraIntensive, minutes: 12) }
-        #expect(plan(45, history: history).task(.extraIntensive)?.isAnchor != true)
+        let history = [1, 3].map { ActivityRecord(date: TestCalendar.adding(days: -$0, to: today), kind: .seriesIntensive, minutes: 12) }
+        #expect(plan(45, history: history).task(.seriesIntensive)?.isAnchor != true)
     }
 
     @Test func suggestedContentReplacesExtraOnceFinished() {
-        let learner = LearnerSnapshot(band: .b1_2, extraEpisodesWatched: Course.extraEpisodes)
-        #expect(!learner.isEligible(.extraExtensive))
+        let learner = LearnerSnapshot(band: .b1_2, seriesEpisodesWatched: 13)
+        #expect(!learner.isEligible(.seriesExtensive))
         #expect(learner.isEligible(.contentWatch))
         #expect(!LearnerSnapshot(band: .a2_1).isEligible(.contentWatch))
     }
 
     @Test func dreamingCardsCarryTheDifficultyRange() {
         var learner = authorAtStart
-        learner.enabledSources.remove(.extraEnEspanol)
-        #expect(plan(45, learner).task(.dsWatch)?.detail == .dreamingDifficulty(40...48))
-        #expect(plan(10, learner).task(.dsWatch)?.detail == .dreamingDifficulty(40...48))
+        learner.enabledSources.remove(.learnerSeries)
+        #expect(plan(45, learner).task(.gradedWatch)?.detail == .difficulty(40...48))
+        #expect(plan(10, learner).task(.gradedWatch)?.detail == .difficulty(40...48))
         learner.band = .b1_1
         // Everything but fluency was covered this week, so a 10-minute day is one easy video.
         let history = (1...6).flatMap { offset in
-            [(TaskKind.dsWatch, 25), (.ltTrack, 8), (.tandemText, 6)].map {
+            [(TaskKind.gradedWatch, 25), (.courseTrack, 8), (.exchangeText, 6)].map {
                 ActivityRecord(date: TestCalendar.adding(days: -offset, to: today), kind: $0.0, minutes: $0.1)
             }
         }
-        #expect(plan(10, learner, history: history).task(.dsEasy)?.detail == .dreamingDifficulty(25...30),
+        #expect(plan(10, learner, history: history).task(.gradedEasy)?.detail == .difficulty(25...30),
                 "easy videos are 10–15 points below the current range")
     }
 
     @Test func focusPointsAtTodaysStructure() {
-        #expect(plan(45).focus == .languageTransferTrack(13))
+        #expect(plan(45).focus == .track(13))
     }
 
     // MARK: Sources, stages, travel
 
     @Test func disabledSourcesAreNeverPlanned() {
         var learner = authorAtStart
-        learner.enabledSources.subtract([.dreamingSpanish, .duolingo])
+        learner.enabledSources.subtract([.gradedVideo, .drillApp])
         for budget in DayPlanner.budgetChoices {
             let plan = plan(budget, learner)
-            #expect(!plan.tasks.contains { $0.kind.source == .dreamingSpanish || $0.kind.source == .duolingo })
+            #expect(!plan.tasks.contains { $0.kind.source == .gradedVideo || $0.kind.source == .drillApp })
             #expect(plan.totalMinutes > 0)
         }
     }
 
     @Test func speakingTasksFollowTheStage() {
         let text = LearnerSnapshot(band: .b1_1, speakingStage: .text)
-        #expect(!text.isEligible(.tandemVoice) && !text.isEligible(.fluency432) && !text.isEligible(.tandemCall))
+        #expect(!text.isEligible(.exchangeVoice) && !text.isEligible(.fluency432) && !text.isEligible(.exchangeCall))
         let voice = LearnerSnapshot(band: .b1_1, speakingStage: .voiceNotes)
-        #expect(voice.isEligible(.tandemVoice) && voice.isEligible(.fluency432) && !voice.isEligible(.tandemCall))
-        #expect(LearnerSnapshot(band: .b1_1, speakingStage: .calls).isEligible(.tandemCall))
+        #expect(voice.isEligible(.exchangeVoice) && voice.isEligible(.fluency432) && !voice.isEligible(.exchangeCall))
+        #expect(LearnerSnapshot(band: .b1_1, speakingStage: .calls).isEligible(.exchangeCall))
     }
 
     @Test func oneCallAWeekOnceCallsAreUnlocked() {
-        let learner = LearnerSnapshot(band: .b2_1, speakingStage: .calls, languageTransferLastTrack: 90, extraEpisodesWatched: 13, dueReviewCards: 8)
+        let learner = LearnerSnapshot(band: .b2_1, speakingStage: .calls, courseLastTrack: 90, seriesEpisodesWatched: 13, dueReviewCards: 8)
         let history = simulate(learner, budgets: [30, 30, 30, 30, 30, 30, 30])
-        #expect(history.filter { $0.kind == .tandemCall }.count == 1)
+        #expect(history.filter { $0.kind == .exchangeCall }.count == 1)
     }
 
     @Test func travelModeOfflinePrefersMissionsAndSkipsOnlineTasks() {

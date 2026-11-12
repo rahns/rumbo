@@ -185,17 +185,17 @@ final class NotificationPresenter: NSObject, UNUserNotificationCenterDelegate {
 enum DeepLinks {
     static func url(for task: TaskKind, detail: TaskDetail) -> URL? {
         switch task {
-        case .dsWatch, .dsEasy:
+        case .gradedWatch, .gradedEasy:
             return URL(string: "dreaming://")
-        case .ltTrack:
+        case .courseTrack:
             return URL(string: "languagetransfer://")
-        case .duoLesson:
+        case .drillLesson:
             return URL(string: "duolingo://")
-        case .tandemText, .tandemVoice, .tandemCall:
+        case .exchangeText, .exchangeVoice, .exchangeCall:
             return URL(string: "tandem://")
-        case .extraIntensive, .extraExtensive:
+        case .seriesIntensive, .seriesExtensive:
             let episode: Int = switch detail {
-            case .extraPart(let episode, _), .extraEpisode(let episode): episode
+            case .seriesPart(let episode, _), .seriesEpisode(let episode): episode
             default: 1
             }
             let query = "Extra en Español episodio \(episode)".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
@@ -207,10 +207,10 @@ enum DeepLinks {
 
     static func webFallback(for task: TaskKind) -> URL? {
         switch task {
-        case .dsWatch, .dsEasy: URL(string: "https://www.dreaming.com/spanish")
-        case .ltTrack: URL(string: "https://www.languagetransfer.org")
-        case .duoLesson: URL(string: "https://www.duolingo.com")
-        case .tandemText, .tandemVoice, .tandemCall: URL(string: "https://www.tandem.net")
+        case .gradedWatch, .gradedEasy: URL(string: "https://www.dreaming.com/spanish")
+        case .courseTrack: URL(string: "https://www.languagetransfer.org")
+        case .drillLesson: URL(string: "https://www.duolingo.com")
+        case .exchangeText, .exchangeVoice, .exchangeCall: URL(string: "https://www.tandem.net")
         default: nil
         }
     }

@@ -55,8 +55,8 @@ import Testing
 
     @Test func strandMinutesCoverTheLastSevenDays() {
         let history = [
-            ActivityRecord(date: today, kind: .dsWatch, minutes: 20),
-            ActivityRecord(date: TestCalendar.adding(days: -6, to: today), kind: .ltTrack, minutes: 10),
+            ActivityRecord(date: today, kind: .gradedWatch, minutes: 20),
+            ActivityRecord(date: TestCalendar.adding(days: -6, to: today), kind: .courseTrack, minutes: 10),
             ActivityRecord(date: TestCalendar.adding(days: -7, to: today), kind: .writeGuided, minutes: 99),
         ]
         let minutes = ProgressStats.strandMinutes(history: history, today: today, calendar: calendar)
@@ -64,7 +64,7 @@ import Testing
     }
 
     @Test func heatMapWeeksAreWholeCalendarWeeks() {
-        let history = [ActivityRecord(date: today, kind: .dsWatch, minutes: 15)]
+        let history = [ActivityRecord(date: today, kind: .gradedWatch, minutes: 15)]
         let weeks = ProgressStats.weeks(12, history: history, today: today, calendar: calendar)
         #expect(weeks.count == 12)
         #expect(weeks.allSatisfy { $0.count == 7 })

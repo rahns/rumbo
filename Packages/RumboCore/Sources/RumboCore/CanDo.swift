@@ -3,7 +3,13 @@
 public enum CanDo {
     public static let perBand = 10
 
-    public static func statements(for band: Band) -> [String] {
+    /// The statements for a level, worded for the language being learned.
+    public static func statements(for band: Band, pack: LanguagePack) -> [String] {
+        shared(for: band).map(pack.fill)
+    }
+
+    /// The statements every language shares; `{language}` stands for its name.
+    static func shared(for band: Band) -> [String] {
         switch band {
         case .a2_1: [
             "I can follow a slow, clear video about daily life on a familiar topic.",
@@ -31,7 +37,7 @@ public enum CanDo {
         ]
         case .b1_1: [
             "I can understand the main points of a podcast about a topic I know.",
-            "I can deal with most situations while travelling where Spanish is spoken.",
+            "I can deal with most situations while travelling where {language} is spoken.",
             "I can join a conversation on a familiar topic without preparing first.",
             "I can describe experiences, dreams and plans, and give short reasons.",
             "I can write a simple connected text about something that interests me.",
@@ -61,7 +67,7 @@ public enum CanDo {
             "I can understand most podcasts and radio programmes on familiar topics.",
             "I can read articles where the writer argues a particular point of view.",
             "I can describe a film or book plot and my reaction to it in detail.",
-            "I can handle everyday admin (renting, banking, a doctor's appointment) in Spanish.",
+            "I can handle everyday admin (renting, banking, a doctor's appointment) in {language}.",
             "I can use the subjunctive in common expressions without thinking too hard.",
             "I can understand jokes or irony some of the time.",
         ]
@@ -75,7 +81,7 @@ public enum CanDo {
             "I can change my tone between formal and informal situations.",
             "I can understand long, complex speech when the topic is reasonably familiar.",
             "I can correct myself when I notice a mistake, mid-sentence.",
-            "I can live day to day in a Spanish-speaking country without switching to English.",
+            "I can live day to day in a {language}-speaking country without switching to English.",
         ]
         }
     }
@@ -83,9 +89,9 @@ public enum CanDo {
     /// Onboarding shows 5 statements from the band the hours point to and 5 from the next one.
     public static let placementSampleSize = 5
 
-    public static func placementStatements(for band: Band) -> (own: [String], next: [String]) {
-        let own = Array(statements(for: band).prefix(placementSampleSize))
-        let next = band.next.map { Array(statements(for: $0).prefix(placementSampleSize)) } ?? []
+    public static func placementStatements(for band: Band, pack: LanguagePack) -> (own: [String], next: [String]) {
+        let own = Array(statements(for: band, pack: pack).prefix(placementSampleSize))
+        let next = band.next.map { Array(statements(for: $0, pack: pack).prefix(placementSampleSize)) } ?? []
         return (own, next)
     }
 }

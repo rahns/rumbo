@@ -15,7 +15,7 @@ import Testing
     }
 
     func learner(_ lessons: LessonSchedule, duolingo: Bool = true) -> LearnerSnapshot {
-        LearnerSnapshot(band: .a2_1, languageTransferLastTrack: 13, alwaysIncludeDuolingo: duolingo, lessons: lessons)
+        LearnerSnapshot(band: .a2_1, courseLastTrack: 13, alwaysIncludeDrillApp: duolingo, lessons: lessons)
     }
 
     @Test func aLessonDayAlwaysHasTheLessonAtItsLength() {
@@ -42,13 +42,13 @@ import Testing
         let tuesday = TestCalendar.adding(days: 1, to: monday)
         let plan = planner.plan(budget: 90, learner: learner(schedule), history: [], today: tuesday)
         #expect(plan.totalMinutes <= 90)
-        #expect(plan.tasks.first?.kind == .duoLesson, "Duolingo stays first")
+        #expect(plan.tasks.first?.kind == .drillLesson, "Duolingo stays first")
         #expect(plan.tasks.dropFirst().first?.kind.isLesson == true, "then the lesson")
         // The lesson covers speaking, so the rest of the day isn't more speaking.
         #expect(plan.tasks.filter { $0.kind.strand == .output && !$0.kind.isLesson }.isEmpty)
         // When the lesson takes the whole time, the plan is the lesson and the daily Duolingo lesson.
         let short = planner.plan(budget: 30, learner: learner(schedule), history: [], today: tuesday)
-        #expect(short.tasks.map(\.kind) == [.duoLesson, .lessonOutput])
+        #expect(short.tasks.map(\.kind) == [.drillLesson, .lessonOutput])
     }
 
     @Test func lessonsAreNeverKeepGoingOptions() {
@@ -67,7 +67,7 @@ import Testing
         // On: a busy day is the 3-minute Duolingo lesson plus one task. Off: one task for the whole 10 minutes
         // (Duolingo can still be picked as a study task, but nothing reserves room for it).
         let on = planner.plan(budget: 10, learner: learner(LessonSchedule()), history: [], today: monday)
-        #expect(on.tasks.first?.kind == .duoLesson && on.tasks.first?.minutes == 3)
+        #expect(on.tasks.first?.kind == .drillLesson && on.tasks.first?.minutes == 3)
         let off = planner.plan(budget: 10, learner: learner(LessonSchedule(), duolingo: false), history: [], today: monday)
         #expect(off.tasks.count == 1 && off.tasks.first?.minutes == 10)
     }

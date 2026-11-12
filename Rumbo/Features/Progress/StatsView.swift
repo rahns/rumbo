@@ -15,7 +15,7 @@ struct StatsView: View {
                             StrandBalanceChart(minutes: model.strandMinutesThisWeek, targets: model.snapshot(for: profile).strandTargets)
                         }
                         projectionCard(profile)
-                        if profile.enabledSources.contains(.dreamingSpanish) {
+                        if profile.enabledSources.contains(.gradedVideo) {
                             RaisedCard(accent: Palette.coral) {
                                 WatchedLevelChart(sessions: model.watchedLevels, calendar: model.calendar)
                             }
@@ -126,19 +126,19 @@ struct StatsView: View {
                 Text("Your sources")
                     .font(.rounded(.headline, weight: .black))
                     .foregroundStyle(Palette.ink)
-                if sources.contains(.dreamingSpanish) {
+                if sources.contains(.gradedVideo) {
                     infoRow("Dreaming Spanish", "\(Int(model.listeningHours)) h listening · videos \(profile.dsDifficultyLow)–\(profile.dsDifficultyHigh)")
                 }
-                if sources.contains(.languageTransfer) {
+                if sources.contains(.audioCourse) {
                     courseRow("Language Transfer", done: profile.languageTransferLastTrack, total: Course.languageTransferTracks, unit: "tracks")
                 }
-                if sources.contains(.duolingo) {
+                if sources.contains(.drillApp) {
                     infoRow("Duolingo", "Section \(profile.duolingoSection) · Unit \(profile.duolingoUnit)")
                 }
-                if sources.contains(.extraEnEspanol) {
+                if sources.contains(.learnerSeries) {
                     courseRow("Extra en Español", done: profile.extraEpisodesWatched, total: Course.extraEpisodes, unit: "episodes")
                 }
-                if sources.contains(.tandem) {
+                if sources.contains(.exchange) {
                     infoRow("Tandem/HelloTalk", "Speaking stage: \(stageName(profile.speakingStage))")
                 }
             }

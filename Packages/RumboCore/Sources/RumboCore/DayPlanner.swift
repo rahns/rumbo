@@ -3,10 +3,12 @@ import Foundation
 /// What a planned card points at, so the app can show "Track 13" or "Episode 2, part 1".
 public enum TaskDetail: Equatable, Sendable {
     case none
-    case languageTransferTrack(Int)
-    case extraPart(episode: Int, part: Int)
-    case extraEpisode(Int)
-    case dreamingDifficulty(ClosedRange<Int>)
+    /// A track of the audio course.
+    case track(Int)
+    case seriesPart(episode: Int, part: Int)
+    case seriesEpisode(Int)
+    /// A difficulty range in the graded video library.
+    case difficulty(ClosedRange<Int>)
 }
 
 public struct PlannedTask: Equatable, Sendable {
@@ -28,7 +30,7 @@ public struct DayPlan: Equatable, Sendable {
     public var focus: TaskDetail? {
         tasks.first { task in
             switch task.detail {
-            case .languageTransferTrack, .extraPart, .extraEpisode: true
+            case .track, .seriesPart, .seriesEpisode: true
             default: false
             }
         }?.detail
@@ -101,39 +103,6 @@ public struct DayPlanner: Sendable {
     }
 }
 
-// MARK: - Weekly anchors
-
-/// How often each anchor should happen in a rolling 7 days, by band (§2.5 "Weekly anchors").
-struct AnchorTargets {
-    var writing: Int
-    var extraIntensiveParts: Int
-    var extraEpisodes: Int
-    var tandemExchanges: Int
-    var fluency432: Int
-
-    init(band: Band) {
-        switch band {
-        case .a2_1, .a2_2:
-            // Dreaming Spanish is the main input; Extra is a once-a-week change of pace.
-            self.init(writing: 1, extraIntensiveParts: 1, extraEpisodes: 0, tandemExchanges: 2, fluency432: 0)
-        case .b1_1, .b1_2:
-            self.init(writing: 2, extraIntensiveParts: 0, extraEpisodes: 1, tandemExchanges: 3, fluency432: 1)
-        case .b2_1:
-            self.init(writing: 2, extraIntensiveParts: 0, extraEpisodes: 0, tandemExchanges: 3, fluency432: 1)
-        case .b2_2:
-            self.init(writing: 3, extraIntensiveParts: 0, extraEpisodes: 0, tandemExchanges: 3, fluency432: 1)
-        }
-    }
-
-    private init(writing: Int, extraIntensiveParts: Int, extraEpisodes: Int, tandemExchanges: Int, fluency432: Int) {
-        self.writing = writing
-        self.extraIntensiveParts = extraIntensiveParts
-        self.extraEpisodes = extraEpisodes
-        self.tandemExchanges = tandemExchanges
-        self.fluency432 = fluency432
-    }
-}
-
 // MARK: - Builder
 
 private struct PlanBuilder {
@@ -155,16 +124,16 @@ private struct PlanBuilder {
     }
 
     mutating func planBusyDayWarmUp() {
-        if learner.alwaysIncludeDuolingo, learner.isEligible(.duoLesson) {
-            add(.duoLesson, minutes: TaskKind.duoLesson.minutes.min)
+        if learner.alwaysIncludeDrillApp, learner.isEligible(.drillLesson) {
+            add(.drillLesson, minutes: TaskKind.drillLesson.minutes.min)
         }
     }
 
     // Step 1
     mutating func planWarmUp() {
         // Every day, so the Duolingo streak survives; one 3-minute lesson leaves study time for Language Transfer.
-        if budget >= 15, learner.alwaysIncludeDuolingo, learner.isEligible(.duoLesson) {
-            add(.duoLesson, minutes: TaskKind.duoLesson.minutes.standard)
+        if budget >= 15, learner.alwaysIncludeDrillApp, learner.isEligible(.drillLesson) {
+            add(.drillLesson, minutes: TaskKind.drillLesson.minutes.standard)
         }
         if budget >= 20, learner.dueReviewCards >= 5, learner.isEligible(.reviewMistakes) {
             add(.reviewMistakes, minutes: budget >= 30 ? 5 : 3)
@@ -217,8 +186,8 @@ private struct PlanBuilder {
 
     /// Tasks with a set length: a Language Transfer track takes as long as the track is.
     func fixedMinutes(for kind: TaskKind) -> Int? {
-        guard kind == .ltTrack, case .languageTransferTrack(let track) = detail(for: kind) else { return nil }
-        return Course.languageTransferMinutes(track: track)
+        guard kind == .courseTrack, case .track(let track) = detail(for: kind) else { return nil }
+        return learner.pack.course?.minutes(track: track)
     }
 
     // Step 7: one task for what's left of a 10-minute day, preferring one that fills it.
@@ -253,7 +222,7 @@ private struct PlanBuilder {
     func orderedTasks() -> [PlannedTask] {
         func rank(_ task: PlannedTask) -> Int {
             switch task.kind {
-            case .duoLesson: 0
+            case .drillLesson: 0
             case .lessonOutput, .lessonInput, .lessonStudy, .lessonMixed: 1
             case .reviewMistakes: 2
             default:
@@ -292,22 +261,22 @@ private struct PlanBuilder {
         var ordered: [TaskKind]
         switch strand {
         case .input:
-            ordered = anchorsDue(.extraIntensive) + anchorsDue(.extraExtensive)
-                + [.dsWatch, .extraIntensive, .extraExtensive, .contentWatch]
+            ordered = anchorsDue(.seriesIntensive) + anchorsDue(.seriesExtensive)
+                + [.gradedWatch, .seriesIntensive, .seriesExtensive, .contentWatch]
         case .languageFocused:
-            ordered = [.ltTrack, .reviewMistakes, .duoLesson]
+            ordered = [.courseTrack, .reviewMistakes, .drillLesson]
         case .output:
             // Once calls are unlocked, one call a week; voice notes otherwise.
-            let callDue = learner.isEligible(.tandemCall) && count(of: .tandemCall) == 0
-            let tandem = callDue ? .tandemCall : learner.preferredTandemTask
+            let callDue = learner.isEligible(.exchangeCall) && count(of: .exchangeCall) == 0
+            let exchange = callDue ? .exchangeCall : learner.preferredExchangeTask
             var anchors: [TaskKind] = anchorsDue(.writeGuided)
-            if isTandemAnchorDue && anchorSlotFree { anchors.append(tandem) }
+            if isExchangeAnchorDue && anchorSlotFree { anchors.append(exchange) }
             // The week's call goes first: it's the one speaking task that doesn't fit into a short slot later.
-            if callDue && isTandemAnchorDue && anchorSlotFree { anchors.insert(.tandemCall, at: 0) }
+            if callDue && isExchangeAnchorDue && anchorSlotFree { anchors.insert(.exchangeCall, at: 0) }
             let travel: [TaskKind] = learner.travelMode ? [.missionTravel] : []
-            ordered = travel + anchors + [tandem, learner.preferredTandemTask, .writeGuided, .tandemCall, .tandemText, .missionTravel]
+            ordered = travel + anchors + [exchange, learner.preferredExchangeTask, .writeGuided, .exchangeCall, .exchangeText, .missionTravel]
         case .fluency:
-            ordered = anchorsDue(.fluency432) + [.dsEasy, .writeQuick, .fluency432]
+            ordered = anchorsDue(.fluency432) + [.gradedEasy, .writeQuick, .fluency432]
         }
         var seen: Set<TaskKind> = []
         return ordered.filter { learner.isEligible($0) && seen.insert($0).inserted }
@@ -320,22 +289,22 @@ private struct PlanBuilder {
 
     private func anchorsDue(_ kind: TaskKind) -> [TaskKind] {
         guard anchorSlotFree else { return [] }
-        // Short days stay with Dreaming Spanish; Extra waits for a day with 20+ minutes.
-        if kind.source == .extraEnEspanol && budget < 20 { return [] }
-        let targets = AnchorTargets(band: learner.band)
+        // Short days stay with the main listening source; the learner series waits for a day with enough time.
+        if kind.source == .learnerSeries && budget < (learner.pack.series?.minimumBudget ?? 0) { return [] }
+        let targets = learner.pack.anchorTargets(for: learner.band)
         let required: Int = switch kind {
         case .writeGuided: targets.writing
-        case .extraIntensive: targets.extraIntensiveParts
-        case .extraExtensive: targets.extraEpisodes
+        case .seriesIntensive: targets.seriesIntensiveParts
+        case .seriesExtensive: targets.seriesEpisodes
         case .fluency432: targets.fluency432
         default: 0
         }
         return count(of: kind) < required && learner.isEligible(kind) ? [kind] : []
     }
 
-    private var isTandemAnchorDue: Bool {
-        let done = window.filter(\.kind.isTandemExchange).count + tasks.filter(\.kind.isTandemExchange).count
-        return done < AnchorTargets(band: learner.band).tandemExchanges
+    private var isExchangeAnchorDue: Bool {
+        let done = window.filter(\.kind.isExchange).count + tasks.filter(\.kind.isExchange).count
+        return done < learner.pack.anchorTargets(for: learner.band).exchanges
     }
 
     private func count(of kind: TaskKind) -> Int {
@@ -345,7 +314,7 @@ private struct PlanBuilder {
     func isAnchor(_ kind: TaskKind) -> Bool {
         switch kind.strand {
         case .output:
-            !anchorsDue(kind).isEmpty || (kind.isTandemExchange && isTandemAnchorDue && anchorSlotFree)
+            !anchorsDue(kind).isEmpty || (kind.isExchange && isExchangeAnchorDue && anchorSlotFree)
         default:
             !anchorsDue(kind).isEmpty
         }
@@ -360,21 +329,20 @@ private struct PlanBuilder {
 
     func detail(for kind: TaskKind) -> TaskDetail {
         switch kind {
-        case .ltTrack:
-            let track = learner.languageTransferRepeatPending
-                ? max(learner.languageTransferLastTrack, 1)
-                : learner.languageTransferLastTrack + 1
-            return .languageTransferTrack(min(track, Course.languageTransferTracks))
-        case .extraIntensive:
-            return .extraPart(episode: learner.extraEpisodesWatched + 1, part: learner.extraPartsDoneInEpisode + 1)
-        case .extraExtensive:
-            return .extraEpisode(learner.extraEpisodesWatched + 1)
-        case .dsWatch:
-            return .dreamingDifficulty(learner.dsDifficulty)
-        case .dsEasy:
-            let low = max(0, learner.dsDifficulty.lowerBound - 15)
-            let high = max(low, learner.dsDifficulty.lowerBound - 10)
-            return .dreamingDifficulty(low...high)
+        case .courseTrack:
+            let track = learner.courseRepeatPending
+                ? max(learner.courseLastTrack, 1)
+                : learner.courseLastTrack + 1
+            return .track(min(track, learner.pack.course?.tracks ?? track))
+        case .seriesIntensive:
+            return .seriesPart(episode: learner.seriesEpisodesWatched + 1, part: learner.seriesPartsDone + 1)
+        case .seriesExtensive:
+            return .seriesEpisode(learner.seriesEpisodesWatched + 1)
+        case .gradedWatch:
+            return learner.pack.graded == nil ? .none : .difficulty(learner.gradedDifficulty)
+        case .gradedEasy:
+            guard let graded = learner.pack.graded else { return .none }
+            return .difficulty(graded.easyRange(below: learner.gradedDifficulty.lowerBound))
         default:
             return .none
         }

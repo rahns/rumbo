@@ -26,7 +26,7 @@ import Testing
         (2000, .b2_2),
     ])
     func placementByHours(hours: Double, expected: Band) {
-        #expect(Band.forHours(hours) == expected)
+        #expect(LanguagePack.spanish.levels.band(forHours: hours) == expected)
     }
 
     @Test func outputGrowsAndLanguageFocusShrinks() {

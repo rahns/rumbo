@@ -11,55 +11,30 @@ public enum SpeakingStage: Int, Codable, Sendable, Comparable {
     }
 }
 
-public enum Course {
-    public static let languageTransferTracks = 90
-    public static let extraEpisodes = 13
-    /// At A2, one Extra episode is split into this many intensive parts.
-    public static let extraIntensivePartsPerEpisode = 2
-
-    /// Length of each Complete Spanish track in seconds, track 1 first (Language Transfer's SoundCloud
-    /// uploads, as archived at archive.org/details/55_20260801; spot-checked against SoundCloud).
-    public static let languageTransferTrackSeconds = [
-        334, 479, 375, 509, 565, 425, 615, 453, 548, 748,
-        652, 834, 578, 910, 540, 458, 803, 411, 422, 562,
-        733, 791, 419, 345, 727, 524, 645, 682, 527, 451,
-        420, 580, 524, 547, 342, 663, 800, 565, 635, 760,
-        787, 424, 545, 607, 772, 650, 575, 660, 650, 563,
-        740, 870, 499, 583, 939, 824, 690, 549, 643, 506,
-        479, 713, 298, 804, 906, 298, 703, 490, 570, 658,
-        760, 781, 484, 548, 560, 491, 415, 564, 430, 430,
-        716, 404, 491, 472, 292, 539, 618, 578, 498, 413,
-    ]
-
-    /// Minutes to plan for a Language Transfer track: its real length, rounded up.
-    public static func languageTransferMinutes(track: Int) -> Int {
-        let index = min(max(track, 1), languageTransferTracks) - 1
-        return Int((Double(languageTransferTrackSeconds[index]) / 60).rounded(.up))
-    }
-}
-
 /// Everything the planner needs to know about the learner today.
 public struct LearnerSnapshot: Sendable {
+    /// The language being learned: which sources exist, their sizes, and the weekly anchors.
+    public var pack: LanguagePack
     public var band: Band
     public var enabledSources: Set<SourceKind>
     public var speakingStage: SpeakingStage
-    /// Last Language Transfer track finished (0 = not started).
-    public var languageTransferLastTrack: Int
+    /// Last audio-course track finished (0 = not started).
+    public var courseLastTrack: Int
     /// The last track was rated "shaky", so the next session repeats it once.
-    public var languageTransferRepeatPending: Bool
-    public var extraEpisodesWatched: Int
+    public var courseRepeatPending: Bool
+    public var seriesEpisodesWatched: Int
     /// Intensive parts already done in the episode currently being watched.
-    public var extraPartsDoneInEpisode: Int
-    /// Keep a short Duolingo warm-up at B2.1 (optional there; never planned at B2.2).
-    public var keepDuolingoInB2: Bool
+    public var seriesPartsDone: Int
+    /// Keep the drill-app warm-up at the level where it's optional (`DrillApp.optionalBand`).
+    public var keepDrillAppLate: Bool
     public var dueReviewCards: Int
     public var travelMode: Bool
     public var isOnline: Bool
-    /// Suggested Dreaming Spanish difficulty range.
-    public var dsDifficulty: ClosedRange<Int>
-    /// Settings → Habit → Always include Duolingo: a short lesson every day, for the learner's Duolingo streak.
-    /// Off: Duolingo is just one of the study options.
-    public var alwaysIncludeDuolingo: Bool
+    /// Suggested difficulty range in the graded video library.
+    public var gradedDifficulty: ClosedRange<Int>
+    /// Settings → Habit → Always include (Duolingo): a short lesson every day, for the learner's streak there.
+    /// Off: the drill app is just one of the study options.
+    public var alwaysIncludeDrillApp: Bool
     /// Tutoring or classroom lessons (Settings → Lessons).
     public var lessons: LessonSchedule
     /// Settings → Plan balance: the learner's own split between the strands, or nil for the band's.
@@ -94,79 +69,86 @@ public struct LearnerSnapshot: Sendable {
         band: Band,
         enabledSources: Set<SourceKind> = Set(SourceKind.allCases),
         speakingStage: SpeakingStage = .text,
-        languageTransferLastTrack: Int = 0,
-        languageTransferRepeatPending: Bool = false,
-        extraEpisodesWatched: Int = 0,
-        extraPartsDoneInEpisode: Int = 0,
-        keepDuolingoInB2: Bool = false,
+        courseLastTrack: Int = 0,
+        courseRepeatPending: Bool = false,
+        seriesEpisodesWatched: Int = 0,
+        seriesPartsDone: Int = 0,
+        keepDrillAppLate: Bool = false,
         dueReviewCards: Int = 0,
         travelMode: Bool = false,
         isOnline: Bool = true,
-        dsDifficulty: ClosedRange<Int> = 40...48,
-        alwaysIncludeDuolingo: Bool = true,
+        gradedDifficulty: ClosedRange<Int> = 40...48,
+        alwaysIncludeDrillApp: Bool = true,
         lessons: LessonSchedule = LessonSchedule(),
-        balance: StrandBalance? = nil
+        balance: StrandBalance? = nil,
+        pack: LanguagePack = .spanish
     ) {
+        self.pack = pack
         self.balance = balance
         self.band = band
         self.enabledSources = enabledSources
         self.speakingStage = speakingStage
-        self.languageTransferLastTrack = languageTransferLastTrack
-        self.languageTransferRepeatPending = languageTransferRepeatPending
-        self.extraEpisodesWatched = extraEpisodesWatched
-        self.extraPartsDoneInEpisode = extraPartsDoneInEpisode
-        self.keepDuolingoInB2 = keepDuolingoInB2
+        self.courseLastTrack = courseLastTrack
+        self.courseRepeatPending = courseRepeatPending
+        self.seriesEpisodesWatched = seriesEpisodesWatched
+        self.seriesPartsDone = seriesPartsDone
+        self.keepDrillAppLate = keepDrillAppLate
         self.dueReviewCards = dueReviewCards
         self.travelMode = travelMode
         self.isOnline = isOnline
-        self.dsDifficulty = dsDifficulty
-        self.alwaysIncludeDuolingo = alwaysIncludeDuolingo
+        self.gradedDifficulty = gradedDifficulty
+        self.alwaysIncludeDrillApp = alwaysIncludeDrillApp
         self.lessons = lessons
     }
 
-    public var languageTransferFinished: Bool {
-        languageTransferLastTrack >= Course.languageTransferTracks
+    /// The audio course is done, or the language has none.
+    public var courseFinished: Bool {
+        courseLastTrack >= (pack.course?.tracks ?? 0)
     }
 
-    public var extraFinished: Bool {
-        extraEpisodesWatched >= Course.extraEpisodes
+    /// The learner series is done, or the language has none.
+    public var seriesFinished: Bool {
+        seriesEpisodesWatched >= (pack.series?.episodes ?? 0)
     }
 
-    /// Duolingo is a daily warm-up from A2.1 to B1.2, optional at B2.1 and dropped at B2.2 (R15).
-    public var usesDuolingo: Bool {
-        guard enabledSources.contains(.duolingo) else { return false }
-        switch band {
-        case .a2_1, .a2_2, .b1_1, .b1_2: return true
-        case .b2_1: return keepDuolingoInB2
-        case .b2_2: return false
-        }
+    /// Whether the learner uses `role`: the language has a source for it and it's switched on.
+    public func uses(_ role: SourceKind) -> Bool {
+        pack.has(role) && enabledSources.contains(role)
+    }
+
+    /// The drill app is a daily warm-up up to a level, optional at the next and dropped after (R15).
+    public var usesDrillApp: Bool {
+        guard uses(.drillApp), let drill = pack.drill else { return false }
+        if band <= drill.lastBand { return true }
+        return band == drill.optionalBand && keepDrillAppLate
     }
 
     /// Whether a task may be planned at all for this learner today.
     public func isEligible(_ kind: TaskKind) -> Bool {
-        if let source = kind.source, !enabledSources.contains(source) { return false }
+        if let source = kind.source, !uses(source) { return false }
         if !isOnline && !kind.isOfflineCapable { return false }
 
         switch kind {
-        case .duoLesson:
-            return usesDuolingo
-        case .ltTrack:
-            return !languageTransferFinished
-        case .dsWatch, .dsEasy, .writeGuided, .tandemText:
+        case .drillLesson:
+            return usesDrillApp
+        case .courseTrack:
+            return !courseFinished
+        case .gradedWatch, .gradedEasy, .writeGuided, .exchangeText:
             return true
-        case .extraIntensive:
-            return band <= .a2_2 && !extraFinished
-        case .extraExtensive:
-            return band >= .b1_1 && band <= .b1_2 && !extraFinished
+        case .seriesIntensive:
+            return pack.series?.intensiveBands.contains(band) == true && !seriesFinished
+        case .seriesExtensive:
+            return pack.series?.extensiveBands.contains(band) == true && !seriesFinished
         case .contentWatch:
-            // Suggested content steps in once Extra has run out (or isn't used), from B1, or when there is no Dreaming Spanish.
-            let extraUnavailable = extraFinished || !enabledSources.contains(.extraEnEspanol)
-            return (band >= .b1_1 && extraUnavailable) || !enabledSources.contains(.dreamingSpanish)
+            // Suggested content steps in once the learner series has run out (or isn't used), from B1,
+            // or when there is no graded video library.
+            let seriesUnavailable = seriesFinished || !uses(.learnerSeries)
+            return (band >= .b1_1 && seriesUnavailable) || !uses(.gradedVideo)
         case .writeQuick:
             return band >= .b1_1
-        case .tandemVoice, .fluency432:
+        case .exchangeVoice, .fluency432:
             return speakingStage >= .voiceNotes
-        case .tandemCall:
+        case .exchangeCall:
             return speakingStage >= .calls
         case .reviewMistakes:
             return dueReviewCards > 0
@@ -181,11 +163,11 @@ public struct LearnerSnapshot: Sendable {
         }
     }
 
-    /// The best Tandem task for the learner's speaking stage.
-    var preferredTandemTask: TaskKind {
+    /// The best exchange task for the learner's speaking stage.
+    var preferredExchangeTask: TaskKind {
         switch speakingStage {
-        case .text: .tandemText
-        case .voiceNotes, .calls: .tandemVoice
+        case .text: .exchangeText
+        case .voiceNotes, .calls: .exchangeVoice
         }
     }
 }

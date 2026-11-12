@@ -9,7 +9,7 @@ import Testing
 
     func log(_ minutesPerDay: [Int], from start: Date) -> [ActivityRecord] {
         minutesPerDay.enumerated().compactMap { offset, minutes in
-            minutes > 0 ? ActivityRecord(date: TestCalendar.adding(days: offset, to: start), kind: .dsWatch, minutes: minutes) : nil
+            minutes > 0 ? ActivityRecord(date: TestCalendar.adding(days: offset, to: start), kind: .gradedWatch, minutes: minutes) : nil
         }
     }
 
@@ -116,32 +116,32 @@ import Testing
 
     @Test func weeklyGoalSetsTheArrivalDate() {
         // 290 h → B2.1 (1,090 h): 800 h at 150 min = 2.5 h a week = 320 weeks.
-        let arrival = GoalPace.arrival(of: .b2_1, currentHours: 290, weeklyMinutes: 150, from: monday, calendar: TestCalendar.utc)
+        let arrival = GoalPace.arrival(atHours: 1090, currentHours: 290, weeklyMinutes: 150, from: monday, calendar: TestCalendar.utc)
         #expect(TestCalendar.utc.dateComponents([.day], from: TestCalendar.utc.startOfDay(for: monday), to: arrival).day == 2240)
         // Twice the goal, half the time.
-        let faster = GoalPace.arrival(of: .b2_1, currentHours: 290, weeklyMinutes: 300, from: monday, calendar: TestCalendar.utc)
+        let faster = GoalPace.arrival(atHours: 1090, currentHours: 290, weeklyMinutes: 300, from: monday, calendar: TestCalendar.utc)
         #expect(faster < arrival)
     }
 
     @Test func targetDateSetsTheWeeklyGoalAndTheTwoAgree() {
         let date = TestCalendar.adding(days: 7 * 90, to: monday)
-        let minutes = GoalPace.weeklyMinutes(toReach: .b2_1, by: date, currentHours: 290, from: monday, calendar: TestCalendar.utc)
+        let minutes = GoalPace.weeklyMinutes(toReachHours: 1090, by: date, currentHours: 290, from: monday, calendar: TestCalendar.utc)
         #expect(minutes % GoalPace.step == 0)
         // 800 h over 90 weeks ≈ 8.9 h a week ≈ 533 min → 540.
         #expect(minutes == 540)
         // Going back the other way lands on or just before the chosen date.
-        let back = GoalPace.arrival(of: .b2_1, currentHours: 290, weeklyMinutes: minutes, from: monday, calendar: TestCalendar.utc)
+        let back = GoalPace.arrival(atHours: 1090, currentHours: 290, weeklyMinutes: minutes, from: monday, calendar: TestCalendar.utc)
         #expect(back <= TestCalendar.utc.startOfDay(for: date))
     }
 
     @Test func goalPaceStaysInRange() {
         let tomorrow = TestCalendar.adding(days: 1, to: monday)
-        #expect(GoalPace.weeklyMinutes(toReach: .b2_1, by: tomorrow, currentHours: 290, from: monday) == GoalPace.minutes.upperBound)
-        #expect(GoalPace.isOutOfReach(.b2_1, by: tomorrow, currentHours: 290, from: monday, calendar: TestCalendar.utc))
+        #expect(GoalPace.weeklyMinutes(toReachHours: 1090, by: tomorrow, currentHours: 290, from: monday) == GoalPace.minutes.upperBound)
+        #expect(GoalPace.isOutOfReach(hours: 1090, by: tomorrow, currentHours: 290, from: monday, calendar: TestCalendar.utc))
         let farAway = TestCalendar.adding(days: 365 * 100, to: monday)
-        #expect(GoalPace.weeklyMinutes(toReach: .b2_1, by: farAway, currentHours: 290, from: monday) == GoalPace.minutes.lowerBound)
+        #expect(GoalPace.weeklyMinutes(toReachHours: 1090, by: farAway, currentHours: 290, from: monday) == GoalPace.minutes.lowerBound)
         // Already there: no extra time needed.
-        #expect(GoalPace.weeklyMinutes(toReach: .b1_1, by: farAway, currentHours: 600, from: monday) == GoalPace.minutes.lowerBound)
+        #expect(GoalPace.weeklyMinutes(toReachHours: 550, by: farAway, currentHours: 600, from: monday) == GoalPace.minutes.lowerBound)
     }
 
 }
@@ -152,7 +152,7 @@ import Testing
 
     @Test func weeklyHoursAverageFourWeeksOfAllTraining() {
         let history = (0..<28).flatMap { offset in
-            [ActivityRecord(date: TestCalendar.adding(days: -offset, to: today), kind: .dsWatch, minutes: 30),
+            [ActivityRecord(date: TestCalendar.adding(days: -offset, to: today), kind: .gradedWatch, minutes: 30),
              ActivityRecord(date: TestCalendar.adding(days: -offset, to: today), kind: .writeGuided, minutes: 30)]
         }
         // Listening and writing both count: 60 min a day = 7 h a week.
@@ -161,13 +161,13 @@ import Testing
 
     @Test func aNewLearnersPaceIsNotSpreadOverFourWeeks() {
         // One 15-minute session today: averaged over a week minimum, not four.
-        let history = [ActivityRecord(date: today, kind: .dsWatch, minutes: 15)]
+        let history = [ActivityRecord(date: today, kind: .gradedWatch, minutes: 15)]
         #expect(abs(projection.weeklyHours(history: history, today: today) - 0.25) < 0.001)
         #expect(!projection.hasEnoughHistory(history, today: today))
     }
 
     @Test func twoWeeksOfHistoryUseTwoWeeks() {
-        let history = (0..<14).map { ActivityRecord(date: TestCalendar.adding(days: -$0, to: today), kind: .dsWatch, minutes: 30) }
+        let history = (0..<14).map { ActivityRecord(date: TestCalendar.adding(days: -$0, to: today), kind: .gradedWatch, minutes: 30) }
         #expect(abs(projection.weeklyHours(history: history, today: today) - 3.5) < 0.001)
         #expect(projection.hasEnoughHistory(history, today: today))
     }
@@ -178,18 +178,18 @@ import Testing
 
     @Test func levelHoursAreListeningMilestonesOverTheListeningShare() {
         for (band, listening) in zip(Band.allCases, [150.0, 225, 300, 450, 600, 800]) {
-            #expect(abs(band.hoursThreshold - (listening / Band.listeningShare / 10).rounded() * 10) < 0.001, "\(band.rawValue)")
+            #expect(abs(LanguagePack.spanish.levels.threshold(band) - (listening / Band.listeningShare / 10).rounded() * 10) < 0.001, "\(band.rawValue)")
             #expect(abs((band.strandTargets[.input] ?? 0) - Band.listeningShare) < 0.001)
         }
         #expect(abs(Band.trainingHours(fromListening: 150) - 272.7) < 0.1)
     }
 
     @Test func arrivalDatesFollowThePace() {
-        let dates = projection.arrivalDates(hours: 280, weeklyHours: 2, from: today)
+        let dates = projection.arrivalDates(hours: 280, weeklyHours: 2, from: today, levels: LanguagePack.spanish.levels)
         #expect(dates[.a2_1] == nil, "already reached")
         // 130 h to A2.2 at 2 h/week = 65 weeks = 455 days.
         #expect(dates[.a2_2] == TestCalendar.adding(days: 455, to: today))
-        #expect(projection.arrivalDates(hours: 280, weeklyHours: 0, from: today).isEmpty)
+        #expect(projection.arrivalDates(hours: 280, weeklyHours: 0, from: today, levels: LanguagePack.spanish.levels).isEmpty)
     }
 
     @Test func extraMinutesPerDayRaiseTheForecast() {
@@ -306,7 +306,7 @@ import Testing
 
     @Test func weeklyMinutesResetOnTheChosenDay() {
         let saturday = TestCalendar.adding(days: -1, to: sunday)
-        let history = [ActivityRecord(date: saturday, kind: .dsWatch, minutes: 30)]
+        let history = [ActivityRecord(date: saturday, kind: .gradedWatch, minutes: 30)]
         let sundayStart = StreakCalculator(weeklyGoalMinutes: 150, calendar: calendar(firstWeekday: 1)).status(history: history, today: sunday)
         let mondayStart = StreakCalculator(weeklyGoalMinutes: 150, calendar: calendar(firstWeekday: 2)).status(history: history, today: sunday)
         #expect(sundayStart.minutesThisWeek == 0, "Saturday belongs to last week when weeks start on Sunday")

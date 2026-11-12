@@ -19,19 +19,19 @@ struct SourceInfoSheet: View {
 
     private var info: Info {
         switch source {
-        case .dreamingSpanish:
+        case .gradedVideo:
             Info(what: "A video library of Spanish made to be understood: thousands of videos where native speakers explain, chat and tell stories, using pictures and gestures at the easy levels. Every video has a difficulty from 0 to 100, and it counts your hours of listening. It's built on comprehensible input: you pick up Spanish by understanding lots of it.",
                  whereToFind: "The Dreaming Spanish app and dreaming.com.",
                  links: [("Open dreaming.com", URL(string: "https://www.dreaming.com/spanish")!)])
-        case .languageTransfer:
+        case .audioCourse:
             Info(what: "\"Complete Spanish\": a free audio course of 90 short tracks. A teacher guides a student to build sentences by thinking, not memorising, and you answer out loud before the student does. It gives you the skeleton of Spanish grammar from A2 to early B1.",
                  whereToFind: "The free Language Transfer app or languagetransfer.org.",
                  links: [("Open languagetransfer.org", URL(string: "https://www.languagetransfer.org")!)])
-        case .extraEnEspanol:
+        case .learnerSeries:
             Info(what: "A sitcom made for Spanish learners: 13 episodes about flatmates in Spain and an American friend who arrives knowing little Spanish. The speech is clear and slow at first, and it's funny.",
                  whereToFind: "Free on YouTube: search \"Extra en Español\".",
                  links: [("Search on YouTube", URL(string: "https://www.youtube.com/results?search_query=Extra%20en%20Espa%C3%B1ol")!)])
-        case .duolingo:
+        case .drillApp:
             Info(what: "The green-owl app of short, game-like lessons and a daily streak.",
                  whereToFind: "The Duolingo app and duolingo.com.",
                  links: [("Open duolingo.com", URL(string: "https://www.duolingo.com")!)])
@@ -39,7 +39,7 @@ struct SourceInfoSheet: View {
             Info(what: "Short writing tasks inside Rumbo: guided writing with a prompt, and quick timed writes. Pico checks your writing with AI using your own Gemini or GroqCloud key, which are both free to get (Settings → Writing feedback).",
                  whereToFind: "Right here in Rumbo; there's nothing else to install.",
                  links: [])
-        case .tandem:
+        case .exchange:
             Info(what: "Language-exchange apps where you chat with native Spanish speakers who are learning your language: you help each other.",
                  whereToFind: "The Tandem and HelloTalk apps.",
                  links: [("Open tandem.net", URL(string: "https://www.tandem.net")!), ("Open hellotalk.com", URL(string: "https://www.hellotalk.com")!)])
