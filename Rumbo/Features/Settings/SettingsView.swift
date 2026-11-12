@@ -377,6 +377,7 @@ struct SettingsView: View {
                 Text(title)
                     .font(.rounded(.subheadline, weight: .heavy))
                     .foregroundStyle(Palette.secondaryText)
+                    .textCase(.uppercase)
                 Spacer(minLength: 8)
                 if switcher, LanguagePack.all.count > 1 {
                     Menu {
@@ -389,7 +390,8 @@ struct SettingsView: View {
                     }
                 }
             }
-            .textCase(.uppercase)
+            // Only the title is uppercase; the Switch menu keeps its case.
+            .textCase(nil)
             .padding(.top, 8)
         }
     }
