@@ -368,15 +368,15 @@ struct SettingsView: View {
         }
     }
 
-    /// A big heading over a group of sections. For the language being learned, a Switch menu beside it
+    /// A small heading over a group of sections. For the language being learned, a Switch menu beside it
     /// changes language without scrolling down to the Language picker.
     private func groupHeader(_ title: String, switcher: Bool) -> some View {
         Section {
         } header: {
             HStack(alignment: .firstTextBaseline) {
                 Text(title)
-                    .font(.rounded(.title2, weight: .black))
-                    .foregroundStyle(Palette.ink)
+                    .font(.rounded(.subheadline, weight: .heavy))
+                    .foregroundStyle(Palette.secondaryText)
                 Spacer(minLength: 8)
                 if switcher, LanguagePack.all.count > 1 {
                     Menu {
@@ -389,8 +389,8 @@ struct SettingsView: View {
                     }
                 }
             }
-            .textCase(nil)
-            .padding(.top, 12)
+            .textCase(.uppercase)
+            .padding(.top, 8)
         }
     }
 
