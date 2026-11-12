@@ -350,16 +350,16 @@ struct SettingsView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { confirmingDeleteForGood = true }
                 }
             } message: {
-                Text(fallback.map { "Your \(current) streak, hours and history will be deleted. Your \($0) progress stays as it is." }
-                     ?? "Your streak, hours and history for \(current) will be deleted. You'll go through onboarding again.")
+                // The leading line break gives the message a little room under the title.
+                Text("\n" + (fallback.map { "Your \(current) streak, hours and history will be deleted. Your \($0) progress stays as it is." }
+                     ?? "Your streak, hours and history for \(current) will be deleted. You'll go through onboarding again."))
             }
             .alert("Are you sure?", isPresented: $confirmingDeleteForGood) {
                 Button("Save a backup first") { saveBackup() }
                 Button("Delete \(current) for good", role: .destructive) { model.reset() }
                 Button("Keep it", role: .cancel) {}
             } message: {
-                // The leading line break gives the message a little room under the title.
-                Text("\n" + lossSummary(profile) + " This can't be undone. Save a backup first so you can bring it all back later.")
+                Text(lossSummary(profile) + " This can't be undone. Save a backup first so you can bring it all back later.")
             }
         } footer: {
             VStack(spacing: 4) {
@@ -406,8 +406,8 @@ struct SettingsView: View {
         let cards = model.allCards.count
         var parts: [String] = []
         if streak > 0 { parts.append("your \(streak)-day streak") }
-        parts.append(days == 0 ? "your setup" : "\(hours) \(hours == 1 ? "hour" : "hours") logged over \(days) \(days == 1 ? "day" : "days")")
-        parts.append("your \(profile.band.rawValue) level and plan history")
+        if days > 0 { parts.append("\(hours) \(hours == 1 ? "hour" : "hours") logged over \(days) \(days == 1 ? "day" : "days")") }
+        parts.append(days > 0 ? "your \(profile.band.rawValue) level and plan history" : "your setup and \(profile.band.rawValue) level")
         if cards > 0 { parts.append("\(cards) mistake \(cards == 1 ? "card" : "cards")") }
         let list = parts.count > 1 ? parts.dropLast().joined(separator: ", ") + " and " + parts.last! : parts[0]
         return "You'll lose all your \(profile.pack.name) progress: \(list)."
