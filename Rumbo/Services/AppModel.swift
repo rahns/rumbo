@@ -37,6 +37,8 @@ final class AppModel {
         let id = UUID()
         let from: String
         let to: String
+        /// The old language was deleted (Start over with another language set up): its flag goes up in a puff.
+        var deleted = false
     }
     private(set) var languageSwitch: LanguageSwitch?
 
@@ -273,6 +275,7 @@ final class AppModel {
         weekStartsOnSunday = false
         try? context.save()
         if let other = profiles.first {
+            languageSwitch = LanguageSwitch(from: languageCode, to: other.languageCode, deleted: true)
             setLanguage(other.languageCode)
         }
         save()

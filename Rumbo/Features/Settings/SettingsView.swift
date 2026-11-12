@@ -358,7 +358,8 @@ struct SettingsView: View {
                 Button("Delete \(current) for good", role: .destructive) { model.reset() }
                 Button("Keep it", role: .cancel) {}
             } message: {
-                Text(lossSummary(profile) + " This can't be undone. Save a backup first so you can bring it all back later.")
+                // The leading line break gives the message a little room under the title.
+                Text("\n" + lossSummary(profile) + " This can't be undone. Save a backup first so you can bring it all back later.")
             }
         } footer: {
             VStack(spacing: 4) {
