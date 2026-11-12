@@ -53,7 +53,6 @@ struct SettingsView: View {
     @ViewBuilder
     private func sections(_ profile: LearnerProfile) -> some View {
         // Settings for the language being learned: each language has its own.
-        groupHeader("Settings for \(profile.pack.name) \(profile.pack.flag)", switcher: true)
         Section {
             ForEach(profile.pack.roles, id: \.self) { source in
                 HStack {
@@ -82,7 +81,7 @@ struct SettingsView: View {
                 }
             }
         } header: {
-            Text("Sources")
+            GroupHeading(title: "Settings for \(profile.pack.name) \(profile.pack.flag)", section: "Sources")
         } footer: {
             Text("Tap a source to see what it is and where to find it.")
         }
@@ -289,7 +288,6 @@ struct SettingsView: View {
             }
         }
         // Settings shared by every language.
-        groupHeader("Settings across all languages", switcher: false)
         Section {
             if LanguagePack.all.count > 1 {
                 // Each language has its own level, plan, goal and streak. One without a profile yet starts its setup.
@@ -302,7 +300,7 @@ struct SettingsView: View {
                 LabeledContent("Learning", value: profile.pack.name)
             }
         } header: {
-            Text("Language")
+            GroupHeading(title: "Settings across all languages", section: "Language")
         } footer: {
             Text(LanguagePack.all.count > 1
                  ? "Each language keeps its own level, plan, goal and streak."
@@ -368,33 +366,6 @@ struct SettingsView: View {
         }
     }
 
-    /// A small heading over a group of sections. For the language being learned, a Switch menu beside it
-    /// changes language without scrolling down to the Language picker.
-    private func groupHeader(_ title: String, switcher: Bool) -> some View {
-        Section {
-        } header: {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title)
-                    .font(.rounded(.subheadline, weight: .heavy))
-                    .foregroundStyle(Palette.secondaryText)
-                Spacer(minLength: 8)
-                if switcher, LanguagePack.all.count > 1 {
-                    Menu {
-                        ForEach(LanguagePack.all.filter { $0.code != model.languageCode }) { pack in
-                            Button("\(pack.flag) \(pack.name)") { model.setLanguage(pack.code, announce: true) }
-                        }
-                    } label: {
-                        Label("Switch", systemImage: "arrow.left.arrow.right")
-                            .font(.rounded(.subheadline, weight: .bold))
-                    }
-                }
-            }
-            // Written as is, not in the list's default uppercase.
-            .textCase(nil)
-            .padding(.top, 8)
-        }
-    }
-
     /// A new email to Rahn in the Mail app, with the app and iOS version filled in for bug reports.
     static var feedbackEmail: URL {
         var components = URLComponents()
@@ -451,6 +422,23 @@ struct SettingsView: View {
             set(value)
             model.save()
         })
+    }
+}
+
+/// The first section of a group carries the group's heading above its own: "Settings for Spanish 🇪🇸"
+/// over "Sources". Sharing one header keeps the gap between them small.
+private struct GroupHeading: View {
+    let title: String
+    let section: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(title)
+                .font(.rounded(.title3, weight: .black))
+                .foregroundStyle(Palette.ink)
+                .textCase(nil)
+            Text(section)
+        }
     }
 }
 
