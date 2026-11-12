@@ -24,11 +24,6 @@ struct SettingsView: View {
             }
             .rumboListBackground()
             .navigationTitle("Settings")
-            .confirmationDialog("Start over?", isPresented: $confirmingReset, titleVisibility: .visible) {
-                Button("Delete everything and start again", role: .destructive) { model.reset() }
-            } message: {
-                Text("Your streak, hours and history will be deleted. You'll go through onboarding again.")
-            }
             .fileExporter(isPresented: $exporting, document: backupDocument, contentType: .json, defaultFilename: BackupDocument.defaultFilename()) { result in
                 switch result {
                 case .success(let url): message = "Saved \(url.lastPathComponent)."
@@ -45,21 +40,6 @@ struct SettingsView: View {
                     }
                 }
                 .ignoresSafeArea()
-            }
-            .confirmationDialog("Restore this backup?", isPresented: Binding(get: { pendingRestore != nil }, set: { if !$0 { pendingRestore = nil } }), titleVisibility: .visible) {
-                Button("Replace my data with the backup", role: .destructive) {
-                    guard let data = pendingRestore else { return }
-                    pendingRestore = nil
-                    do {
-                        try model.restore(from: data)
-                        checkers = SettingsView.checkersText()
-                        message = "Backup restored."
-                    } catch {
-                        message = error.localizedDescription
-                    }
-                }
-            } message: {
-                Text("Everything in Rumbo now will be replaced by what's in the file.")
             }
             .sheet(item: $sourceInfo) { SourceInfoSheet(source: $0) }
             .alert(message ?? "", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
@@ -327,6 +307,21 @@ struct SettingsView: View {
                 }
             }
             Button("Restore from a backup", systemImage: "arrow.counterclockwise") { importing = true }
+            .confirmationDialog("Restore this backup?", isPresented: Binding(get: { pendingRestore != nil }, set: { if !$0 { pendingRestore = nil } }), titleVisibility: .visible) {
+                Button("Replace my data with the backup", role: .destructive) {
+                    guard let data = pendingRestore else { return }
+                    pendingRestore = nil
+                    do {
+                        try model.restore(from: data)
+                        checkers = SettingsView.checkersText()
+                        message = "Backup restored."
+                    } catch {
+                        message = error.localizedDescription
+                    }
+                }
+            } message: {
+                Text("Everything in Rumbo now will be replaced by what's in the file.")
+            }
         } header: {
             Text("Backup")
         } footer: {
@@ -349,6 +344,11 @@ struct SettingsView: View {
         Section {
             NavigationLink("Diagnostics") { DiagnosticsView() }
             Button("Start over", role: .destructive) { confirmingReset = true }
+            .confirmationDialog("Start over?", isPresented: $confirmingReset, titleVisibility: .visible) {
+                Button("Delete everything and start again", role: .destructive) { model.reset() }
+            } message: {
+                Text("Your streak, hours and history for \(model.pack.name) will be deleted. You'll go through onboarding again.")
+            }
         } footer: {
             VStack(spacing: 4) {
                 Text("Rumbo \(DiagnosticsModel.appVersion)")
