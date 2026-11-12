@@ -4,7 +4,10 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-/// Manual backup: Settings → Save backup writes one JSON file; Restore reads one back.
+/// Manual backup: Settings → Save backup writes one `.rumbo` file; Restore reads one back.
+/// The file is this struct as JSON, compressed (LZFSE) and wrapped in a `BackupContainer` (a "RUMBO" marker,
+/// a format version and a checksum), so it isn't readable or editable as text and a changed file is refused.
+/// Plain-JSON backups from before that are no longer accepted.
 /// Today's plan isn't included; it's rebuilt from the restored history.
 /// Version 2 holds every language being learned: each profile, and a language on every log, writing entry
 /// and card. A version 1 file (one profile, no languages) restores as Spanish. The field names for source
@@ -121,8 +124,31 @@ struct BackupFile: Codable {
     static func encoder() -> JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.outputFormatting = [.sortedKeys]
         return encoder
+    }
+
+    /// The `.rumbo` file: JSON, compressed, in a checksummed container.
+    func fileData() throws -> Data {
+        let json = try Self.encoder().encode(self)
+        let compressed = try (json as NSData).compressed(using: .lzfse) as Data
+        return BackupContainer.wrap(compressed)
+    }
+
+    /// Reads a `.rumbo` file. Anything else (an old plain-JSON backup, another file) is refused.
+    static func read(_ fileData: Data) throws -> BackupFile {
+        let payload: Data
+        do {
+            payload = try BackupContainer.unwrap(fileData)
+        } catch BackupContainer.Failure.notABackup {
+            throw BackupError.notABackup
+        } catch BackupContainer.Failure.newerFormat {
+            throw BackupError.newerVersion
+        } catch {
+            throw BackupError.damaged
+        }
+        guard let json = try? (payload as NSData).decompressed(using: .lzfse) as Data else { throw BackupError.damaged }
+        return try decode(json)
     }
 
     static func decode(_ data: Data) throws -> BackupFile {
@@ -137,11 +163,15 @@ struct BackupFile: Codable {
 enum BackupError: LocalizedError {
     case newerVersion
     case unreadable
+    case notABackup
+    case damaged
 
     var errorDescription: String? {
         switch self {
         case .newerVersion: "This backup was made by a newer version of Rumbo. Update the app first."
-        case .unreadable: "That file couldn't be read. Pick a Rumbo backup (.json)."
+        case .unreadable: "That file couldn't be read. Pick a Rumbo backup (.rumbo)."
+        case .notABackup: "That isn't a Rumbo backup. Pick a .rumbo file saved from Settings → Save backup."
+        case .damaged: "This backup has been changed or damaged since it was saved, so it can't be restored."
         }
     }
 }
@@ -255,8 +285,13 @@ extension BackupFile.LogData {
 }
 
 /// The backup as a document for SwiftUI's file exporter (saving to Files worked on device in M0).
+extension UTType {
+    /// A Rumbo backup (`.rumbo`), declared in Info.plist (project.yml: UTExportedTypeDeclarations).
+    static let rumboBackup = UTType(exportedAs: "com.rahns.rumbo.backup", conformingTo: .data)
+}
+
 struct BackupDocument: FileDocument {
-    static let readableContentTypes: [UTType] = [.json]
+    static let readableContentTypes: [UTType] = [.rumboBackup]
 
     var data: Data
 
@@ -283,7 +318,7 @@ struct BackupImportPicker: UIViewControllerRepresentable {
     let onFinish: (Result<Data, Error>?) -> Void
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.json], asCopy: true)
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.rumboBackup], asCopy: true)
         picker.allowsMultipleSelection = false
         picker.delegate = context.coordinator
         return picker

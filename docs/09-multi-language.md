@@ -96,7 +96,7 @@ SwiftData models keep the CloudKit rules (defaults on every property, no unique 
 - **Source progress.** The profile keeps its columns (`dsDifficultyLow/High`, `languageTransferLastTrack`, `extraEpisodesWatched`, `duolingoSection/Unit`, `keepDuolingoInB2`, `alwaysIncludeDuolingo`). The names are from when Spanish was the only language; they hold the same things for any language's graded video, audio course, learner series and drill app. They weren't renamed, so no stored column changes. `SourceProgress` (saved with each task for undo) has role names in code and the old names as coding keys.
 - **Shared across languages.** Reminder time, week start, AI checker keys and default checker, thinking level are on each profile or in the Keychain as before; with several profiles, reminders follow the active one. One-off moments ("7-day streak") are remembered per language: Spanish keeps its plain keys, other languages prefix theirs with the code.
 - **Start over** removes the active language's records only; another language's profile, if there is one, becomes active.
-- **Backup.** `BackupFile` version 2: `profiles` (every language), `activeLanguage`, and an optional `language` on each profile, log, writing entry and card. `profile` is still written (the active one). A version 1 file has none of these and restores as Spanish. Restoring replaces everything, in every language. Field names for source progress are unchanged.
+- **Backup.** `BackupFile` version 2: `profiles` (every language), `activeLanguage`, and an optional `language` on each profile, log, writing entry and card. `profile` is still written (the active one). A version 1 file has none of these and would restore as Spanish (plain-JSON backups are no longer accepted at all since the `.rumbo` format, [04-data-model.md](04-data-model.md) §4.3, but the inner format still reads them). Restoring replaces everything, in every language. Field names for source progress are unchanged.
 - **Path history** and the plan balance are on the profile, so they are per language.
 - **Content catalog.** `LanguagePack.catalog` names the bundled file, the remote URL and the cache file. Spanish keeps `content.json` and its URL, so installed builds keep updating; French will add `content.fr.json`.
 
@@ -152,7 +152,6 @@ The list the work followed, from a scan of all 15,700 lines. "Source names" mean
 | 5 | **French pack.** `LanguagePack+French.swift`, `content.fr.json`, place words in shared prompts, Cancel when adding a language (§9.7) | Built. Engine tests cover its numbers, its words, its suggestions list and plans before and after its short course runs out |
 
 Still to check on a device (the app doesn't compile on Linux):
-- A version 1 backup restoring into this build.
 - Setting up French beside Spanish, switching between them in Settings → Language, and each keeping its own streak, plan and widgets.
 - The French words on screen, which no French speaker has read yet.
 

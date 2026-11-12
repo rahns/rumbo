@@ -324,14 +324,14 @@ final class AppModel {
             gemini: BackupFile.GeminiData(apiKey: GeminiKey.current, thinkingLevel: GeminiKey.thinkingLevel.rawValue,
                                           groqAPIKey: GroqKey.current, defaultChecker: WritingCheckers.defaultChecker.rawValue)
         )
-        return BackupDocument(data: try BackupFile.encoder().encode(file))
+        return BackupDocument(data: try file.fileData())
     }
 
     /// Replaces everything with the backup's contents. The file is fully decoded before anything is deleted.
     func restore(from data: Data) throws {
         let file: BackupFile
         do {
-            file = try BackupFile.decode(data)
+            file = try BackupFile.read(data)
         } catch let error as BackupError {
             throw error
         } catch {

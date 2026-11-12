@@ -43,6 +43,14 @@ targets:
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIRequiresFullScreen: true
+        # The backup file (Settings → Save backup): a .rumbo file, not plain JSON.
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.rahns.rumbo.backup
+            UTTypeDescription: Rumbo Backup
+            UTTypeConformsTo: [public.data]
+            UTTypeTagSpecification:
+              public.filename-extension: [rumbo]
+              public.mime-type: [application/x-rumbo-backup]
         CFBundleURLTypes:
           - CFBundleURLName: com.rahns.rumbo
             CFBundleURLSchemes: [rumbo]

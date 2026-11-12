@@ -26,7 +26,7 @@ struct SettingsView: View {
             }
             .rumboListBackground()
             .navigationTitle("Settings")
-            .fileExporter(isPresented: $exporting, document: backupDocument, contentType: .json, defaultFilename: BackupDocument.defaultFilename()) { result in
+            .fileExporter(isPresented: $exporting, document: backupDocument, contentType: .rumboBackup, defaultFilename: BackupDocument.defaultFilename()) { result in
                 switch result {
                 case .success(let url): message = "Saved \(url.lastPathComponent)."
                 case .failure(let error): message = "Couldn't save the backup: \(error.localizedDescription)"
