@@ -33,7 +33,7 @@ struct WatchedLevelChart: View {
                     .fill(Palette.lilac.opacity(0.5))
                     .frame(height: 160)
                     .overlay {
-                        Text("Log a Dreaming Spanish task and say what level you watched.")
+                        Text("Log a \(SourceCopy.name(.gradedVideo)) task and say what level you watched.")
                             .font(.rounded(.subheadline, weight: .semibold))
                             .foregroundStyle(Palette.secondaryText)
                             .multilineTextAlignment(.center)

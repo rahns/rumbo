@@ -34,7 +34,11 @@ struct TaskSessionView: View {
     private var color: Color { kind.color }
     private var isWriting: Bool { kind == .writeGuided || kind == .writeQuick }
     /// Asks "What level did you watch?". Easy Dreaming is below level on purpose, so it isn't charted or asked.
-    private var isDreaming: Bool { kind == .gradedWatch }
+    /// A graded video task in a library with a difficulty scale: the log form asks what level was watched.
+    private var watchedGradedLevel: Bool { kind == .gradedWatch && ActiveLanguage.pack.graded != nil }
+    private var pack: LanguagePack { ActiveLanguage.pack }
+    /// Tracks in the language's audio course.
+    private var courseTracks: Int { pack.course?.tracks ?? 0 }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -236,11 +240,11 @@ struct TaskSessionView: View {
                     ], selection: $comprehension)
                 }
             }
-            if isDreaming {
+            if watchedGradedLevel {
                 question("What level did you watch?",
-                         explanation: "The difficulty on Dreaming Spanish (0–100). Watched a few? Pick the middle. Progress charts it so you can see your level climb.") {
+                         explanation: "The difficulty on \(SourceCopy.name(.gradedVideo)) (\(pack.graded?.scale.lowerBound ?? 0)–\(pack.graded?.scale.upperBound ?? 100)). Watched a few? Pick the middle. Progress charts it so you can see your level climb.") {
                     RaisedCard {
-                        NumberStepper(title: "Difficulty", value: $levelWatched, range: 0...100, step: 1)
+                        NumberStepper(title: "Difficulty", value: $levelWatched, range: pack.graded?.scale ?? 0...100, step: 1)
                     }
                 }
             }
@@ -262,12 +266,12 @@ struct TaskSessionView: View {
                          explanation: "Rumbo plans this track next. Did more than one? Move it on. Want to repeat one? Set it back.") {
                     RaisedCard {
                         HStack {
-                            Text(ltNextTrack > Course.languageTransferTracks ? "Course finished 🎉" : "Track \(ltNextTrack)")
+                            Text(ltNextTrack > courseTracks ? "Course finished 🎉" : "Track \(ltNextTrack)")
                                 .font(.rounded(.title3, weight: .heavy))
                                 .foregroundStyle(Palette.ink)
                                 .contentTransition(.numericText())
                             Spacer()
-                            Stepper("", value: $ltNextTrack, in: 1...(Course.languageTransferTracks + 1))
+                            Stepper("", value: $ltNextTrack, in: 1...(courseTracks + 1))
                                 .labelsHidden()
                         }
                         .animation(.snappy, value: ltNextTrack)
@@ -275,12 +279,12 @@ struct TaskSessionView: View {
                 }
             }
             if kind == .drillLesson {
-                question("Where are you in Duolingo now?",
+                question("Where are you in \(SourceCopy.name(.drillApp)) now?",
                          explanation: "Keeps your place up to date, so the warm-up card shows where to pick up.") {
                     RaisedCard {
                         VStack(spacing: 10) {
-                            NumberStepper(title: "Section", value: $duolingoSection, range: 1...10, step: 1)
-                            NumberStepper(title: "Unit", value: $duolingoUnit, range: 1...300, step: 1)
+                            NumberStepper(title: "Section", value: $duolingoSection, range: pack.drill?.sections ?? 1...10, step: 1)
+                            NumberStepper(title: "Unit", value: $duolingoUnit, range: pack.drill?.units ?? 1...300, step: 1)
                         }
                     }
                 }
@@ -408,7 +412,7 @@ struct TaskSessionView: View {
         duolingoUnit = model.profile?.duolingoUnit ?? 1
         // The track just done, plus one: finishing 13 suggests 14.
         if case .track(let track) = task.detail {
-            ltNextTrack = min(track + 1, Course.languageTransferTracks + 1)
+            ltNextTrack = min(track + 1, courseTracks + 1)
         } else {
             ltNextTrack = (model.profile?.languageTransferLastTrack ?? 0) + 1
         }
@@ -436,7 +440,7 @@ struct TaskSessionView: View {
             duolingoPosition: kind == .drillLesson ? (section: duolingoSection, unit: duolingoUnit) : nil,
             languageTransferNextTrack: kind == .courseTrack ? ltNextTrack : nil,
             lessonType: kind.isLesson ? lessonType : nil,
-            levelWatched: isDreaming ? levelWatched : nil
+            levelWatched: watchedGradedLevel ? levelWatched : nil
         ))
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()

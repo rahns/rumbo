@@ -63,7 +63,7 @@ struct GuidedWritingView: View {
     private var checking: some View {
         VStack(spacing: 14) {
             PicoView(mood: .listening, size: 110)
-            Text("Pico is reading your Spanish…")
+            Text("Pico is reading your \(ActiveLanguage.name)…")
                 .font(.rounded(.headline, weight: .heavy))
                 .foregroundStyle(Palette.ink)
             Text("A careful check can take up to a minute.")
@@ -101,7 +101,7 @@ struct GuidedWritingView: View {
             }
             RaisedCard(accent: Palette.coral) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(feedback.corrections.isEmpty ? "No errors found. ¡Muy bien!" : "Your text")
+                    Text(feedback.corrections.isEmpty ? "No errors found. \(ActiveLanguage.phrases.wellDone)" : "Your text")
                         .font(.rounded(.headline, weight: .black))
                         .foregroundStyle(Palette.ink)
                     Text(highlighted(draft, feedback.corrections))

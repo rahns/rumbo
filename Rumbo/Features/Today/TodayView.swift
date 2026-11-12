@@ -108,8 +108,7 @@ struct TodayView: View {
     private var greeting: String {
         let name = model.profile?.displayName ?? ""
         let hour = Calendar.current.component(.hour, from: .now)
-        let hello = hour < 12 ? "¡Buenos días" : hour < 20 ? "¡Buenas tardes" : "¡Buenas noches"
-        return name.isEmpty ? "\(hello)!" : "\(hello), \(name)!"
+        return model.pack.phrases.greeting(hour: hour, name: name)
     }
 
     // MARK: Travel mode
@@ -125,8 +124,8 @@ struct TodayView: View {
                                 .font(.rounded(.headline, weight: .black))
                                 .foregroundStyle(Palette.ink)
                             Text(profile.travelMode
-                                 ? "On the road: Rumbo adds a real-world Spanish mission to every day."
-                                 : "Travelling? Turn this on for a real-world Spanish mission every day.")
+                                 ? "On the road: Rumbo adds a real-world \(model.pack.name) mission to every day."
+                                 : "Travelling? Turn this on for a real-world \(model.pack.name) mission every day.")
                                 .font(.rounded(.caption, weight: .semibold))
                                 .foregroundStyle(Palette.secondaryText)
                         }
@@ -158,7 +157,7 @@ struct TodayView: View {
             BannerCard(
                 title: harder ? "Ready for harder videos?" : "Let's make it easier",
                 message: harder
-                    ? "Your recent Dreaming Spanish videos felt easy. Try videos rated \(suggestion.lowerBound)–\(suggestion.upperBound)."
+                    ? "Your recent \(SourceCopy.name(.gradedVideo)) videos felt easy. Try videos rated \(suggestion.lowerBound)–\(suggestion.upperBound)."
                     : "You've felt lost a few times. Try videos rated \(suggestion.lowerBound)–\(suggestion.upperBound) so input stays understandable.",
                 color: Palette.coral
             ) {

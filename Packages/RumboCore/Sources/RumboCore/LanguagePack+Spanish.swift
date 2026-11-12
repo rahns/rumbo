@@ -13,6 +13,7 @@ extension LanguagePack {
         sources: [
             .gradedVideo: SourceInfo(
                 name: "Dreaming Spanish",
+                shortName: "Dreaming",
                 role: "Your main listening engine",
                 symbol: "play.tv.fill",
                 what: "A video library of Spanish made to be understood: thousands of videos where native speakers explain, chat and tell stories, using pictures and gestures at the easy levels. Every video has a difficulty from 0 to 100, and it counts your hours of listening. It's built on comprehensible input: you pick up Spanish by understanding lots of it.",
@@ -31,6 +32,7 @@ extension LanguagePack {
                 webURL: "https://www.languagetransfer.org"),
             .learnerSeries: SourceInfo(
                 name: "Extra en Español",
+                shortName: "Extra",
                 role: "Sitcom with subtitles and shadowing",
                 symbol: "film.fill",
                 what: "A sitcom made for Spanish learners: 13 episodes about flatmates in Spain and an American friend who arrives knowing little Spanish. The speech is clear and slow at first, and it's funny.",
@@ -53,6 +55,7 @@ extension LanguagePack {
                 whereToFind: "Right here in Rumbo; there's nothing else to install."),
             .exchange: SourceInfo(
                 name: "Tandem/HelloTalk partner",
+                shortName: "Tandem/HelloTalk",
                 role: "I have a language exchange partner",
                 symbol: "bubble.left.and.bubble.right.fill",
                 what: "Language-exchange apps where you chat with native Spanish speakers who are learning your language: you help each other.",

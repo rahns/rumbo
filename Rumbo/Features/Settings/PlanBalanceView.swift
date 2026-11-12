@@ -66,9 +66,9 @@ struct PlanBalanceView: View {
         }
 
         Section("About the balance") {
-            explanation("What this does", "Each day's plan picks its cards and minutes so your practice over the past week moves toward this split. Classes/tutoring, the Duolingo warm-up, the mistake review and travel missions are planned as usual and count toward it.")
+            explanation("What this does", "Each day's plan picks its cards and minutes so your practice over the past week moves toward this split. Classes/tutoring, the daily warm-up, the mistake review and travel missions are planned as usual and count toward it.")
             explanation("The default for your level (\(profile.band.rawValue))", Self.order.map { "\($0.label) \(standard[$0])%" }.joined(separator: " · "))
-            explanation("Why it's recommended", "It follows research on the four strands of language learning. Understanding lots of Spanish is what moves your level most, so listening stays at about half your time. Grammar & vocab gives you a head start early on and shrinks as the courses finish; speaking & writing grows as you level up; a little fluency practice makes what you already know quicker. The default shifts by itself as your level changes, while a custom balance stays as you set it. Listening below about 40% tends to slow progress.")
+            explanation("Why it's recommended", "It follows research on the four strands of language learning. Understanding lots of \(profile.pack.name) is what moves your level most, so listening stays at about half your time. Grammar & vocab gives you a head start early on and shrinks as the courses finish; speaking & writing grows as you level up; a little fluency practice makes what you already know quicker. The default shifts by itself as your level changes, while a custom balance stays as you set it. Listening below about 40% tends to slow progress.")
         }
     }
 

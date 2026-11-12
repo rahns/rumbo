@@ -1,6 +1,6 @@
 # 9. Supporting languages other than Spanish
 
-**Status: draft plan. Nothing here is built yet.** The other docs describe the app as it is (Spanish only); this one describes how to get from there to an app that can teach several languages. French is the second language. The app's own text stays in English.
+**Status: Phases 1 to 4 are built (§9.6); the French pack (Phase 5) is not.** Spanish is the only language that can be chosen. This doc is the design for teaching several languages and the record of what was decided. French is the second language. The app's own text stays in English.
 
 ## 9.1 Summary
 
@@ -16,24 +16,22 @@ The plan is to gather all five into one value per language, a **language pack**,
 
 Two things should land **before the first public release**, because they are cheap now and costly once people have data on their phones: tagging stored data with its language (§9.4), and a backup format that carries the tag (§9.4). Everything else can follow in any order.
 
-## 9.2 Decisions needed
+## 9.2 Decisions
 
-These change the design, so they should be settled before Phase 3. Each has a recommendation.
-
-| # | Decision | Recommendation |
+| # | Decision | Settled |
 | --- | --- | --- |
-| 1 | Can someone learn two languages at once in the app? | Store data so they can (every record tagged), but ship with **one active language**, switchable in Settings. Each language has its own level, plan, weekly goal, streak and history. Side-by-side daily plans can come later without another data change. |
-| 2 | The Spanish decoration ("Semana", "¡Hecho!") for other languages | Translate it per language through the pack (French: "Semaine 3", "Aujourd'hui", "C'est fait !"). It is a small fixed list (§9.3 "Phrasebook") and it is part of the app's charm. The alternative is plain English everywhere. |
-| 3 | Name and mascot | Keep **Rumbo** and **Pico**. Both are Spanish words, and the reminder title "¿Rumbo a dónde?" is Spanish too; the brand line stays, the reminder title moves to the phrasebook. A per-language accessory for Pico (a beret) is optional polish. |
-| 4 | Level range | Stay A2–B2 for every language. Beginners from zero are out of scope, as now. |
-| 5 | A language with no good source for a role (say, no graded video site) | Ship it anyway. The planner already passes on the share of a strand that has nothing to plan (`LearnerSnapshot.canPlan`), and suggested content covers listening. |
-| 6 | Which languages after French | Affects how much of §9.3 "Levels" is needed. French, Italian and Portuguese take about the same hours as Spanish for an English speaker. German takes more; Japanese, Korean, Mandarin and Arabic take several times more, have no LanguageTool support worth using, and need script-aware text handling in the mistake deck. Recommend the first group, then German. |
+| 1 | Can someone learn two languages at once in the app? | Data is stored so they can (every record tagged), with **one active language**, switchable in Settings. Each language has its own level, plan, weekly goal, streak and history. Onboarding starts by choosing the language. |
+| 2 | The Spanish decoration ("Semana", "¡Hecho!") for other languages | Translated per language through the pack's phrasebook. |
+| 3 | Name and mascot | **Rumbo** and **Pico** stay for every language, as do the welcome screen's "¡Hola!" and "¿Rumbo a dónde?". The daily reminder's title is in the phrasebook, so a language can keep or translate it. |
+| 4 | Level range | A2–B2 for every language. |
+| 5 | A language with no good source for a role | Ships anyway: the planner passes on the share of a strand that has nothing to plan (tested with a pack that has only writing, a partner and suggested content). |
+| 6 | Which languages after French | Not decided. Languages that need different text handling (Japanese, Korean, Mandarin, Arabic) are for later. |
 
-## 9.3 Target design
+## 9.3 Design
 
 ### Language pack
 
-A new type in RumboCore, `LanguagePack`, one static value per language (`LanguagePack.spanish`, `.french`), looked up by code (`"es"`, `"fr"`). Packs are Swift values, not downloaded files, so they are type-checked and unit-tested like the rest of the engine. The one bulky list that already updates over the air (suggested content) stays a JSON file, one per language.
+A type in RumboCore, `LanguagePack` (`LanguagePack.swift`), one static value per language (`LanguagePack.spanish` in `LanguagePack+Spanish.swift`), listed in `LanguagePack.all` and looked up by code (`LanguagePack.pack(for: "es")`; an unknown code gives Spanish). Packs are Swift values, not downloaded files, so they are type-checked and unit-tested like the rest of the engine. The one bulky list that already updates over the air (suggested content) stays a JSON file, one per language.
 
 A pack holds:
 
@@ -67,6 +65,10 @@ Can-do statements and prompts are English text about everyday life and are nearl
 
 `TaskKind` follows: `.dsWatch` becomes the graded video task, `.ltTrack` the audio course task, and so on. The Swift names change; **the stored raw values (`"ds.watch"`, `"lt.track"`, `"dreamingSpanish"`) stay**, so every existing store and backup keeps working with no migration. They are opaque identifiers that nobody sees.
 
+In code the roles are `gradedVideo`, `audioCourse`, `learnerSeries`, `drillApp`, `writing`, `exchange` and `suggestedContent`; the task kinds are `gradedWatch`, `gradedEasy`, `courseTrack`, `seriesIntensive`, `seriesExtensive`, `drillLesson`, `exchangeText/Voice/Call`. `LanguagePackTests.storedIdentifiersNeverChange` pins the stored values.
+
+**How the app reaches the pack.** The engine takes it explicitly: `LearnerSnapshot.pack`, and a `pack` or `levels` argument on everything that depends on the language (`Placement`, `LevelGate`, `Projection.arrivalDates`, `GoalPace`, `CanDo`, `Prompts`, `SourceProgress.record`). In the app, `AppModel.languageCode` and `AppModel.pack` are the active language, and each `LearnerProfile` has its own `pack`. Wording that isn't inside a view with the model at hand (task titles in `TaskCopy`, source names in `SourceCopy`, links, reminders, the tutor's instructions, the path's dates) reads `ActiveLanguage.pack` (`Shared/ActiveLanguage.swift`), a global that `AppModel` keeps equal to its own language and that is remembered in `UserDefaults` (`language.active`). Widgets get the code in their snapshot (`WidgetSnapshot.languageCode`).
+
 One source per role is a limit: a language with two strong graded-video sources can only list one. That is acceptable for now; lifting it means the planner choosing between sources inside a role, which is a larger change.
 
 ### Levels
@@ -89,17 +91,18 @@ Widgets and the Live Activity show some of these ("¡Hecho!"). They already link
 
 SwiftData models keep the CloudKit rules (defaults on every property, no unique constraints).
 
-- **Language tag.** `LearnerProfile`, `ActivityLog`, `DayPlanRecord`, `WritingEntry` and `ReviewCard` each get `languageCode: String = "es"`. The default makes every existing record Spanish with no migration code. This is the change to make before release.
-- **One profile per language.** `LearnerProfile` is "one per install" today. It becomes one per language; the active one is named in `UserDefaults` (and in the shared store, for widgets). `AppModel.profile`, `logs`, `sessions`, the mistake deck and writing history all filter by the active language. `AppModel` is 1,141 lines and reaches these collections in many places, so the filter should go in at the lowest level (the fetches) rather than at each use.
-- **Source progress.** The profile has fixed columns per Spanish source (`dsDifficultyLow/High`, `languageTransferLastTrack`, `extraEpisodesWatched`, `duolingoSection/Unit`, …). Because each role has at most one source and each profile is one language, these columns already work as "the graded video window", "the audio course track", and so on. Rename them in Swift with `@Attribute(originalName:)` to keep the stored columns, or leave the names and add role-named accessors. No data moves either way.
-- **Settings shared across languages.** Reminder time, week start, AI checker keys and default checker, thinking level: stay global. Weekly goal, target level and date, travel mode, classes/tutoring, plan balance, speaking stage: per language, so they stay on the profile.
-- **Backup.** `BackupFile` goes to version 2: a list of profiles, and a language code on each log, writing entry and card. A version 1 file restores as Spanish. Decide whether restoring replaces every language or only the ones in the file; recommend "replaces everything", as now.
-- **Path history** (`pathHistoryData`) is on the profile, so it is per language already.
-- **Content catalog.** `Rumbo/Resources/catalog/content.json` becomes `content.es.json`, with `content.fr.json` beside it; the remote URL and the cache file take the code. `currentContentID` is on the profile, so it is per language already. Keep serving the old URL for builds already installed.
+- **Language tag.** `LearnerProfile`, `ActivityLog`, `DayPlanRecord`, `WritingEntry` and `ReviewCard` each have `languageCode: String = "es"` (protocol `LanguageTagged`). The default makes every record saved before this Spanish, with no migration code. New records are tagged in one place, `AppModel.insert`.
+- **One profile per language.** `AppModel.profiles` is every language's profile; `AppModel.profile` is the active language's (nil until that language has been set up, which is what shows onboarding). `logs`, `sessions`, `allCards` and `dueCards` fetch with a predicate on the active language, so everything built on them (streak, weekly minutes, training hours, the path, the planner's history, used prompts, the mistake deck) is per language without further changes. At launch, if the remembered language has no profile but another does, that one becomes active.
+- **Source progress.** The profile keeps its columns (`dsDifficultyLow/High`, `languageTransferLastTrack`, `extraEpisodesWatched`, `duolingoSection/Unit`, `keepDuolingoInB2`, `alwaysIncludeDuolingo`). The names are from when Spanish was the only language; they hold the same things for any language's graded video, audio course, learner series and drill app. They weren't renamed, so no stored column changes. `SourceProgress` (saved with each task for undo) has role names in code and the old names as coding keys.
+- **Shared across languages.** Reminder time, week start, AI checker keys and default checker, thinking level are on each profile or in the Keychain as before; with several profiles, reminders follow the active one. One-off moments ("7-day streak") are remembered per language: Spanish keeps its plain keys, other languages prefix theirs with the code.
+- **Start over** removes the active language's records only; another language's profile, if there is one, becomes active.
+- **Backup.** `BackupFile` version 2: `profiles` (every language), `activeLanguage`, and an optional `language` on each profile, log, writing entry and card. `profile` is still written (the active one). A version 1 file has none of these and restores as Spanish. Restoring replaces everything, in every language. Field names for source progress are unchanged.
+- **Path history** and the plan balance are on the profile, so they are per language.
+- **Content catalog.** `LanguagePack.catalog` names the bundled file, the remote URL and the cache file. Spanish keeps `content.json` and its URL, so installed builds keep updating; French will add `content.fr.json`.
 
-## 9.5 What changes, file by file
+## 9.5 What changed, file by file
 
-From a scan of all 15,700 lines. "Source names" means references to the five branded sources or their task kinds: about 740 across some two dozen files.
+The list the work followed, from a scan of all 15,700 lines. "Source names" means references to the five branded sources or their task kinds: about 740 across some two dozen files.
 
 **RumboCore (engine)**
 
@@ -140,35 +143,42 @@ From a scan of all 15,700 lines. "Source names" means references to the five bra
 
 ## 9.6 Phases
 
-Each phase ends with the Spanish app behaving exactly as before, checked by the existing 157 engine tests plus the new ones listed.
+| Phase | What | State |
+| --- | --- | --- |
+| 1 | **Spanish as a pack (engine).** `LanguagePack`, roles, level hours, anchors, can-do and prompts behind the pack | Built. 165 engine tests: the planner's are unchanged apart from names, plus `LanguagePackTests` (stored values pinned, every pack complete, shared wording names no language, a pack with few sources still fills the day, level hours per language) |
+| 2 | **Storage.** Language tag, a profile per language, filtered fetches, backup version 2, catalog per language | Built. Not yet run on a device: the app doesn't compile on Linux, so the first CI build is its test |
+| 3 | **App reads the pack.** Source names and info, task titles and instructions, links, reminders, the tutor, the decoration, Settings and Progress rows | Built |
+| 4 | **Choosing a language.** Onboarding's first step after the welcome ("What are you learning?", with French shown as coming soon); Settings → Language (a plain row while there is one language, a picker once there are two; picking a language with no profile starts its setup, and picking one that's already set up from within onboarding switches to it) | Built |
+| 5 | **French pack.** Content, not code (§9.7) | Not started |
 
-**Phase 1: Spanish as a pack (engine only).** Add `LanguagePack` and the Spanish pack. Rename sources and task kinds to roles, keeping raw values. Move `Course`, thresholds, anchors, eligibility levels, can-do and prompts behind the pack. `LearnerSnapshot` carries its pack. No app-visible change.
-*Tests:* a test that pins every stored raw value; every existing planner test runs unchanged; a pack validator (thresholds rise, every role's numbers are complete, phrasebook has no empty entries, no shared prompt names a language).
-
-**Phase 2: Storage (do before public release).** Language tag on the five models; profile per language; fetches filtered by the active language; backup version 2 that still reads version 1; catalog per language. With only Spanish available, nothing looks different.
-*Tests:* restore a saved version 1 backup; a store with two languages keeps their logs, streaks and plans apart (this needs the filtering logic to sit in RumboCore or be covered by a CI app test, since app code doesn't build on Linux).
-
-**Phase 3: App reads the pack.** Replace every "Spanish" literal, the source copy, links, task titles and instructions, the tutor instructions and the decoration with pack lookups. Onboarding and Settings build their source rows from the pack's roles.
-*Check:* a grep in CI that fails on "Spanish", "Dreaming", "Duolingo" and the like outside the pack files.
-
-**Phase 4: Choosing a language.** Onboarding's first step; Settings → Language to switch or add one (adding runs the placement steps again for that language). Hidden while only one pack exists, or shown with French marked "coming soon".
-
-**Phase 5: French pack.** Content, not code. See §9.7.
-
-Phases 1 and 2 are independent and could be done in either order; 3 needs 1; 4 needs 2 and 3.
+Still to do within Phases 1 to 4:
+- Test a version 1 backup restoring into the new build, and two languages side by side, on a device (the second needs a second pack).
+- A second language's setup can't be cancelled yet except by choosing the first language again on its first step; give it a Cancel when French arrives.
+- The widget gallery's sample and the Live Activity test in Diagnostics still show Spanish source names; they are samples.
 
 ## 9.7 What the French pack needs
 
-To be researched and checked when Phase 5 starts; nothing below has been verified yet.
+Checked online in November 2026; what couldn't be confirmed is marked.
 
-- **Sources for each role.** Candidates: Dreaming French (does it have the same 0–100 difficulty scale and hour counter?), Language Transfer's French course (it is an introduction, far shorter than Complete Spanish, so the audio course would run out early in A2), Extra in French (same 13-episode format), Duolingo French, Tandem/HelloTalk. Each needs its real numbers: track count and lengths, episode count, URL schemes and links.
-- **Level thresholds.** Start from the Spanish numbers; adjust if a French roadmap is published.
-- **Tutor focus.** French error patterns in place of ser/estar and por/para: gender and agreement, passé composé against imparfait, être or avoir as auxiliary, partitive articles, y and en, subjunctive triggers, elision.
-- **LanguageTool code** `fr`, and whether the on-device model handles French well enough for the offline fallback.
-- **Phrasebook**, about 25 strings, checked by a French speaker.
-- **Suggested content**, about 24 items across the six levels, as for Spanish.
+| Role | French source | Compared with Spanish |
+| --- | --- | --- |
+| Graded video | **Dreaming French**: live at dreaming.com/french, library at app.dreaming.com/french, in the same site and app as Dreaming Spanish. It tracks input hours automatically and has the same levels (Superbeginner to Advanced) | A like-for-like swap. To confirm in the app: that videos carry the same 0–100 difficulty number (a learner's post mentions "difficulty level 20 or lower", which suggests so) and the app's URL scheme |
+| Audio course | **Language Transfer, "Introduction to French"**: at languagetransfer.org/french, in the Language Transfer app, on SoundCloud and YouTube, and as a download | Not like for like. It is an introduction, much shorter than Complete Spanish's 90 tracks, so it will run out early in A2 and grammar time will then come from Duolingo and the mistake deck (the planner handles this). The track count and each track's length weren't on the page; read them from the downloaded files |
+| Learner series | **Extr@ French** (Extra French): 13 episodes, the same sitcom with the same format (Sam, Sacha, Annie, Nico), rated A2–B1 | A like-for-like swap: same episode count and parts. On YouTube; no official channel found, so the link should be a search, as for Spanish |
+| Drill app | Duolingo French | Same |
+| Exchange partner | Tandem/HelloTalk | Same |
+
+**Level hours.** No French roadmap with hours was found (dreaming.com/french/roadmap doesn't exist). Dreaming's FAQ says the early phase "may be slightly longer if instead of Spanish or Italian you are learning Portuguese, or especially French". So French should start from the Spanish numbers raised a little, or from Dreaming's French figures if they are shown in the app.
+
+**Suggested shows and podcasts** (candidates for `content.fr.json`; each needs its level and where to watch checked, as was done for Spanish):
+- Made for learners, found in several recommendation lists: *InnerFrench* (podcast and YouTube, A2–B2, free transcripts), *Easy French* (street interviews with subtitles, all levels), *Alice Ayel* (stories told for beginners), *French Mornings with Elisa* (B1–B2), *Français Authentique* (B1), *Piece of French* (intermediate), *Coffee Break French* (upper A2).
+- Made for native speakers, from general knowledge and not yet checked: Peppa Pig in French and other children's series for A2; *HugoDécrypte* (news explained) and *Journal en français facile* (RFI) for B1; *Lupin*, *Dix pour cent*, *Plan Cœur*, *Au service de la France*, *Le Bureau des Légendes* and the podcast *Transfert* for B2.
+
+**The rest of the pack:**
+- **Tutor focus.** French error patterns in place of ser/estar and por/para: gender and agreement, passé composé against imparfait, être or avoir as auxiliary, partitive articles, y and en, subjunctive triggers, elision. LanguageTool code `fr`.
+- **Phrasebook**, 19 entries plus Pico's cheers and six level names, checked by a French speaker. French puts a space before "!", which `exclamationEnd` allows for.
 - **Prompts and can-do**: read through the shared lists for anything that assumes Spanish-speaking countries.
-- **Level names**: French counterparts for Explorador … Local.
+- **Code that waits for the pack:** add it to `LanguagePack.all`, remove "French" from `upcoming`, add its URL schemes to `LSApplicationQueriesSchemes` in `project.yml`, and bundle `content.fr.json`.
 
 ## 9.8 Risks
 

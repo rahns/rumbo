@@ -59,6 +59,8 @@ Pico is a chubby cartoon **toucan**. *Pico* is Spanish for "beak", and toucans a
 ## 3.4 Screens
 
 ### Onboarding (first launch, about 2 minutes)
+
+After the welcome, the first step is **"What are you learning?"**: one row per language Rumbo can teach (its English name, its own name, a tick on the chosen one), then languages on the way, greyed with "Coming soon" (French). The steps after it follow the choice: the sources offered are the ones that language has, the progress step asks for each of those sources' numbers, the can-do questions name the language, and placement uses that language's level hours. The welcome itself doesn't name a language. Settings has a **Language** section at the top: "Learning: Spanish" while there is one language, a picker once there are more (each language keeps its own level, plan, goal and streak; choosing one that isn't set up starts its setup). Everywhere below, "Spanish", the source names and the Spanish words on screen are the active language's (`LanguagePack`, [09-multi-language.md](09-multi-language.md)).
 The first screen also offers "Restore from a backup". Without a backup, onboarding again is the recovery path (see [04-data-model.md](04-data-model.md#43-no-sync-manual-backup)).
 
 1. Welcome: Pico bobs in under a speech bubble introducing himself ("¡Hola! I'm Pico 👋 I'll turn the Spanish you already do into one simple plan each day, and cheer you on."), then "¿Rumbo a dónde?"

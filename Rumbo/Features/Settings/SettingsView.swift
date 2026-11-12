@@ -71,7 +71,26 @@ struct SettingsView: View {
     @ViewBuilder
     private func sections(_ profile: LearnerProfile) -> some View {
         Section {
-            ForEach(SourceKind.allCases, id: \.self) { source in
+            if LanguagePack.all.count > 1 {
+                // Each language has its own level, plan, goal and streak. One without a profile yet starts its setup.
+                Picker("Learning", selection: Binding(get: { model.languageCode }, set: { model.setLanguage($0) })) {
+                    ForEach(LanguagePack.all) { pack in
+                        Text(pack.name).tag(pack.code)
+                    }
+                }
+            } else {
+                LabeledContent("Learning", value: profile.pack.name)
+            }
+        } header: {
+            Text("Language")
+        } footer: {
+            Text(LanguagePack.all.count > 1
+                 ? "Each language keeps its own level, plan, goal and streak. Choosing a new one starts its setup."
+                 : "More languages are on the way\(LanguagePack.upcoming.first.map { ": \($0) is next" } ?? "").")
+        }
+
+        Section {
+            ForEach(profile.pack.roles, id: \.self) { source in
                 HStack {
                     // The name opens what the source is; the switch turns it on or off.
                     Button {
@@ -181,43 +200,56 @@ struct SettingsView: View {
         Section {
             Toggle("Travel mode", isOn: Binding(get: { profile.travelMode }, set: { model.setTravelMode($0) }))
         } footer: {
-            Text("Adds a real-world Spanish mission to every day's plan." + (model.canChangeBudget ? "" : " Today's plan has started, so this applies from tomorrow."))
+            Text("Adds a real-world \(profile.pack.name) mission to every day's plan." + (model.canChangeBudget ? "" : " Today's plan has started, so this applies from tomorrow."))
         }
 
+        // One row per source the language has, each in that source's own terms.
         Section("Progress") {
-            // A 5-point window (e.g. 40–45) that slides by 1 per tap.
-            Stepper("Dreaming Spanish: \(profile.dsDifficultyLow)–\(profile.dsDifficultyHigh)", value: binding(
-                get: { profile.dsDifficultyLow },
-                set: { low in profile.dsDifficulty = max(0, low)...(max(0, low) + LearnerProfile.dreamingRangeWidth) }
-            ), in: 0...(100 - LearnerProfile.dreamingRangeWidth))
-            // The last track finished, like Extra's "seen": finishing 13 means you're up to 14.
-            Stepper(profile.languageTransferLastTrack == 0
-                    ? "Language Transfer: not started"
-                    : "Language Transfer: finished Track \(profile.languageTransferLastTrack)", value: binding(
-                get: { profile.languageTransferLastTrack },
-                set: { profile.languageTransferLastTrack = $0; profile.languageTransferRepeatPending = false }
-            ), in: 0...Course.languageTransferTracks)
-            // Section and unit as two full steppers in one row, so they read as one Duolingo entry.
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Duolingo")
-                Stepper(value: binding(get: { profile.duolingoSection }, set: { profile.duolingoSection = $0 }), in: 1...10) {
-                    Text("Section \(profile.duolingoSection)").foregroundStyle(Palette.secondaryText)
-                }
-                Stepper(value: binding(get: { profile.duolingoUnit }, set: { profile.duolingoUnit = $0 }), in: 1...300) {
-                    Text("Unit \(profile.duolingoUnit)").foregroundStyle(Palette.secondaryText)
-                }
+            let pack = profile.pack
+            if let graded = pack.graded {
+                // A window (e.g. 40–45) that slides by 1 per tap.
+                Stepper("\(SourceCopy.name(.gradedVideo)): \(profile.dsDifficultyLow)–\(profile.dsDifficultyHigh)", value: binding(
+                    get: { profile.dsDifficultyLow },
+                    set: { low in
+                        let low = max(graded.scale.lowerBound, low)
+                        profile.dsDifficulty = low...(low + graded.windowWidth)
+                    }
+                ), in: graded.scale.lowerBound...(graded.scale.upperBound - graded.windowWidth))
             }
-            .padding(.vertical, 2)
-            // One step = one part (each episode is two parts), so a half-watched episode can be set.
-            Stepper(extraProgressLabel(profile), value: binding(
-                get: { profile.extraEpisodesWatched * Course.extraIntensivePartsPerEpisode + profile.extraPartsDoneInEpisode },
-                set: { parts in
-                    profile.extraEpisodesWatched = parts / Course.extraIntensivePartsPerEpisode
-                    profile.extraPartsDoneInEpisode = parts % Course.extraIntensivePartsPerEpisode
+            if let course = pack.course {
+                // The last track finished, like the series' "seen": finishing 13 means you're up to 14.
+                Stepper(profile.languageTransferLastTrack == 0
+                        ? "\(SourceCopy.name(.audioCourse)): not started"
+                        : "\(SourceCopy.name(.audioCourse)): finished Track \(profile.languageTransferLastTrack)", value: binding(
+                    get: { profile.languageTransferLastTrack },
+                    set: { profile.languageTransferLastTrack = $0; profile.languageTransferRepeatPending = false }
+                ), in: 0...course.tracks)
+            }
+            if let drill = pack.drill {
+                // Section and unit as two full steppers in one row, so they read as one entry.
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(SourceCopy.name(.drillApp))
+                    Stepper(value: binding(get: { profile.duolingoSection }, set: { profile.duolingoSection = $0 }), in: drill.sections) {
+                        Text("Section \(profile.duolingoSection)").foregroundStyle(Palette.secondaryText)
+                    }
+                    Stepper(value: binding(get: { profile.duolingoUnit }, set: { profile.duolingoUnit = $0 }), in: drill.units) {
+                        Text("Unit \(profile.duolingoUnit)").foregroundStyle(Palette.secondaryText)
+                    }
                 }
-            ), in: 0...(Course.extraEpisodes * Course.extraIntensivePartsPerEpisode))
-            if profile.band >= .b2_1 && profile.band < .b2_2 {
-                Toggle("Keep a Duolingo warm-up", isOn: binding(get: { profile.keepDuolingoInB2 }, set: { profile.keepDuolingoInB2 = $0 }))
+                .padding(.vertical, 2)
+            }
+            if let series = pack.series {
+                // One step = one part (an episode is watched in parts at the early levels), so a half-watched episode can be set.
+                Stepper(seriesProgressLabel(profile, series), value: binding(
+                    get: { profile.extraEpisodesWatched * series.intensiveParts + profile.extraPartsDoneInEpisode },
+                    set: { parts in
+                        profile.extraEpisodesWatched = parts / series.intensiveParts
+                        profile.extraPartsDoneInEpisode = parts % series.intensiveParts
+                    }
+                ), in: 0...(series.episodes * series.intensiveParts))
+            }
+            if let drill = pack.drill, profile.band == drill.optionalBand {
+                Toggle("Keep a \(SourceCopy.name(.drillApp)) warm-up", isOn: binding(get: { profile.keepDuolingoInB2 }, set: { profile.keepDuolingoInB2 = $0 }))
             }
         }
 
@@ -234,16 +266,18 @@ struct SettingsView: View {
         } header: {
             Text("Speaking")
         } footer: {
-            Text("Rumbo switches these on by itself as your hours and Tandem/HelloTalk exchanges grow, and you can go early if you feel ready. Switch one off and it stays off until you switch it back on.")
+            Text("Rumbo switches these on by itself as your hours and \(profile.pack.sources[.exchange]?.shortName ?? "partner") exchanges grow, and you can go early if you feel ready. Switch one off and it stays off until you switch it back on.")
         }
 
         Section("Habit") {
-            Toggle(isOn: binding(get: { profile.alwaysIncludeDuolingo }, set: { profile.alwaysIncludeDuolingo = $0; model.replanTodayIfNotStarted() })) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Always include Duolingo")
-                    Text("If you're keeping a streak going")
-                        .font(.rounded(.caption, weight: .medium))
-                        .foregroundStyle(Palette.secondaryText)
+            if profile.pack.has(.drillApp) {
+                Toggle(isOn: binding(get: { profile.alwaysIncludeDuolingo }, set: { profile.alwaysIncludeDuolingo = $0; model.replanTodayIfNotStarted() })) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Always include \(SourceCopy.name(.drillApp))")
+                        Text("If you're keeping a streak going")
+                            .font(.rounded(.caption, weight: .medium))
+                            .foregroundStyle(Palette.secondaryText)
+                    }
                 }
             }
             Picker("Week starts on", selection: Binding(
@@ -302,7 +336,7 @@ struct SettingsView: View {
         Section {
             ShareLink(item: URL(string: "https://github.com/rahns/rumbo/releases/latest")!,
                       subject: Text("Rumbo"),
-                      message: Text("I'm using Rumbo to plan my Spanish. Download it here (you sign it with your own certificate):")) {
+                      message: Text("I'm using Rumbo to plan my \(profile.pack.name). Download it here (you sign it with your own certificate):")) {
                 Label("Share Rumbo with a friend", systemImage: "square.and.arrow.up")
             }
             Link(destination: Self.feedbackEmail) {
@@ -342,12 +376,13 @@ struct SettingsView: View {
     static func checkersText() -> String { WritingCheckers.summary }
 
     /// The last part seen: "Extra en Español: seen Ep 3 Part 2" (or "not started").
-    private func extraProgressLabel(_ profile: LearnerProfile) -> String {
-        let parts = profile.extraEpisodesWatched * Course.extraIntensivePartsPerEpisode + profile.extraPartsDoneInEpisode
-        guard parts > 0 else { return "Extra en Español: not started" }
-        let episode = (parts - 1) / Course.extraIntensivePartsPerEpisode + 1
-        let part = (parts - 1) % Course.extraIntensivePartsPerEpisode + 1
-        return "Extra en Español: seen Ep \(episode) Part \(part)"
+    private func seriesProgressLabel(_ profile: LearnerProfile, _ series: LearnerSeries) -> String {
+        let name = SourceCopy.name(.learnerSeries)
+        let parts = profile.extraEpisodesWatched * series.intensiveParts + profile.extraPartsDoneInEpisode
+        guard parts > 0 else { return "\(name): not started" }
+        let episode = (parts - 1) / series.intensiveParts + 1
+        let part = (parts - 1) % series.intensiveParts + 1
+        return "\(name): seen Ep \(episode) Part \(part)"
     }
 
     /// A binding that saves through the app model, so every change persists and refreshes views.

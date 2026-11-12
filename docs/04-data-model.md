@@ -1,5 +1,7 @@
 # 4. Data model and backup
 
+> **Languages.** `LearnerProfile`, `ActivityLog`, `DayPlanRecord`, `WritingEntry` and `ReviewCard` each carry `languageCode` (default `"es"`, so records from before languages were tagged are Spanish). Everything the app shows is fetched for the active language. Backups are version 2 and hold every language; a version 1 backup restores as Spanish. Details in [09-multi-language.md](09-multi-language.md) §9.4.
+
 ## 4.1 Storage
 
 **SwiftData**, stored on device only. No Rumbo server and no accounts.
@@ -16,7 +18,7 @@ Defined in `Rumbo/Models/Models.swift`. Enums are stored as raw strings/ints, wi
 
 | Model | Holds |
 |---|---|
-| `LearnerProfile` | One per install: name, goal, target date, band, gates passed, last failed gate, speaking stage, enabled sources, weekly goal, habit cue and reminder, week start, travel mode, the Library item being watched (`currentContentID`), and the learner's place in each source: baseline input hours, Dreaming Spanish difficulty range, Language Transfer track (+ repeat flag), Extra episode and part, Duolingo section/unit. |
+| `LearnerProfile` | One per language being learned (`languageCode`; one language is active at a time, see [09-multi-language.md](09-multi-language.md) §9.4): name, goal, target date, band, gates passed, last failed gate, speaking stage, enabled sources, weekly goal, habit cue and reminder, week start, travel mode, the Library item being watched (`currentContentID`), and the learner's place in each source: baseline input hours, Dreaming Spanish difficulty range, Language Transfer track (+ repeat flag), Extra episode and part, Duolingo section/unit. |
 | `ActivityLog` | One logged block: date, task, minutes, comprehension rating (input), track rating or Tandem feeling, bonus flag (logged with "Log other"; its task is `content.watch` for listening or `other.study` / `other.output` / `other.fluency`; an all-in-one entry is three of these with the same date), the Dreaming Spanish range it was watched at (for difficulty tuning), and the level the learner says they watched (`levelWatched`, regular Dreaming Spanish only, for the Progress chart). |
 | `DayPlanRecord` + `PlannedTaskRecord` | A day's plan, saved when the budget is picked so it stays stable as courses move forward during the day. `day` is the calendar day the plan is *for*: a plan made early (working ahead) is stored under the later day. Each task keeps its order, minutes, anchor flag, an `isExtra` flag (added from "Keep going" after the plan was complete; extras don't count toward the day being complete), the writing draft, rewrite and feedback while a writing task is in progress (kept as they're typed), encoded detail (`lt:13`, `extra:2:1`, `ds:40:48`), the prompt fixed at planning time, and status (planned / active / done / skipped). Once done, it also keeps what's needed to undo it: the log and writing entry IDs (an all-in-one lesson's other two logs in `splitLogIDs`), the course progress before, the previous Duolingo position, and for mistake review each reviewed card's schedule from before (`reviewsBefore`). |
 | `WritingEntry` | Text written in a writing task, with its prompt, the correction (encoded `CorrectionService.Result`) and the learner's rewrite. |

@@ -146,7 +146,7 @@ struct HomeWidgetView: View {
             }
         } else if snapshot.dayComplete {
             HStack(spacing: 6) {
-                Text("¡Hecho!")
+                Text(snapshot.phrases.done)
                     .foregroundStyle(Palette.leaf)
                 if snapshot.extrasDone > 0 {
                     Text("+\(snapshot.extrasDone) extra")
@@ -198,7 +198,7 @@ struct HomeWidgetView: View {
 
     private func status(_ snapshot: WidgetSnapshot) -> String {
         if snapshot.dayComplete {
-            return snapshot.extrasDone > 0 ? "¡Hecho! +\(snapshot.extrasDone) extra" : "¡Hecho! Day complete"
+            return snapshot.extrasDone > 0 ? "\(snapshot.phrases.done) +\(snapshot.extrasDone) extra" : "\(snapshot.phrases.done) Day complete"
         }
         if snapshot.isSuggestion, let minutes = snapshot.suggestedMinutes { return "Suggested: \(minutes) min, tap to start" }
         if let next = snapshot.nextTask { return "Next: \(next.title)" }

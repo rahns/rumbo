@@ -1,4 +1,5 @@
 import Foundation
+import RumboCore
 import Security
 
 /// What the widgets show, written by the app whenever something changes and read by the widget
@@ -36,6 +37,10 @@ struct WidgetSnapshot: Codable, Equatable {
     /// The next few days, worked out by the app ahead of time (suggested plan, week minutes, streak), so the
     /// widget is right after midnight even before the app is opened. Optional for older snapshots.
     var upcoming: [WidgetSnapshot]? = nil
+    /// The language being learned, for the widget's own words ("¡Hecho!"). Optional for older snapshots (Spanish).
+    var languageCode: String? = nil
+
+    var phrases: Phrasebook { LanguagePack.pack(for: languageCode).phrases }
 
     var isSuggestion: Bool { !hasPlan && suggestedMinutes != nil && !tasks.isEmpty }
 

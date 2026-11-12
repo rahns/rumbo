@@ -95,11 +95,16 @@ extension Strand {
 
     /// What counts toward the strand, in the learner's own sources.
     var detail: String {
+        // Named after the sources of the language being learned.
+        let pack = ActiveLanguage.pack
+        func names(_ roles: [SourceKind]) -> [String] { roles.compactMap { pack.sources[$0]?.shortName } }
         switch self {
-        case .input: "Dreaming Spanish, Extra, shows and podcasts"
-        case .output: "Guided writing, Tandem/HelloTalk and travel missions"
-        case .languageFocused: "Language Transfer, Duolingo and the mistake deck"
-        case .fluency: "Easy videos, quick writes and 4-3-2 talks: using what you know, faster"
+        case .input: return ([pack.sources[.gradedVideo]?.name].compactMap { $0 } + names([.learnerSeries]) + ["shows and podcasts"]).joined(separator: ", ")
+        case .output: return "Guided writing, \(names([.exchange]).first ?? "your exchange partner") and travel missions"
+        case .languageFocused:
+            let sources = names([.audioCourse, .drillApp])
+            return sources.isEmpty ? "The mistake deck" : sources.joined(separator: ", ") + " and the mistake deck"
+        case .fluency: return "Easy videos, quick writes and 4-3-2 talks: using what you know, faster"
         }
     }
 }

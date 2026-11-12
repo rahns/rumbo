@@ -1,3 +1,4 @@
+import RumboCore
 import SwiftUI
 
 // One-off celebration moments (docs/03-experience.md §3.5). Each plays when its trigger changes,
@@ -75,7 +76,7 @@ struct GoalReachedOverlay: View {
             if showingBanner {
                 VStack(spacing: 6) {
                     PicoView(mood: .cheering, size: 90, celebrate: trigger)
-                    Text("¡Meta cumplida!")
+                    Text(ActiveLanguage.phrases.goalReached)
                         .font(.rounded(.title, weight: .black))
                         .foregroundStyle(Palette.ink)
                     Text("\(goal) minutes this week. Weekly goal done!")

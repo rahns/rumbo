@@ -1,21 +1,25 @@
 import RumboCore
 
-/// User-facing wording for each task kind.
+/// User-facing wording for each task kind. Source names come from the language being learned.
 enum TaskCopy {
+    private static var pack: LanguagePack { ActiveLanguage.pack }
+    private static func name(_ source: SourceKind) -> String { pack.sources[source]?.name ?? "" }
+    private static func short(_ source: SourceKind) -> String { pack.sources[source]?.shortName ?? "" }
+
     static func title(for task: TaskKind) -> String {
         switch task {
-        case .drillLesson: "Duolingo warm-up"
-        case .courseTrack: "Language Transfer"
-        case .gradedWatch: "Dreaming Spanish"
-        case .gradedEasy: "Easy Dreaming"
-        case .seriesIntensive: "Extra en Español"
-        case .seriesExtensive: "Extra en Español"
+        case .drillLesson: "\(short(.drillApp)) warm-up"
+        case .courseTrack: name(.audioCourse)
+        case .gradedWatch: name(.gradedVideo)
+        case .gradedEasy: "Easy \(short(.gradedVideo))"
+        case .seriesIntensive: name(.learnerSeries)
+        case .seriesExtensive: name(.learnerSeries)
         case .contentWatch: "Watch or listen"
         case .writeGuided: "Writing"
         case .writeQuick: "Quick write"
-        case .exchangeText: "Tandem/HelloTalk message"
-        case .exchangeVoice: "Tandem/HelloTalk voice note"
-        case .exchangeCall: "Tandem/HelloTalk call"
+        case .exchangeText: "\(short(.exchange)) message"
+        case .exchangeVoice: "\(short(.exchange)) voice note"
+        case .exchangeCall: "\(short(.exchange)) call"
         case .fluency432: "4 · 3 · 2 story"
         case .reviewMistakes: "Mistake review"
         case .missionTravel: "Travel mission"
@@ -53,7 +57,7 @@ enum TaskCopy {
         switch detail {
         case .none: nil
         case .track(let track): "Track \(track)"
-        case .seriesPart(let episode, let part): "Episode \(episode), part \(part) of \(Course.extraIntensivePartsPerEpisode)"
+        case .seriesPart(let episode, let part): "Episode \(episode), part \(part) of \(pack.series?.intensiveParts ?? part)"
         case .seriesEpisode(let episode): "Episode \(episode)"
         case .difficulty(let range): "Videos rated \(range.lowerBound)–\(range.upperBound)"
         }
@@ -88,14 +92,14 @@ enum TaskCopy {
             "Watch something easy, below your level, at normal speed. Easy and fast builds fluency."
         case .seriesIntensive:
             if case .seriesPart(_, let part) = detail, part == 1 {
-                "Watch the first half with Spanish subtitles. Then rewatch one short scene and shadow it: speak along with the actors for 2–3 minutes."
+                "Watch the first half with \(pack.name) subtitles. Then rewatch one short scene and shadow it: speak along with the actors for 2–3 minutes."
             } else {
-                "Watch the second half with Spanish subtitles. Then pick one short scene and shadow it for 2–3 minutes."
+                "Watch the second half with \(pack.name) subtitles. Then pick one short scene and shadow it for 2–3 minutes."
             }
         case .seriesExtensive:
             "Watch the whole episode for enjoyment. Subtitles only if you get lost."
         case .contentWatch:
-            "Watch or listen to what you picked in Library, or any Spanish you enjoy. Follow the story; don't stop to look words up."
+            "Watch or listen to what you picked in Library, or any \(pack.name) you enjoy. Follow the story; don't stop to look words up."
         case .writeGuided:
             "Write \(Prompts.wordTarget(for: band).lowerBound)–\(Prompts.wordTarget(for: band).upperBound) words. Don't look things up while writing; check afterwards."
         case .writeQuick:
@@ -122,7 +126,7 @@ enum TaskCopy {
     /// A sentence nudging output to reuse today's structure (R4).
     static func reuseHint(for focus: TaskDetail) -> String? {
         switch focus {
-        case .track(let track): "Try to use something from Language Transfer track \(track)."
+        case .track(let track): "Try to use something from \(name(.audioCourse)) track \(track)."
         case .seriesPart(let episode, _), .seriesEpisode(let episode): "Try to reuse a phrase from Extra episode \(episode)."
         default: nil
         }
@@ -145,9 +149,9 @@ enum TaskCopy {
 
     static func otherExamples(_ strand: Strand) -> String {
         switch strand {
-        case .input: "Podcasts, a show, a tour in Spanish, a long conversation you mostly listened to."
+        case .input: "Podcasts, a show, a tour in \(pack.name), a long conversation you mostly listened to."
         case .languageFocused: "A grammar book, a class, flashcards, another app."
-        case .output: "A conversation, a class where you spoke, messages or a diary in Spanish."
+        case .output: "A conversation, a class where you spoke, messages or a diary in \(pack.name)."
         case .fluency: "Easy reading or listening at speed, retelling a story, chatting about familiar things."
         }
     }

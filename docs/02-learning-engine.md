@@ -1,5 +1,7 @@
 # 2. Learning engine
 
+> **Languages.** This chapter states the rules with Spanish's sources and numbers, because Spanish is the language they were tuned on. In code, everything that depends on the language (the hours each level starts at, which product fills each source role and its sizes, the weekly anchors, the can-do wording) comes from the active `LanguagePack`; the method (strands, planning steps, streaks, goals) is the same for every language. See [09-multi-language.md](09-multi-language.md).
+
 The engine is pure Swift with no UI or Apple-framework dependencies (`RumboCore`), so every rule here is unit-testable. References like (R3) point to [01-research.md](01-research.md).
 
 ## 2.1 Levels (bands)

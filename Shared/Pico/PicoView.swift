@@ -1,3 +1,4 @@
+import RumboCore
 import SwiftUI
 import UIKit
 
@@ -31,7 +32,8 @@ struct PicoView: View {
     @State private var hops = 0
     @State private var squawk: String?
 
-    private static let squawks = ["¡Vamos!", "¡Olé!", "¡Hola!", "¡Dale!", "¡Qué bien!", "¡Ánimo!"]
+    /// Pico cheers in the language being learned.
+    private static var squawks: [String] { ActiveLanguage.phrases.squawks }
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60, paused: reduceMotion)) { timeline in
@@ -115,7 +117,7 @@ struct PicoView: View {
         case 1: withAnimation(.spring(response: 0.7, dampingFraction: 0.75)) { spinAngle -= 360 }
         case 2: hops += 1
         default:
-            let word = Self.squawks.randomElement()!
+            let word = Self.squawks.randomElement() ?? ActiveLanguage.phrases.hello
             withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { squawk = word }
             Task {
                 try? await Task.sleep(for: .milliseconds(1300))

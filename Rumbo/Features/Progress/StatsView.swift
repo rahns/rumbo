@@ -15,7 +15,8 @@ struct StatsView: View {
                             StrandBalanceChart(minutes: model.strandMinutesThisWeek, targets: model.snapshot(for: profile).strandTargets)
                         }
                         projectionCard(profile)
-                        if profile.enabledSources.contains(.gradedVideo) {
+                        // The level-watched chart needs a graded library with a difficulty scale.
+                        if profile.enabledSources.contains(.gradedVideo), profile.pack.graded != nil {
                             RaisedCard(accent: Palette.coral) {
                                 WatchedLevelChart(sessions: model.watchedLevels, calendar: model.calendar)
                             }
@@ -120,26 +121,28 @@ struct StatsView: View {
     }
 
     private func coursesCard(_ profile: LearnerProfile) -> some View {
-        let sources = profile.enabledSources
+        let pack = profile.pack
+        // Only the sources this language has and the learner uses.
+        let sources = profile.enabledSources.filter(pack.has)
         return RaisedCard(accent: Palette.leaf) {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Your sources")
                     .font(.rounded(.headline, weight: .black))
                     .foregroundStyle(Palette.ink)
                 if sources.contains(.gradedVideo) {
-                    infoRow("Dreaming Spanish", "\(Int(model.listeningHours)) h listening · videos \(profile.dsDifficultyLow)–\(profile.dsDifficultyHigh)")
+                    infoRow(SourceCopy.name(.gradedVideo), "\(Int(model.listeningHours)) h listening · videos \(profile.dsDifficultyLow)–\(profile.dsDifficultyHigh)")
                 }
                 if sources.contains(.audioCourse) {
-                    courseRow("Language Transfer", done: profile.languageTransferLastTrack, total: Course.languageTransferTracks, unit: "tracks")
+                    courseRow(SourceCopy.name(.audioCourse), done: profile.languageTransferLastTrack, total: pack.course?.tracks ?? 0, unit: "tracks")
                 }
                 if sources.contains(.drillApp) {
-                    infoRow("Duolingo", "Section \(profile.duolingoSection) · Unit \(profile.duolingoUnit)")
+                    infoRow(SourceCopy.name(.drillApp), "Section \(profile.duolingoSection) · Unit \(profile.duolingoUnit)")
                 }
                 if sources.contains(.learnerSeries) {
-                    courseRow("Extra en Español", done: profile.extraEpisodesWatched, total: Course.extraEpisodes, unit: "episodes")
+                    courseRow(SourceCopy.name(.learnerSeries), done: profile.extraEpisodesWatched, total: pack.series?.episodes ?? 0, unit: "episodes")
                 }
                 if sources.contains(.exchange) {
-                    infoRow("Tandem/HelloTalk", "Speaking stage: \(stageName(profile.speakingStage))")
+                    infoRow(pack.sources[.exchange]?.shortName ?? "Exchange", "Speaking stage: \(stageName(profile.speakingStage))")
                 }
             }
         }

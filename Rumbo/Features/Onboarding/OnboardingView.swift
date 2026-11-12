@@ -96,6 +96,11 @@ struct OnboardingView: View {
             onFinish(draft)
             return
         }
+        // A language that's already set up (reached from Settings → Language) is switched to, not set up twice.
+        if step == .language, model.profiles.contains(where: { $0.languageCode == draft.languageCode }) {
+            model.setLanguage(draft.languageCode)
+            return
+        }
         if step == .progress {
             canDoIndex = 0
             draft.canDoAnswers = [:]

@@ -12,6 +12,8 @@
 | CI | GitHub Actions, `runs-on: xcode-27` (Apple Silicon, macOS 27, Xcode 27) |
 | Third-party dependencies | None in v1 |
 
+> **Languages.** What is specific to the language being learned lives in a `LanguagePack` in RumboCore (`LanguagePack.swift`, `LanguagePack+Spanish.swift`): source names, descriptions, links and URL schemes (§5.4), the writing checker's instructions and LanguageTool code (§5.3), level hours, and the Spanish words the app decorates itself with. `Shared/ActiveLanguage.swift` gives app and widget code the active pack. See [09-multi-language.md](09-multi-language.md).
+
 ## 5.2 Repository layout
 
 ```

@@ -110,6 +110,8 @@ public struct SourceInfo: Equatable, Sendable {
     }
 
     public let name: String
+    /// The name inside task titles and lists ("Dreaming" in "Easy Dreaming", "Tandem/HelloTalk" in "Tandem/HelloTalk call").
+    public let shortName: String
     /// One line under the name in onboarding ("Your main listening engine").
     public let role: String
     /// SF Symbol.
@@ -124,9 +126,10 @@ public struct SourceInfo: Equatable, Sendable {
     /// Opened when the app isn't installed.
     public let webURL: String?
 
-    public init(name: String, role: String, symbol: String, what: String, whereToFind: String, links: [Link] = [],
+    public init(name: String, shortName: String? = nil, role: String, symbol: String, what: String, whereToFind: String, links: [Link] = [],
                 inYourPlan: String? = nil, appURL: String? = nil, webURL: String? = nil) {
         self.name = name
+        self.shortName = shortName ?? name
         self.role = role
         self.symbol = symbol
         self.what = what

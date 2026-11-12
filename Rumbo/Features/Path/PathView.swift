@@ -194,7 +194,7 @@ struct PathView: View {
             ViewThatFits(in: .horizontal) {
                 leftChips(fullLevel: true, doneText: "Day done", todayDone: todayDone)
                 leftChips(fullLevel: false, doneText: "Day done", todayDone: todayDone)
-                leftChips(fullLevel: false, doneText: "Hoy", todayDone: todayDone)
+                leftChips(fullLevel: false, doneText: ActiveLanguage.phrases.today, todayDone: todayDone)
                 leftChips(fullLevel: false, doneText: nil, todayDone: todayDone)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -306,7 +306,7 @@ struct PathView: View {
             } label: {
                 VStack(spacing: 6) {
                     PathNodeView(status: node.status, isToday: node.isToday, date: node.date, minutes: node.minutes)
-                    Text(node.isToday ? "Hoy" : SpanishDate.shortDay(node.date))
+                    Text(node.isToday ? ActiveLanguage.phrases.today : PathDate.shortDay(node.date))
                         .font(.rounded(.caption, weight: node.isToday ? .black : .bold))
                         .foregroundStyle(node.isToday ? Palette.ink : Palette.secondaryText)
                 }
@@ -333,7 +333,7 @@ struct PathView: View {
 
     private func bubble(for node: PathNode) -> (text: String, color: Color)? {
         if node.isToday {
-            if node.status == .done { return ("¡Hecho!", Palette.leaf) }
+            if node.status == .done { return (ActiveLanguage.phrases.done, Palette.leaf) }
             return (model.session(for: node.date) == nil ? "Start" : "Continue", Palette.coral)
         }
         return nil
@@ -423,13 +423,13 @@ struct UnitBanner: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Semana \(unit.number)")
+                    Text("\(ActiveLanguage.phrases.week) \(unit.number)")
                         .font(.rounded(.title3, weight: .black))
                     if gold {
-                        Text("¡Semana completa!")
+                        Text(ActiveLanguage.phrases.weekCompleteGold)
                             .font(.rounded(.subheadline, weight: .black))
                     } else if unit.isPast && !showingOldSide {
-                        Text("Semana completa")
+                        Text(ActiveLanguage.phrases.weekComplete)
                             .font(.rounded(.subheadline, weight: .bold))
                             .opacity(0.85)
                     } else if let first = dates.first, let last = dates.last {
@@ -807,7 +807,7 @@ struct DaySummarySheet: View {
         let minutes = planned.flatMap(\.allLogIDs).compactMap { id in logs.first { $0.id == id }?.minutes }.reduce(0, +)
             + others.reduce(0) { $0 + $1.minutes }
         VStack(alignment: .leading, spacing: 14) {
-            Text(SpanishDate.longDay(date))
+            Text(PathDate.longDay(date))
                 .font(.rounded(.title2, weight: .black))
                 .foregroundStyle(Palette.ink)
             Text(minutes == 0 ? "Nothing logged that day." : "\(minutes) minutes\(plan?.isComplete == true ? " · day complete" : "")")
@@ -844,16 +844,17 @@ struct DaySummarySheet: View {
     }
 }
 
-/// Day names on the path in Spanish: "Lun 26" on nodes, "Lunes 26 de octubre" on a day's summary.
-enum SpanishDate {
-    private static let spanish = Locale(identifier: "es")
+/// Day names on the path in the language being learned: for Spanish, "Lun 26" on nodes and
+/// "Lunes 26 de octubre" on a day's summary.
+enum PathDate {
+    private static var locale: Locale { ActiveLanguage.pack.locale }
 
     static func shortDay(_ date: Date) -> String {
-        date.formatted(.dateTime.weekday(.abbreviated).day().locale(spanish)).capitalizedFirstLetter
+        date.formatted(.dateTime.weekday(.abbreviated).day().locale(locale)).capitalizedFirstLetter
     }
 
     static func longDay(_ date: Date) -> String {
-        date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(spanish)).capitalizedFirstLetter
+        date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(locale)).capitalizedFirstLetter
     }
 }
 

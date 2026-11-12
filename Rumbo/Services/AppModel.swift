@@ -223,7 +223,8 @@ final class AppModel {
 
     /// A suggested new Dreaming Spanish range, from recent comprehension ratings (§2.6).
     var difficultySuggestion: ClosedRange<Int>? {
-        guard let profile else { return nil }
+        // Only for a graded library with a difficulty scale.
+        guard let profile, profile.pack.graded != nil else { return nil }
         let range = profile.dsDifficulty
         let ratings = logs
             .filter { $0.difficultyLow == range.lowerBound && $0.difficultyHigh == range.upperBound }
@@ -1127,7 +1128,7 @@ final class AppModel {
         profile.speakingStage = capped
         save()
         banner = capped == .calls
-            ? Banner(title: "Live calls unlocked", message: "Once a week Rumbo will plan a short call with your Tandem/HelloTalk partner.")
+            ? Banner(title: "Live calls unlocked", message: "Once a week Rumbo will plan a short call with your \(pack.sources[.exchange]?.shortName ?? "exchange") partner.")
             : Banner(title: "Voice notes unlocked", message: "Plan a few bullet points, then record a 1–2 minute voice note. Planning first makes speaking easier.")
     }
 
@@ -1190,7 +1191,8 @@ final class AppModel {
             weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.pack.levelName(profile.band)) · \(profile.band.rawValue)",
             dayComplete: plan?.isComplete ?? false, hasPlan: plan != nil, tasks: tasks, mood: mood,
             suggestedMinutes: suggested, minutesToday: minutesToday,
-            upcoming: (1...3).compactMap { calendar.date(byAdding: .day, value: $0, to: today) }.map { upcomingSnapshot(for: $0, profile: profile) }
+            upcoming: (1...3).compactMap { calendar.date(byAdding: .day, value: $0, to: today) }.map { upcomingSnapshot(for: $0, profile: profile) },
+            languageCode: profile.languageCode
         )
         var comparable = snapshot
         comparable.updated = lastSnapshot?.updated ?? snapshot.updated
@@ -1222,7 +1224,7 @@ final class AppModel {
             updated: day, day: day, streak: status.streak, minutesThisWeek: status.minutesThisWeek,
             weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.pack.levelName(profile.band)) · \(profile.band.rawValue)",
             dayComplete: false, hasPlan: false, tasks: preview.tasks, mood: profile.travelMode ? "backpacker" : "hovering",
-            suggestedMinutes: preview.minutes, minutesToday: 0
+            suggestedMinutes: preview.minutes, minutesToday: 0, languageCode: profile.languageCode
         )
     }
 }

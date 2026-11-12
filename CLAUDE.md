@@ -13,6 +13,11 @@ Native iOS app (SwiftUI, iOS 27+) that turns a learner's Spanish sources into on
 - **Only start a build when the user says so.** Pushing to `main` doesn't build; trigger the `Build` workflow manually (workflow_dispatch) when asked.
 - CI runs `swift test` on RumboCore, then archives an unsigned IPA, fake-signs it with `ldid` using the entitlements files, and uploads just the IPA (unzipped, no entitlements files) as an artifact. Tags `v*` publish a release.
 
+## Languages
+- Spanish is one `LanguagePack` (RumboCore); everything specific to a language lives in its pack: sources and their numbers, level hours, the tutor's checklist, the phrasebook. Don't name a language or one of its sources outside a pack. See `docs/09-multi-language.md`.
+- Stored identifiers (`TaskKind` and `SourceKind` raw values, profile column names, backup field names) date from when Spanish was the only language. Never change them; a test pins them.
+- Every stored record has a `languageCode`; new records go through `AppModel.insert`.
+
 ## Conventions
 - App targets use Swift 5 language mode for now; RumboCore uses Swift 6.
 - Every planner rule from `docs/02-learning-engine.md` gets a unit test in RumboCore.
