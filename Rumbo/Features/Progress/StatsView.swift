@@ -91,7 +91,7 @@ struct StatsView: View {
                 }
                 if let target = profile.targetDate, target > .now {
                     let extra = projection.hours(by: target, from: .now, current: model.trainingHours, weeklyHours: weekly, extraMinutesPerDay: 10)
-                    Label("With 10 more minutes a day, you'd have about \(Int(extra)) h by \(target.formatted(.dateTime.month(.abbreviated).year())): \(ActiveLanguage.pack.levels.band(forHours: extra).label) (\(ActiveLanguage.pack.levels.band(forHours: extra).rawValue)).", systemImage: "bolt.fill")
+                    Label("With 10 more minutes a day, you'd have about \(Int(extra)) h by \(target.formatted(.dateTime.month(.abbreviated).year())): \(ActiveLanguage.pack.levelName(ActiveLanguage.pack.levels.band(forHours: extra))) (\(ActiveLanguage.pack.levels.band(forHours: extra).rawValue)).", systemImage: "bolt.fill")
                         .font(.rounded(.subheadline, weight: .semibold))
                         .foregroundStyle(Palette.secondaryText)
                 }
