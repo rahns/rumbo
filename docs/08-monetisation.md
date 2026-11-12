@@ -27,8 +27,8 @@ Status: **ideas only, parked for later.** Nothing here is implemented. Rumbo is 
 
 ## Audience and launch
 
-- **Who:** comprehensible-input learners using Dreaming Spanish and Language Transfer.
-- **Where:** r/dreamingspanish, the Dreaming Spanish community and language-learning Discords, with a short demo video of the path, Pico and the daily plan.
+- **Who:** comprehensible-input learners of Spanish and French using Dreaming and Language Transfer.
+- **Where:** r/dreamingspanish, r/French, the Dreaming community and language-learning Discords, with a short demo video of the path, Pico and the daily plan.
 
 ## Rough expectations
 

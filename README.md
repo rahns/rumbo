@@ -1,20 +1,26 @@
 # Rumbo
 
-*¿Rumbo a dónde?* — A native iOS app that combines the Spanish sources you already use into one research-based daily plan, taking you from A2 to B2 (comfortably conversational).
+*¿Rumbo a dónde?* — A native iOS app that combines the language-learning sources you already use into one research-based daily plan, taking you from A2 to B2 (comfortably conversational).
 
 Rumbo doesn't replace your sources. It tells you **exactly what to do today, with which source, and for how long**, then tracks it with a Duolingo-style path, a mascot, streaks, widgets and a Dynamic Island timer.
 
-## Supported sources
+**Languages:** Spanish, French.
 
-| Source | Role in the plan |
-|---|---|
-| Dreaming Spanish | Main comprehensible-input engine |
-| Language Transfer (Complete Spanish) | Grammar skeleton, A2 → early B1 |
-| Extra en Español | Intensive then extensive viewing, A2 → B1 |
-| Duolingo | Short daily retrieval warm-up, fades out by B2 |
-| Writing tasks (in-app) | Output, with free AI correction |
-| Tandem partner | Interaction: text → planned voice notes → live calls |
-| Suggested content | Native shows & podcasts once a source runs out |
+Each language keeps its own level, plan, goal and streak; switch between them in Settings. The app itself is in English.
+
+## Sources
+
+Each language fills these roles with the best source it has (see [docs/09-multi-language.md](docs/09-multi-language.md)):
+
+| Role | Source | In the plan |
+|---|---|---|
+| Graded video | Dreaming | Main comprehensible-input engine |
+| Audio course | Language Transfer | Grammar skeleton in the early levels |
+| Learner sitcom | Extra | Intensive then extensive viewing, A2 → B1 |
+| Drill app | Duolingo | Short daily retrieval warm-up, fades out by B2 |
+| Writing (in-app) | Rumbo | Output, with free AI correction |
+| Exchange partner | Tandem/HelloTalk | Interaction: text → planned voice notes → live calls |
+| Suggested content | Rumbo's Library | Native shows & podcasts once a source runs out |
 
 Every source can be turned off. The planner reallocates its time to whatever else fills the same learning strand.
 
@@ -38,6 +44,7 @@ Every source can be turned off. The planner reallocates its time to whatever els
 6. [Content catalog](docs/06-content-catalog.md)
 7. [Roadmap](docs/07-roadmap.md)
 8. [Monetisation ideas (parked, not built)](docs/08-monetisation.md)
+9. [Languages: language packs, and adding a new language](docs/09-multi-language.md)
 
 ## Install
 
@@ -56,3 +63,5 @@ open Rumbo.xcodeproj
 ```
 
 Engine tests: `swift test --package-path Packages/RumboCore`.
+
+To add a language, see [docs/09-multi-language.md](docs/09-multi-language.md): a new `LanguagePack` in RumboCore and a suggestions list, then add it to the **Languages** line above.

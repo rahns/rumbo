@@ -8,6 +8,8 @@ Each item: `id`, `title`, `kind` (`series` / `film` / `podcast` / `youtube`), `f
 
 ## 6.1 Core sources
 
+### Spanish
+
 | Source | Units | Used in bands | How it's scheduled |
 |---|---|---|---|
 | Dreaming Spanish | Hours; difficulty range | All | `ds.watch` / `ds.easy`, difficulty tuned by comprehension ratings |
@@ -17,7 +19,19 @@ Each item: `id`, `title`, `kind` (`series` / `film` / `podcast` / `youtube`), `f
 | Writing | Prompt library (`RumboCore/PromptLibrary+*.swift`): 100 guided-writing prompts per level (A2, B1, B2), 100 quick-write topics, 63 4/3/2 stories, 75 travel missions | All | `write.guided`, `write.quick`; a prompt isn't repeated until its whole list has been used |
 | Tandem | 62 prompts per level (A2, B1, B2), each with something to send and a question back | All | Text → voice → calls; no repeats until the list is used up |
 
+### French
+
+| Source | Units | Used in bands | How it's scheduled |
+|---|---|---|---|
+| Dreaming French | Hours; difficulty range | All | As Dreaming Spanish |
+| Language Transfer – Introduction to French | 40 tracks (6 h 37 min) | Until finished, usually within A2 | As Complete Spanish; once finished, grammar & vocab comes from Duolingo and the mistake deck |
+| Extra French | 13 episodes | A2 intensive, B1 extensive | As Extra en Español |
+| Duolingo, Writing, Tandem | As Spanish | As Spanish | The same prompt library, with the language and places filled in ("France" for "Latin America") |
+
 ## 6.2 Suggested content
+
+The lists below are Spanish's (`content.json`). French's is `content.fr.json` (25 items, at least 5 per level), described in [09-multi-language.md](09-multi-language.md) §9.7.
+
 
 Leaning Latin American, since the goal is living there. Each entry has a band, format, country/accent, where to find it, and why it's suggested.
 

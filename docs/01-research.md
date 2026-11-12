@@ -1,6 +1,6 @@
 # 1. Research foundations
 
-Every scheduling rule in Rumbo traces back to one of the findings below. Where a rule is a design judgement rather than a research finding, the spec says so (marked **[design]**).
+Rumbo teaches several languages (Spanish and French so far) with the same method. Every scheduling rule in Rumbo traces back to one of the findings below. Where a rule is a design judgement rather than a research finding, the spec says so (marked **[design]**).
 
 ## Evidence → rule
 
@@ -19,7 +19,7 @@ Every scheduling rule in Rumbo traces back to one of the findings below. Where a
 | R11 | Written corrective feedback improves accuracy, especially when followed by revision. | Bitchener (2008); Kang & Han (2015) | Writing tasks: write → get AI feedback → **rewrite** → errors go into the mistake deck. |
 | R12 | Habits take ~66 days on average to form, and a single missed day doesn't derail them. | Lally et al. (2010) | The weekly goal is the main metric. Streaks are lenient: earned freezes, a 10-minute day still counts. |
 | R13 | Planning *when and where* ("if X, then I'll do Y") raises follow-through. | Gollwitzer (1999) | Onboarding asks for a daily reminder time, so practice happens at a set time every day. (A separate study-cue question was dropped: the reminder time does the job.) |
-| R14 | Spanish is a Category I language: ~600–750 class hours to professional working proficiency for English speakers. | US Foreign Service Institute | Used for the long-term projection, alongside Dreaming Spanish's published hours roadmap (company guidance, not peer-reviewed). |
+| R14 | Spanish and French are both Category I languages for English speakers, but French takes longer: about 24 weeks (600 class hours) for Spanish against 30 weeks (750) for French to professional working proficiency. | US Foreign Service Institute | Used for the long-term projection, alongside Dreaming Spanish's published hours roadmap (company guidance, not peer-reviewed). It's also why French levels start at higher hours than Spanish ones ([09-multi-language.md](09-multi-language.md) §9.7). |
 | R15 | Beginner Duolingo courses produce reading/listening outcomes comparable to several university semesters, but give little speaking practice. | Jiang et al. (2021) | Duolingo's share shrinks as the output strands grow, and drops out by B2. |
 
 ## Where Rumbo deliberately deviates

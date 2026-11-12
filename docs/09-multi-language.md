@@ -1,6 +1,6 @@
-# 9. Supporting languages other than Spanish
+# 9. Languages
 
-**Status: built. Spanish and French can both be chosen.** The French pack (§9.7) rests on a few judgements that are listed there. This doc is the design for teaching several languages and the record of what was decided. French is the second language. The app's own text stays in English.
+**Status: built. Spanish and French can both be chosen.** To add a language, see §9.9. The French pack (§9.7) rests on a few judgements that are listed there. This doc is the design for teaching several languages and the record of what was decided. French is the second language. The app's own text stays in English.
 
 ## 9.1 Summary
 
@@ -184,3 +184,12 @@ Adding French needed no change to `project.yml`: its sources open with the same 
 - **Renaming persisted names.** Avoided by keeping raw values and stored column names. The pinning test in Phase 1 makes a slip fail loudly.
 - **Uneven languages.** A language with thin sources gives a thinner plan. The app should say so when a language is chosen, not leave it to be discovered.
 - **Third-party names.** The packs name other companies' products. That is fine for describing what the learner already uses, but each pack's wording should be checked before a store release.
+
+## 9.9 Adding a language
+
+1. Write `LanguagePack+<Name>.swift` in RumboCore, following `LanguagePack+French.swift`: sources for each role it has (leave out roles with no good source), real course and series numbers, level hours, the tutor's checklist, the phrasebook (a native speaker should read it), place words and a flag.
+2. Add it to `LanguagePack.all`. `LanguagePackTests` then checks it is complete, that every shared prompt fills, and that its plans are well formed.
+3. Add `Rumbo/Resources/catalog/content.<code>.json` (at least 20 items, 3 per level; `ContentCatalogTests` checks it).
+4. If one of its sources opens with a URL scheme the others don't use, add it to `LSApplicationQueriesSchemes` in `project.yml`.
+5. Add it to the **Languages** line in the README, and to §9.7's table of what each pack rests on.
+
