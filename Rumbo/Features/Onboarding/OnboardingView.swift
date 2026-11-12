@@ -82,7 +82,7 @@ struct OnboardingView: View {
     private var header: some View {
         HStack(spacing: 12) {
             Button {
-                go(to: Step(rawValue: step.rawValue - 1) ?? .welcome)
+                go(to: neighbour(of: step, by: -1) ?? .welcome)
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.rounded(.headline, weight: .heavy))
@@ -131,7 +131,20 @@ struct OnboardingView: View {
             canDoIndex = 0
             draft.canDoAnswers = [:]
         }
-        go(to: Step(rawValue: step.rawValue + 1) ?? .habit)
+        go(to: neighbour(of: step, by: 1) ?? .habit)
+    }
+
+    /// AI writing keys are shared by every language (they're in the Keychain), so adding a language
+    /// skips the writing-feedback step when one is already set up.
+    private var skipsFeedback: Bool {
+        addingLanguage && (GeminiKey.current != nil || GroqKey.current != nil)
+    }
+
+    /// The next or previous step, passing over the ones this setup skips.
+    private func neighbour(of step: Step, by offset: Int) -> Step? {
+        var next = Step(rawValue: step.rawValue + offset)
+        while next == .feedback && skipsFeedback { next = Step(rawValue: next!.rawValue + offset) }
+        return next
     }
 
     /// Where setup starts: the welcome on first launch, the sources when adding a language.
