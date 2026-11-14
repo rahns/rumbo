@@ -10,7 +10,7 @@ import Testing
         let balance = StrandBalance(band: band)
         #expect(total(balance) == 100)
         #expect(Strand.allCases.allSatisfy { balance[$0] % 5 == 0 })
-        #expect(balance[.input] == 55)
+        #expect(balance[.input] == Int(((band.strandTargets[.input] ?? 0) * 100).rounded()))
     }
 
     @Test func movingOneStrandScalesTheOthersInProportion() {

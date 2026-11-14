@@ -20,14 +20,17 @@ public enum Band: String, CaseIterable, Codable, Sendable, Comparable {
         hours / listeningShare
     }
 
-    /// Share of weekly minutes per strand (R1). Each row sums to 1; listening is 55% throughout.
+    /// Share of weekly minutes per strand (R1). Each row sums to 1; listening is 55% throughout, except at A1.1,
+    /// where a complete beginner studies more than they listen (45%).
     public var strandTargets: [Strand: Double] {
         switch self {
         // Beginners lean on structured study (an audio course, Duolingo) while there's little they can understand
         // yet, and speak and write very little: Nation's language-focused strand is at its largest here. No fluency
         // practice yet: there's nothing to make faster until there's something known well. At A1.1 no separate
         // speaking or writing either: Language Transfer and Duolingo already have the learner answering out loud.
-        case .a1_1: [.input: 0.55, .output: 0, .languageFocused: 0.45, .fluency: 0]
+        // A1.1 is also the one level with more study than listening: at zero, a few hundred words and the basic
+        // patterns make every minute of listening worth more. Not further than 55%: there's only so much course.
+        case .a1_1: [.input: 0.45, .output: 0, .languageFocused: 0.55, .fluency: 0]
         case .a1_2: [.input: 0.55, .output: 0.10, .languageFocused: 0.35, .fluency: 0]
         case .a2_1: [.input: 0.55, .output: 0.13, .languageFocused: 0.24, .fluency: 0.08]
         case .a2_2: [.input: 0.55, .output: 0.15, .languageFocused: 0.22, .fluency: 0.08]

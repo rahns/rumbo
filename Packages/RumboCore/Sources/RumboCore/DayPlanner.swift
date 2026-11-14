@@ -156,15 +156,25 @@ private struct PlanBuilder {
         // A lesson doesn't take one of the cards.
         while tasks.filter({ !$0.kind.isLesson }).count < DayPlanner.maxCards && remaining > 0 {
             // A strand set to 0% in a custom balance never gets a card.
-            let strands = Strand.allCases
+            var strands = Strand.allCases
                 .filter { !exhausted.contains($0) && (learner.strandTargets[$0] ?? 0) > 0 }
                 .sorted { deficit($0) > deficit($1) }
+            // A beginner's audio course is the backbone of their study: on a day with 20 minutes or more, its
+            // track goes in before listening takes the rest, so it isn't squeezed out by a longer Duolingo lesson.
+            if learner.band < .a2_1, budget >= 20, isCourseTrackDue, let index = strands.firstIndex(of: .languageFocused) {
+                strands.insert(strands.remove(at: index), at: 0)
+            }
             guard let strand = strands.first else { return }
 
             if !addCard(in: strand) {
                 exhausted.insert(strand)
             }
         }
+    }
+
+    /// The audio course can be planned today and isn't in the plan yet.
+    private var isCourseTrackDue: Bool {
+        learner.isEligible(.courseTrack) && !tasks.contains { $0.kind == .courseTrack } && deficit(.languageFocused) > 0
     }
 
     /// Adds a new card to `strand`. Returns false if nothing in the strand fits.

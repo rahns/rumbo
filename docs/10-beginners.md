@@ -18,11 +18,12 @@ Can-do statements for A1.1 and A1.2 (10 each) follow the CEFR's "Basic user" des
 
 | Band | Input | Output | Language-focused | Fluency |
 |---|---|---|---|---|
-| A1.1 | 55% | 0% | 45% | 0% |
+| A1.1 | 45% | 0% | 55% | 0% |
 | A1.2 | 55% | 10% | 35% | 0% |
 | A2.1 (for comparison) | 55% | 13% | 24% | 8% |
 
-- **Listening stays at 55%.** Comprehensible input works from day one if it's easy enough (Dreaming's Superbeginner videos, children's series), and keeping one listening share means level hours stay one rule.
+- **A1.1 studies more than it listens (45% listening, 55% grammar & vocab).** At zero, even the easiest videos lean on pictures and gestures; a few hundred common words and the basic patterns (Language Transfer, Duolingo) make every minute of listening worth more. Not further than 55%: listening from day one still works and is the engine for everything later, and there's only so much beginner course (Duolingo is capped at 15 minutes a day and one Language Transfer track is planned a day, so on 45–60-minute days study comes out nearer 35–45%). From A1.2 listening is 55%, as at every later level. A1.1 is the one level where listening isn't 55%, so a learner reaches A1.2 (90 training hours) with about 40 hours of listening rather than 50; the threshold stays at 90 because the extra study counts towards the level too.
+- **The course comes first on beginner days.** From 20 minutes, the Language Transfer track goes into the plan before listening takes the rest, so it isn't squeezed out by a longer Duolingo lesson. With **Always include Duolingo** on (the default) the Duolingo lesson is in every day's plan, whatever the length; switched off, it's one of the study options.
 - **Study is the biggest it ever gets.** With little that can be understood yet, the language-focused strand carries the early structure: Language Transfer from track 1, and Duolingo.
 - **Duolingo is real study at A1, not only a warm-up.** Its daily lesson is 5 minutes instead of 3, and it can grow to 15 minutes when grammar & vocab time has nowhere else to go (no audio course, or the course is done). This lengthening applies only below A2.1, so plans from A2 up are unchanged to the minute (`LearnerSnapshot.minuteRange`, the beginner branch in the planner's `addCard`).
 - **Speaking and writing start at A1.2.** At A1.1 there are no separate speaking or writing tasks (0%): Language Transfer and Duolingo already have the learner answering out loud and typing every day, and a writing card at zero is more likely to discourage than help. Travel missions still come if the learner turns on Travel mode. From A1.2, one short write and one message to a partner a week. Guided writing aims for 15–40 words in short sentences ("looking up a word or two is fine"), from 70 A1 prompts; partner messages come from 40 A1 prompts (say hello, ask a name, name a photo). The AI checker explains in English, as at every level below B2.
@@ -52,7 +53,7 @@ Nothing changes for anyone already at A2.1 or above: their level isn't recalcula
 ## 10.7 Judgement calls
 
 These rest on reasoning rather than a source, and are the first things to revisit with real beginners:
-- The A1 strand shares (45% and 35% study, 0% and 10% speaking & writing).
+- The A1 strand shares (A1.1 45% listening and 55% study; A1.2 35% study and 10% speaking & writing).
 - Duolingo's longer range at A1 (5 minutes daily, up to 15).
 - No weekly writing or partner anchors at A1.1.
 - A2 as a beginner's suggested first goal.

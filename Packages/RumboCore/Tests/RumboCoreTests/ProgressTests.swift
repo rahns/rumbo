@@ -179,7 +179,8 @@ import Testing
     @Test func levelHoursAreListeningMilestonesOverTheListeningShare() {
         for (band, listening) in zip(Band.allCases, [0.0, 50, 150, 225, 300, 450, 600, 800]) {
             #expect(abs(LanguagePack.spanish.levels.threshold(band) - (listening / Band.listeningShare / 10).rounded() * 10) < 0.001, "\(band.rawValue)")
-            #expect(abs((band.strandTargets[.input] ?? 0) - Band.listeningShare) < 0.001)
+            // Listening is 55% at every level but A1.1, where a complete beginner studies more (45%).
+            #expect(abs((band.strandTargets[.input] ?? 0) - (band == .a1_1 ? 0.45 : Band.listeningShare)) < 0.001)
         }
         #expect(abs(Band.trainingHours(fromListening: 150) - 272.7) < 0.1)
     }

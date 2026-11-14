@@ -152,4 +152,37 @@ import Testing
         #expect(Band.a1_2.firstBand(including: .fluency) == .a2_1)
         #expect(Band.b1_1.firstBand(including: .fluency) == .b1_1)
     }
+
+    @Test func aCompleteBeginnerStudiesMoreThanTheyListen() {
+        #expect(Band.a1_1.strandTargets[.input] == 0.45 && Band.a1_1.strandTargets[.languageFocused] == 0.55)
+        let learner = LearnerSnapshot(band: .a1_1)
+        // From 20 minutes the course track is always in, alongside Duolingo and some listening.
+        for budget in DayPlanner.budgetChoices where budget >= 20 {
+            let day = plan(budget, learner)
+            #expect(day.task(.courseTrack) != nil && day.task(.gradedWatch) != nil, "\(budget) min: \(day.kinds)")
+        }
+        // A fortnight of irregular days lands near 45 / 55.
+        var history: [ActivityRecord] = []
+        var current = learner
+        for (offset, budget) in [15, 45, 20, 30, 10, 45, 30, 30, 15, 45, 20, 30, 10, 45].enumerated() {
+            let day = TestCalendar.adding(days: offset, to: today)
+            let p = planner.plan(budget: budget, learner: current, history: history, today: day)
+            history += p.tasks.map { ActivityRecord(date: day, kind: $0.kind, minutes: $0.minutes) }
+            if p.task(.courseTrack) != nil { current.courseLastTrack += 1 }
+        }
+        let total = Double(history.reduce(0) { $0 + $1.minutes })
+        let study = Double(history.filter { $0.kind.strand == .languageFocused }.reduce(0) { $0 + $1.minutes }) / total
+        #expect(abs(study - 0.55) <= 0.06, "study share \(study)")
+    }
+
+    @Test(arguments: [Band.a1_1, .a1_2])
+    func alwaysIncludeDuolingoIsRespectedForBeginners(band: Band) {
+        var learner = LearnerSnapshot(band: band)
+        for budget in DayPlanner.budgetChoices {
+            #expect(plan(budget, learner).task(.drillLesson) != nil, "\(band.rawValue) \(budget) min: Duolingo is always in")
+        }
+        // Switched off, it's one of the study options, not a daily fixture, and the course is still planned.
+        learner.alwaysIncludeDrillApp = false
+        #expect(plan(20, learner).task(.courseTrack) != nil)
+    }
 }

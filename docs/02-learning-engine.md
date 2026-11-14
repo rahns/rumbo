@@ -48,7 +48,7 @@ Every task belongs to exactly one strand (R1). The planner targets these shares 
 
 | Band | Input | Output | Language-focused | Fluency |
 |---|---|---|---|---|
-| A1.1 | 55% | 0% | 45% | 0% |
+| A1.1 | 45% | 0% | 55% | 0% |
 | A1.2 | 55% | 10% | 35% | 0% |
 | A2.1 | 55% | 13% | 24% | 8% |
 | A2.2 | 55% | 15% | 22% | 8% |
