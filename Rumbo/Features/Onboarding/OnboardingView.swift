@@ -270,8 +270,8 @@ struct OnboardingView: View {
 
     private var sources: some View {
         VStack(alignment: .leading, spacing: 14) {
-            StepTitle("Which do you use?")
-            Text("Tick what you use; Rumbo fills the time with those. Not sure what one is? Tap it.")
+            StepTitle("Which sources do you want to use?")
+            Text("Tick the ones you use already or want to start; Rumbo builds your plan from those. Not sure what one is? Tap it.")
                 .font(.rounded(.subheadline, weight: .medium))
                 .foregroundStyle(Palette.secondaryText)
             ForEach(draft.pack.roles, id: \.self) { source in
