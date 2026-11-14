@@ -333,7 +333,7 @@ struct SettingsView: View {
                     Text(option.title).tag(option)
                 }
             }
-            .pickerStyle(.segmented)
+            .pickerStyle(.menu)
         } header: {
             Text("Appearance")
         } footer: {
