@@ -24,6 +24,9 @@ final class OnboardingDraft {
 
     var sources: Set<SourceKind> = Set(ActiveLanguage.pack.roles)
 
+    /// "I'm completely new": no hours, no source progress, no can-do questions; placed at A1.1.
+    var startingFromZero = false
+
     var dreamingHours = 150
     var otherListeningHours = 150
     var dreamingDifficultyLow = 40
@@ -48,7 +51,8 @@ final class OnboardingDraft {
 
     /// Listening hours before Rumbo (the graded library's counter, or an estimate).
     var inputHours: Double {
-        Double(importsHours ? dreamingHours : otherListeningHours)
+        if startingFromZero { return 0 }
+        return Double(importsHours ? dreamingHours : otherListeningHours)
     }
 
     /// Listening before Rumbo as training hours (÷ the listening share), which is what levels are measured in.
@@ -59,6 +63,8 @@ final class OnboardingDraft {
     /// The first time the goal step opens: the date the default weekly goal leads to.
     func prepareGoal() {
         guard !targetDateSet else { return }
+        // A beginner's first goal is A2: B2 would be years away, which isn't a motivating first target.
+        if placement.band < .a2_1 && goal == "B2" { goal = "A2" }
         targetDate = GoalPace.arrival(atHours: pack.levels.threshold(GoalEditor.goalBand(for: goal)), currentHours: trainingHours,
                                       weeklyMinutes: weeklyGoalMinutes, from: .now)
         targetDateSet = true
@@ -91,11 +97,13 @@ final class OnboardingDraft {
         profile.enabledSources = sources
         profile.baselineInputHours = inputHours
         profile.band = placement.band
-        profile.dsDifficulty = dreamingDifficultyLow...(dreamingDifficultyLow + profile.gradedWindowWidth)
-        profile.languageTransferLastTrack = languageTransferLastTrack
-        profile.extraEpisodesWatched = extraEpisodesWatched
-        profile.duolingoSection = duolingoSection
-        profile.duolingoUnit = duolingoUnit
+        // Starting from zero: the easiest videos and the start of every course.
+        let difficulty = startingFromZero ? 0 : dreamingDifficultyLow
+        profile.dsDifficulty = difficulty...(difficulty + profile.gradedWindowWidth)
+        profile.languageTransferLastTrack = startingFromZero ? 0 : languageTransferLastTrack
+        profile.extraEpisodesWatched = startingFromZero ? 0 : extraEpisodesWatched
+        profile.duolingoSection = startingFromZero ? 1 : duolingoSection
+        profile.duolingoUnit = startingFromZero ? 1 : duolingoUnit
         profile.reminderEnabled = reminderEnabled
         profile.reminderHour = calendar.component(.hour, from: reminderTime)
         profile.reminderMinute = calendar.component(.minute, from: reminderTime)

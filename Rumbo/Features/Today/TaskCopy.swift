@@ -101,7 +101,9 @@ enum TaskCopy {
         case .contentWatch:
             "Watch or listen to what you picked in Library, or any \(pack.name) you enjoy. Follow the story; don't stop to look words up."
         case .writeGuided:
-            "Write \(Prompts.wordTarget(for: band).lowerBound)–\(Prompts.wordTarget(for: band).upperBound) words. Don't look things up while writing; check afterwards."
+            band < .a2_1
+                ? "Write \(Prompts.wordTarget(for: band).lowerBound)–\(Prompts.wordTarget(for: band).upperBound) words in short, simple sentences, with words you know. Looking up a word or two is fine."
+                : "Write \(Prompts.wordTarget(for: band).lowerBound)–\(Prompts.wordTarget(for: band).upperBound) words. Don't look things up while writing; check afterwards."
         case .writeQuick:
             "Write as much as you can for 5 minutes on an easy topic. No corrections, no dictionary. Just keep going."
         case .exchangeText:

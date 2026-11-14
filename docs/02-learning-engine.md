@@ -6,14 +6,16 @@ The engine is pure Swift with no UI or Apple-framework dependencies (`RumboCore`
 
 ## 2.1 Levels (bands)
 
-Rumbo uses six internal bands. Each band has a **training-hours threshold** and a **can-do check** (10 self-assessment statements adapted from the CEFR self-assessment grid).
+Rumbo uses eight internal bands, from a complete beginner (A1.1, zero hours) to B2.2. Each band has a **training-hours threshold** and a **can-do check** (10 self-assessment statements adapted from the CEFR self-assessment grid).
 
-**Training hours** count every minute of practice logged in Rumbo, whatever the strand. The thresholds start from Dreaming Spanish's listening-hour milestones (150 / 225 / 300 / 450 / 600 / 800 / 1000) and divide them by the plan's listening share, **55%**, rounded to 10: a learner following the mix reaches each listening milestone at the same time as the training-hour threshold. Listening done before Rumbo (the Dreaming Spanish counter at onboarding) is converted the same way, ÷ 0.55, so 150 h becomes about 273 training hours. **[design]**
+**Training hours** count every minute of practice logged in Rumbo, whatever the strand. The thresholds start from Dreaming Spanish's listening-hour milestones (0 / 50 / 150 / 225 / 300 / 450 / 600 / 800 / 1000) and divide them by the plan's listening share, **55%**, rounded to 10: a learner following the mix reaches each listening milestone at the same time as the training-hour threshold. Listening done before Rumbo (the Dreaming Spanish counter at onboarding) is converted the same way, ÷ 0.55, so 150 h becomes about 273 training hours. **[design]**
 
 Sanity check against other sources (checked October 2026): Cambridge English puts B1 at about 350–400 and B2 at about 500–600 *guided* (classroom) hours; total study is usually put at about twice that. The FSI's 600–750 class hours for Spanish to professional working proficiency is often quoted as about 1,200–1,500 hours with self-study. B1.1 at 550 and B2.1 at 1,090 sit inside those ranges.
 
 | Band | Label in app | Training hours | (Listening milestone) | Example can-do statement |
 |---|---|---|---|---|
+| A1.1 | Novato | 0–90 | 0 | "I can say my name and where I'm from." |
+| A1.2 | Aprendiz | 90–270 | 50 | "I can introduce myself and ask someone their name, age and where they live." |
 | A2.1 | Explorador | 270–410 | 150 | "I can follow a slow, clear video about daily life on a familiar topic." |
 | A2.2 | Viajero | 410–550 | 225 | "I can describe my day and my plans in simple connected sentences." |
 | B1.1 | Andante | 550–820 | 300 | "I can understand the main points of a podcast about a topic I know." |
@@ -25,7 +27,7 @@ Speaking-stage unlocks (§2.4) still use **listening** hours, since they're abou
 
 Reaching the end of B2.2 completes the goal. After that Rumbo switches to a **maintenance plan** (same engine, B2.2 targets, mostly native content).
 
-Learners below 270 training hours can still use Rumbo. Onboarding shows a note that it's designed from A2 and places them in A2.1.
+Complete beginners start at A1.1 with zero hours: onboarding has an "I'm completely new" choice that skips the hours and can-do questions. See [10-beginners.md](10-beginners.md) for how the plan differs at A1. (French levels start a little later; each language's hours are in its pack.)
 
 ### Placement (onboarding)
 
@@ -46,6 +48,8 @@ Every task belongs to exactly one strand (R1). The planner targets these shares 
 
 | Band | Input | Output | Language-focused | Fluency |
 |---|---|---|---|---|
+| A1.1 | 55% | 4% | 36% | 5% |
+| A1.2 | 55% | 8% | 30% | 7% |
 | A2.1 | 55% | 13% | 24% | 8% |
 | A2.2 | 55% | 15% | 22% | 8% |
 | B1.1 | 55% | 18% | 18% | 9% |

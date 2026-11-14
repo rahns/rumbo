@@ -12,6 +12,7 @@ Each milestone ends with a downloadable IPA from CI.
 | **M5** | **Widgets and Live Activity** | Home and Lock Screen widgets, Dynamic Island timer with Pause/Done. |
 | **M6** | **Progress, Library, Travel mode** | Charts, projection, content catalog with remote refresh, Travel mode and missions, notifications. |
 | **M7** | **Polish and sharing** | Accessibility pass, empty states, a Releases page friends can download from. |
+| **M9** | **Complete beginners** | Built: A1.1 and A1.2 below A2.1, an "I'm completely new" start, beginner prompts, can-dos and suggestions. See [10-beginners.md](10-beginners.md). |
 | **M8** | **Other languages** | Built: Spanish is one language pack and French the second; each language keeps its own level, plan, goal and streak. See [09-multi-language.md](09-multi-language.md). |
 
 ## M0 findings (iPhone 16 Pro, iOS 27.2, author's development certificate)

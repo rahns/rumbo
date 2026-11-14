@@ -143,7 +143,10 @@ struct OnboardingView: View {
     /// The next or previous step, passing over the ones this setup skips.
     private func neighbour(of step: Step, by offset: Int) -> Step? {
         var next = Step(rawValue: step.rawValue + offset)
-        while next == .feedback && skipsFeedback { next = Step(rawValue: next!.rawValue + offset) }
+        // Someone starting from zero has no can-do questions to answer: they start at A1.1.
+        while (next == .feedback && skipsFeedback) || (next == .canDo && draft.startingFromZero) {
+            next = Step(rawValue: next!.rawValue + offset)
+        }
         return next
     }
 
@@ -285,47 +288,75 @@ struct OnboardingView: View {
     private var progress: some View {
         VStack(alignment: .leading, spacing: 16) {
             StepTitle("Where are you now?")
-            Text("Check each app for these numbers. They're what Rumbo uses to place you.")
+            Text(draft.startingFromZero
+                 ? "Rumbo will start you at the very beginning."
+                 : "Check each app for these numbers. They're what Rumbo uses to place you.")
                 .font(.rounded(.subheadline, weight: .medium))
                 .foregroundStyle(Palette.secondaryText)
-            let pack = draft.pack
-            if draft.importsHours, let graded = pack.graded {
-                RaisedCard(accent: Palette.coral) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        SourceHeading(source: .gradedVideo)
-                        NumberStepper(title: "Total hours watched", value: $draft.dreamingHours, range: 0...3000, step: 5)
-                        NumberStepper(title: "Difficulty you're watching: \(draft.dreamingDifficultyLow)–\(draft.dreamingDifficultyLow + graded.windowWidth)",
-                                      value: $draft.dreamingDifficultyLow,
-                                      range: graded.scale.lowerBound...(graded.scale.upperBound - graded.windowWidth), step: 1)
+            // Complete beginners skip the numbers (and the can-do questions): they start at A1.1.
+            Button {
+                withAnimation(.snappy) { draft.startingFromZero.toggle() }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: draft.startingFromZero ? "checkmark.circle.fill" : "circle")
+                        .font(.title2)
+                        .foregroundStyle(draft.startingFromZero ? Palette.leaf : Palette.secondaryText)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("I'm completely new to \(draft.pack.name)")
+                            .font(.rounded(.headline, weight: .bold))
+                            .foregroundStyle(Palette.ink)
+                        Text("Start from the very first words")
+                            .font(.rounded(.caption, weight: .medium))
+                            .foregroundStyle(Palette.secondaryText)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: 16).fill(Palette.card))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .sensoryFeedback(.selection, trigger: draft.startingFromZero)
+            if !draft.startingFromZero {
+                let pack = draft.pack
+                if draft.importsHours, let graded = pack.graded {
+                    RaisedCard(accent: Palette.coral) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            SourceHeading(source: .gradedVideo)
+                            NumberStepper(title: "Total hours watched", value: $draft.dreamingHours, range: 0...3000, step: 5)
+                            NumberStepper(title: "Difficulty you're watching: \(draft.dreamingDifficultyLow)–\(draft.dreamingDifficultyLow + graded.windowWidth)",
+                                          value: $draft.dreamingDifficultyLow,
+                                          range: graded.scale.lowerBound...(graded.scale.upperBound - graded.windowWidth), step: 1)
+                        }
+                    }
+                } else {
+                    RaisedCard(accent: Palette.coral) {
+                        NumberStepper(title: "Hours of \(pack.name) you've listened to or watched (roughly)", value: $draft.otherListeningHours, range: 0...3000, step: 10)
                     }
                 }
-            } else {
-                RaisedCard(accent: Palette.coral) {
-                    NumberStepper(title: "Hours of \(pack.name) you've listened to or watched (roughly)", value: $draft.otherListeningHours, range: 0...3000, step: 10)
-                }
-            }
-            if draft.sources.contains(.audioCourse), let course = pack.course {
-                RaisedCard(accent: Palette.leaf) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        SourceHeading(source: .audioCourse)
-                        NumberStepper(title: "Last track finished", value: $draft.languageTransferLastTrack, range: 0...course.tracks, step: 1)
+                if draft.sources.contains(.audioCourse), let course = pack.course {
+                    RaisedCard(accent: Palette.leaf) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            SourceHeading(source: .audioCourse)
+                            NumberStepper(title: "Last track finished", value: $draft.languageTransferLastTrack, range: 0...course.tracks, step: 1)
+                        }
                     }
                 }
-            }
-            if draft.sources.contains(.drillApp), let drill = pack.drill {
-                RaisedCard(accent: Palette.leaf) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        SourceHeading(source: .drillApp)
-                        NumberStepper(title: "Section", value: $draft.duolingoSection, range: drill.sections, step: 1)
-                        NumberStepper(title: "Unit", value: $draft.duolingoUnit, range: drill.units, step: 1)
+                if draft.sources.contains(.drillApp), let drill = pack.drill {
+                    RaisedCard(accent: Palette.leaf) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            SourceHeading(source: .drillApp)
+                            NumberStepper(title: "Section", value: $draft.duolingoSection, range: drill.sections, step: 1)
+                            NumberStepper(title: "Unit", value: $draft.duolingoUnit, range: drill.units, step: 1)
+                        }
                     }
                 }
-            }
-            if draft.sources.contains(.learnerSeries), let series = pack.series {
-                RaisedCard(accent: Palette.coral) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        SourceHeading(source: .learnerSeries)
-                        NumberStepper(title: "Episodes watched", value: $draft.extraEpisodesWatched, range: 0...series.episodes, step: 1)
+                if draft.sources.contains(.learnerSeries), let series = pack.series {
+                    RaisedCard(accent: Palette.coral) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            SourceHeading(source: .learnerSeries)
+                            NumberStepper(title: "Episodes watched", value: $draft.extraEpisodesWatched, range: 0...series.episodes, step: 1)
+                        }
                     }
                 }
             }
@@ -390,6 +421,9 @@ struct OnboardingView: View {
     }
 
     private func placementReason(_ result: Placement.Result) -> String {
+        if draft.startingFromZero {
+            return "Starting from zero: the easiest videos, the first course tracks and short daily lessons. The level-up check comes once you've put in the hours."
+        }
         let yes = draft.canDoAnswers.values.filter { $0 }.count
         let base = "\(Int(draft.inputHours)) hours of listening (≈ \(Int(draft.trainingHours)) training hours, since listening is \(Int(Band.listeningShare * 100))% of Rumbo's mix) and \(yes) of \(draft.canDoStatements.count) can-dos"
         switch result.adjustment {

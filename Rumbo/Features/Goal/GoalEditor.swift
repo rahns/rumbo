@@ -15,10 +15,11 @@ struct GoalEditor: View {
     /// Set while one value is being updated from the other, so they don't bounce back and forth.
     @State private var syncing = false
 
-    static let levels = ["B1", "B2", "C1"]
+    static let levels = ["A2", "B1", "B2", "C1"]
 
     static func goalBand(for goal: String) -> Band {
         switch goal {
+        case "A2": .a2_1
         case "B1": .b1_1
         case "C1": .b2_2
         default: .b2_1
@@ -27,6 +28,7 @@ struct GoalEditor: View {
 
     static func description(for goal: String) -> String {
         switch goal {
+        case "A2": "A first milestone: simple conversations about everyday things, and getting by when travelling."
         case "B1": "Get by confidently: travel, everyday conversations, simple opinions."
         case "C1": "Near-native ease. Rumbo's path goes to B2.2, then keeps you growing with native content."
         default: "Comfortably conversational: follow native speakers and hold your own in a group."

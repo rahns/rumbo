@@ -1,5 +1,7 @@
 # 6. Content catalog
 
+> **Beginners.** Both lists cover A1.1 and A1.2 (at least three suggestions each): children's series, songs made for learners and beginner podcasts, e.g. *Pocoyó*, *Plaza Sésamo*, *Señor Wooly*, *Coffee Break Spanish*; *Trotro*, *Petit Ours Brun*, *Alice Ayel*, *Coffee Break French*.
+
 > **Languages.** Each language has its own list, named by its pack (`LanguagePack.catalog`): `content.json` for Spanish, described below, and `content.fr.json` for French (25 items; see [09-multi-language.md](09-multi-language.md) §9.7 for how it was chosen and what still needs checking). Both are refreshed from `main` the same way. Prompts are shared by every language, with the language's name and places filled in.
 
 The catalog is a JSON file bundled with the app (`Rumbo/Resources/catalog/content.json`). Each time the Library opens (or is pulled to refresh), Rumbo fetches `https://raw.githubusercontent.com/rahns/rumbo/main/Rumbo/Resources/catalog/content.json`, caches it, and uses it only if its `version` is higher than the bundled one. So suggestions can be updated by editing the file on `main` and bumping `version`, without a new build. Free, no server.

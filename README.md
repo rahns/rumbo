@@ -1,6 +1,6 @@
 # Rumbo
 
-*¿Rumbo a dónde?* — A native iOS app that combines the language-learning sources you already use into one research-based daily plan, taking you from A2 to B2 (comfortably conversational).
+*¿Rumbo a dónde?* — A native iOS app that combines the language-learning sources you already use into one research-based daily plan, taking you from your very first words to B2 (comfortably conversational).
 
 Rumbo doesn't replace your sources. It tells you **exactly what to do today, with which source, and for how long**, then tracks it with a Duolingo-style path, a mascot, streaks, widgets and a Dynamic Island timer.
 
@@ -45,6 +45,7 @@ Every source can be turned off. The planner reallocates its time to whatever els
 7. [Roadmap](docs/07-roadmap.md)
 8. [Monetisation ideas (parked, not built)](docs/08-monetisation.md)
 9. [Languages: language packs, and adding a new language](docs/09-multi-language.md)
+10. [Complete beginners (A1)](docs/10-beginners.md)
 
 ## Install
 
