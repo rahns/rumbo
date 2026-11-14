@@ -813,6 +813,12 @@ struct DaySummarySheet: View {
             Text(minutes == 0 ? "Nothing logged that day." : "\(minutes) minutes\(plan?.isComplete == true ? " · day complete" : "")")
                 .font(.rounded(.headline, weight: .bold))
                 .foregroundStyle(plan?.isComplete == true ? Palette.leaf : Palette.secondaryText)
+            // A yellow dot: some practice, but less than the weekly goal needed that day.
+            if isPartlyDone {
+                Label("Less time than needed to meet your weekly goal", systemImage: "circle.lefthalf.filled")
+                    .font(.rounded(.subheadline, weight: .bold))
+                    .foregroundStyle(Palette.sun)
+            }
             ForEach(planned) { task in
                 row(symbol: TaskCopy.symbol(for: task.task), color: task.task.color, title: TaskCopy.title(for: task.task),
                     minutes: model.loggedMinutes(for: task) ?? task.minutesPlanned)
@@ -826,6 +832,11 @@ struct DaySummarySheet: View {
         .padding(.top, 8)
         // Fill the whole sheet, so its background reaches the edges.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    /// The day's dot on the path is yellow.
+    private var isPartlyDone: Bool {
+        model.pathMap.allNodes.first { model.calendar.isDate($0.date, inSameDayAs: date) }?.status == .partial
     }
 
     private func row(symbol: String, color: Color, title: String, minutes: Int) -> some View {
