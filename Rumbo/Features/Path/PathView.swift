@@ -815,9 +815,15 @@ struct DaySummarySheet: View {
                 .foregroundStyle(plan?.isComplete == true ? Palette.leaf : Palette.secondaryText)
             // A yellow dot: some practice, but less than the weekly goal needed that day.
             if isPartlyDone {
-                Label("Less time than needed to meet your weekly goal", systemImage: "circle.lefthalf.filled")
-                    .font(.rounded(.subheadline, weight: .bold))
-                    .foregroundStyle(Palette.sun)
+                // Laid out like the task rows below (icon in a 28-point column, 12 points before the text), so they line up.
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Image(systemName: "circle.lefthalf.filled")
+                        .frame(width: 28)
+                    Text("Less time than needed to meet your weekly goal")
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .font(.rounded(.subheadline, weight: .bold))
+                .foregroundStyle(Palette.sun)
             }
             ForEach(planned) { task in
                 row(symbol: TaskCopy.symbol(for: task.task), color: task.task.color, title: TaskCopy.title(for: task.task),
