@@ -810,13 +810,14 @@ struct DaySummarySheet: View {
             Text(PathDate.longDay(date))
                 .font(.rounded(.title2, weight: .black))
                 .foregroundStyle(Palette.ink)
-            // "Day complete" in green only for a green day; a yellow day's note below says why it isn't.
-            let complete = plan?.isComplete == true && !isPartlyDone
+            // The summary matches the day's dot: green says "day complete", yellow says why it isn't (below).
+            let status = nodeStatus
+            let complete = status == .done
             Text(minutes == 0 ? "Nothing logged that day." : "\(minutes) minutes\(complete ? " · day complete" : "")")
                 .font(.rounded(.headline, weight: .bold))
                 .foregroundStyle(complete ? Palette.leaf : Palette.secondaryText)
             // A yellow dot: some practice, but less than the weekly goal needed that day.
-            if isPartlyDone {
+            if status == .partial {
                 // Laid out like the task rows below (icon in a 28-point column, 12 points before the text), so they line up.
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
                     Image(systemName: "circle.lefthalf.filled")
@@ -842,9 +843,9 @@ struct DaySummarySheet: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    /// The day's dot on the path is yellow.
-    private var isPartlyDone: Bool {
-        model.pathMap.allNodes.first { model.calendar.isDate($0.date, inSameDayAs: date) }?.status == .partial
+    /// The colour of the day's dot on the path: green (done), yellow (partial), and so on.
+    private var nodeStatus: PathNode.Status? {
+        model.pathMap.allNodes.first { model.calendar.isDate($0.date, inSameDayAs: date) }?.status
     }
 
     private func row(symbol: String, color: Color, title: String, minutes: Int) -> some View {

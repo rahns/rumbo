@@ -328,7 +328,7 @@ struct SettingsView: View {
             Text("Pico checks your writing with Gemini and/or GroqCloud, both free with your own keys: your default first, then the other. Without either, a basic checker is used.")
         }
         Section {
-            Picker("Appearance", selection: $appearance) {
+            Picker("Theme", selection: $appearance) {
                 ForEach(Appearance.allCases) { option in
                     Text(option.title).tag(option)
                 }
