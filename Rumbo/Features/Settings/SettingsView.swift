@@ -5,6 +5,7 @@ import UIKit
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @State private var confirmingReset = false
+    @AppStorage(Appearance.storageKey) private var appearance = Appearance.system
     /// The second, final check before a language's progress is deleted.
     @State private var confirmingDeleteForGood = false
     @State private var backupDocument: BackupDocument?
@@ -325,6 +326,18 @@ struct SettingsView: View {
             GroupHeading(title: "Settings across all languages", section: "Writing feedback")
         } footer: {
             Text("Pico checks your writing with Gemini and/or GroqCloud, both free with your own keys: your default first, then the other. Without either, a basic checker is used.")
+        }
+        Section {
+            Picker("Appearance", selection: $appearance) {
+                ForEach(Appearance.allCases) { option in
+                    Text(option.title).tag(option)
+                }
+            }
+            .pickerStyle(.segmented)
+        } header: {
+            Text("Appearance")
+        } footer: {
+            Text("System follows your phone's light or dark mode.")
         }
         Section {
             Button("Save backup", systemImage: "square.and.arrow.down") { saveBackup() }

@@ -60,6 +60,7 @@ struct RumboApp: App {
 struct RootView: View {
     let model: AppModel
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage(Appearance.storageKey) private var appearance = Appearance.system
 
     var body: some View {
         Group {
@@ -89,6 +90,8 @@ struct RootView: View {
         .tint(Palette.coral)
         // SF Rounded everywhere, including plain Text in lists and forms (Settings, Mistakes, Diagnostics).
         .fontDesign(.rounded)
+        // Settings → Appearance: light, dark, or (nil) the phone's own.
+        .preferredColorScheme(appearance.colorScheme)
         // Refresh when the app comes back or the day changes, so Today rolls over at midnight.
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
