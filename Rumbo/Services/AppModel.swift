@@ -787,7 +787,17 @@ final class AppModel {
         guard let profile else { return }
         let calculator = StreakCalculator(weeklyGoalMinutes: profile.weeklyGoalMinutes, calendar: calendar)
         let history = history
-        Reminders.refresh(for: profile, practisedToday: minutesToday >= StreakCalculator.minutesForStreakDay, calendar: calendar) { day in
+        // Today's plan, started but not finished: tonight's nudge is about finishing it.
+        var unfinished: Reminders.UnfinishedPlan?
+        if let plan = session(for: calendar.startOfDay(for: .now)), !plan.isComplete {
+            let left = plan.planTasks.filter { $0.status == .planned || $0.status == .active }
+            if !left.isEmpty {
+                unfinished = Reminders.UnfinishedPlan(doneMinutes: minutesToday, tasksLeft: left.count,
+                                                      minutesLeft: left.reduce(0) { $0 + $1.minutesPlanned })
+            }
+        }
+        Reminders.refresh(for: profile, practisedToday: minutesToday >= StreakCalculator.minutesForStreakDay,
+                          unfinished: unfinished, calendar: calendar) { day in
             // If nothing more is logged before `day`, did a freeze just cover the day before?
             let status = calculator.status(history: history, today: day)
             guard let used = status.lastFreezeUsed, let yesterday = self.calendar.date(byAdding: .day, value: -1, to: self.calendar.startOfDay(for: day)),
