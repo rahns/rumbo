@@ -86,7 +86,8 @@ public struct DayPlanner: Sendable {
         let builder = PlanBuilder(budget: 0, learner: learner, window: window)
         let order = Dictionary(uniqueKeysWithValues: TaskKind.allCases.enumerated().map { ($1, $0) })
         return TaskKind.allCases
-            .filter { !planned.contains($0) && learner.isEligible($0) }
+            // A strand at 0% (fluency at A1, or a custom balance) isn't offered here either.
+            .filter { !planned.contains($0) && learner.isEligible($0) && (learner.strandTargets[$0.strand] ?? 0) > 0 }
             .sorted { lhs, rhs in
                 let left = builder.deficit(lhs.strand), right = builder.deficit(rhs.strand)
                 if left != right { return left > right }

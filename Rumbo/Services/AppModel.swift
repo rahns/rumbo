@@ -1224,7 +1224,7 @@ final class AppModel {
         }
         var snapshot = WidgetSnapshot(
             updated: .now, day: today, streak: status.streak, minutesThisWeek: status.minutesThisWeek,
-            weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.pack.levelName(profile.band, learnerAt: profile.band)) · \(profile.band.rawValue)",
+            weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.pack.levelName(profile.band)) · \(profile.band.rawValue)",
             dayComplete: plan?.isComplete ?? false, hasPlan: plan != nil, tasks: tasks, mood: mood,
             suggestedMinutes: suggested, minutesToday: minutesToday,
             upcoming: (1...3).compactMap { calendar.date(byAdding: .day, value: $0, to: today) }.map { upcomingSnapshot(for: $0, profile: profile) },
@@ -1258,7 +1258,7 @@ final class AppModel {
         let preview = suggestedPreview(for: day, profile: profile)
         return WidgetSnapshot(
             updated: day, day: day, streak: status.streak, minutesThisWeek: status.minutesThisWeek,
-            weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.pack.levelName(profile.band, learnerAt: profile.band)) · \(profile.band.rawValue)",
+            weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.pack.levelName(profile.band)) · \(profile.band.rawValue)",
             dayComplete: false, hasPlan: false, tasks: preview.tasks, mood: profile.travelMode ? "backpacker" : "hovering",
             suggestedMinutes: preview.minutes, minutesToday: 0, languageCode: profile.languageCode, band: profile.band.rawValue
         )

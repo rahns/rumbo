@@ -107,17 +107,31 @@ import Testing
         for pack in LanguagePack.all {
             let beginner = pack.phrases(for: .a1_2)
             #expect(beginner.week == "Week" && beginner.today == "Today" && beginner.done == "Done!")
-            #expect(beginner.greeting(hour: 9, name: "Ana") == "Good morning, Ana!")
+            // Greetings, level names and the reminder title stay in the language.
+            #expect(beginner.greeting(hour: 9, name: "Ana") == pack.phrases.greeting(hour: 9, name: "Ana"))
+            #expect(beginner.levelNames == pack.phrases.levelNames && beginner.reminderTitle == pack.phrases.reminderTitle)
             #expect(beginner.yes == "Yes!" && beginner.notYet == "Not yet")
             #expect(beginner.squawks == pack.phrases.squawks, "Pico still cheers in \(pack.name)")
-            #expect(pack.levelName(.a2_1, learnerAt: .a1_1) == "Explorer")
             #expect(pack.dateLocale(for: .a1_1).identifier == "en")
             // From A2, the language's own words.
             #expect(pack.phrases(for: .a2_1) == pack.phrases)
-            #expect(pack.levelName(.a2_1, learnerAt: .a2_1) == pack.levelName(.a2_1))
             #expect(pack.dateLocale(for: .b1_1).identifier == pack.localeIdentifier)
         }
         #expect(Band.a1_2.usesEnglishInterface && !Band.a2_1.usesEnglishInterface)
         #expect(Phrasebook.english.allStrings.allSatisfy { !$0.isEmpty })
+    }
+
+    @Test func noFluencyPracticeAtA1() {
+        for band in [Band.a1_1, .a1_2] {
+            #expect(band.strandTargets[.fluency] == 0)
+            let learner = LearnerSnapshot(band: band, speakingStage: .calls)
+            #expect(learner.strandTargets[.fluency] == 0)
+            for budget in DayPlanner.budgetChoices {
+                #expect(plan(budget, learner).tasks.allSatisfy { $0.kind.strand != .fluency }, "\(band.rawValue) \(budget) min")
+            }
+            let extras = planner.extraTasks(learner: learner, history: [], today: today, excluding: [])
+            #expect(!extras.isEmpty && extras.allSatisfy { $0.kind.strand != .fluency }, "not offered in Keep going either")
+        }
+        #expect(Band.a2_1.strandTargets[.fluency]! > 0)
     }
 }

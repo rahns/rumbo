@@ -18,7 +18,8 @@ struct StrandBalanceChart: View {
                  : "Your last 7 days. The bar is your share of time; the mark is the share your level needs.")
                 .font(.rounded(.subheadline, weight: .semibold))
                 .foregroundStyle(Palette.secondaryText)
-            ForEach(Strand.allCases, id: \.self) { strand in
+            // A strand at 0% (fluency at A1, or a custom balance) isn't shown at all.
+            ForEach(Strand.allCases.filter { (targets[$0] ?? 0) > 0 }, id: \.self) { strand in
                 row(strand, share: total == 0 ? 0 : Double(minutes[strand] ?? 0) / Double(total))
             }
         }

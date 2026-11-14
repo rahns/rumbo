@@ -526,6 +526,13 @@ struct BonusInputSheet: View {
 
     private static let strands: [Strand?] = [.input, .languageFocused, .output, .fluency, nil]
 
+    /// The kinds of practice offered: a strand at 0% (fluency at A1, or a custom balance) isn't one of them.
+    private var strands: [Strand?] {
+        guard let profile = model.profile else { return Self.strands }
+        let targets = model.snapshot(for: profile).strandTargets
+        return Self.strands.filter { option in option.map { (targets[$0] ?? 0) > 0 } ?? true }
+    }
+
     private func name(_ strand: Strand?) -> String { strand.map(TaskCopy.otherName) ?? "All-in-one" }
     private func color(_ strand: Strand?) -> Color { strand?.color ?? Palette.lavender }
 
@@ -538,7 +545,7 @@ struct BonusInputSheet: View {
         VStack(alignment: .leading, spacing: 18) {
             StepTitle("Log other practice")
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 10) {
-                ForEach(Self.strands, id: \.self) { option in
+                ForEach(strands, id: \.self) { option in
                     ChipButton(title: name(option), isSelected: strand == option, color: color(option)) { strand = option }
                 }
             }

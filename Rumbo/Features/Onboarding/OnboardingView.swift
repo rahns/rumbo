@@ -492,7 +492,7 @@ struct BandBadge: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            Text(ActiveLanguage.pack.levelName(band, learnerAt: band))
+            Text(ActiveLanguage.pack.levelName(band))
                 .font(.rounded(.largeTitle, weight: .black))
             Text(band.rawValue)
                 .font(.rounded(.headline, weight: .heavy))

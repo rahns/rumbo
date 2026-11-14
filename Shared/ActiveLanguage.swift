@@ -18,8 +18,8 @@ enum ActiveLanguage {
     static var phrases: Phrasebook { pack.phrases(for: band) }
     static var dateLocale: Locale { pack.dateLocale(for: band) }
 
-    /// A level's name as the learner sees it.
-    static func levelName(_ level: Band) -> String { pack.levelName(level, learnerAt: band) }
+    /// A level's name, always in the language being learned.
+    static func levelName(_ level: Band) -> String { pack.levelName(level) }
 
     /// Called by the app whenever the learner's level may have changed (and by widgets from their snapshot).
     static func setBand(_ band: Band?) {

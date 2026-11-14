@@ -24,9 +24,10 @@ public enum Band: String, CaseIterable, Codable, Sendable, Comparable {
     public var strandTargets: [Strand: Double] {
         switch self {
         // Beginners lean on structured study (an audio course, Duolingo) while there's little they can understand
-        // yet, and speak and write very little: Nation's language-focused strand is at its largest here.
-        case .a1_1: [.input: 0.55, .output: 0.04, .languageFocused: 0.36, .fluency: 0.05]
-        case .a1_2: [.input: 0.55, .output: 0.08, .languageFocused: 0.30, .fluency: 0.07]
+        // yet, and speak and write very little: Nation's language-focused strand is at its largest here. No fluency
+        // practice yet: there's nothing to make faster until there's something known well.
+        case .a1_1: [.input: 0.55, .output: 0.05, .languageFocused: 0.40, .fluency: 0]
+        case .a1_2: [.input: 0.55, .output: 0.10, .languageFocused: 0.35, .fluency: 0]
         case .a2_1: [.input: 0.55, .output: 0.13, .languageFocused: 0.24, .fluency: 0.08]
         case .a2_2: [.input: 0.55, .output: 0.15, .languageFocused: 0.22, .fluency: 0.08]
         case .b1_1: [.input: 0.55, .output: 0.18, .languageFocused: 0.18, .fluency: 0.09]

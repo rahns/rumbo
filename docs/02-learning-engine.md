@@ -48,14 +48,16 @@ Every task belongs to exactly one strand (R1). The planner targets these shares 
 
 | Band | Input | Output | Language-focused | Fluency |
 |---|---|---|---|---|
-| A1.1 | 55% | 4% | 36% | 5% |
-| A1.2 | 55% | 8% | 30% | 7% |
+| A1.1 | 55% | 5% | 40% | 0% |
+| A1.2 | 55% | 10% | 35% | 0% |
 | A2.1 | 55% | 13% | 24% | 8% |
 | A2.2 | 55% | 15% | 22% | 8% |
 | B1.1 | 55% | 18% | 18% | 9% |
 | B1.2 | 55% | 20% | 15% | 10% |
 | B2.1 | 55% | 23% | 10% | 12% |
 | B2.2 | 55% | 25% | 8% | 12% |
+
+A strand at **0%** (fluency at A1, or one set to 0% in a custom balance) is hidden everywhere: it gets no cards, isn't offered in Keep going or Log other, and has no row on Progress → strand balance.
 
 **Custom plan balance** (Settings → Plan balance, `StrandBalance`): the learner can replace this split with their own, in whole percentages in steps of 5 that always add up to 100. Moving one strand scales the others to fill the rest, keeping their proportions (evenly if they were all 0). The custom split is used for every deficit (`LearnerSnapshot.strandTargets`) until the learner switches back to Rumbo's. A strand at 0% never gets a new card (step 3 and the 10-minute single task skip it). A strand the planner can't fill today (nothing eligible: say Language Transfer and Duolingo are off and no mistake cards are due, `LearnerSnapshot.canPlan`) has its share spread over the others in proportion, with the default split too; if a custom split puts everything on such strands, the band's split is used for the rest, so the plan is never left empty. Settings → Plan balance flags such a strand under its slider, and Progress → strand balance uses the same effective targets; classes/tutoring, the Duolingo warm-up, the mistake review and the travel mission are planned as usual. Tested in `StrandBalanceTests`.
 

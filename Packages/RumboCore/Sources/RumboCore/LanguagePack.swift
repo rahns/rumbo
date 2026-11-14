@@ -95,15 +95,11 @@ public struct LanguagePack: Sendable, Identifiable {
     /// The level's friendly name ("Explorador").
     public func levelName(_ band: Band) -> String { phrases.levelNames[band] ?? band.rawValue }
 
-    /// The words the app shows a learner at `learnerBand`: the language's own from A2, English below it
-    /// (a beginner can't read them yet), except Pico's cheers, which are always the language's.
+    /// The words the app shows a learner at `learnerBand`: the language's own from A2. Below it, the
+    /// interface words (week, today, done, yes / not yet, congratulations…) are English, since a beginner
+    /// can't read them yet; Pico's cheers, the greetings, the level names and the reminder title stay the language's.
     public func phrases(for learnerBand: Band) -> Phrasebook {
-        learnerBand.usesEnglishInterface ? Phrasebook.english.cheering(with: phrases.squawks) : phrases
-    }
-
-    /// A level's name as a learner at `learnerBand` sees it ("Explorador", or "Explorer" for a beginner).
-    public func levelName(_ band: Band, learnerAt learnerBand: Band) -> String {
-        phrases(for: learnerBand).levelNames[band] ?? band.rawValue
+        learnerBand.usesEnglishInterface ? Phrasebook.english.keepingNativeWords(of: phrases) : phrases
     }
 
     /// Day and month names on the path: the language's, or English for a beginner.
@@ -404,7 +400,8 @@ extension Band {
 }
 
 extension Phrasebook {
-    /// The app's own words in English, for beginners (`LanguagePack.phrases(for:)`).
+    /// The app's own words in English, for beginners (`LanguagePack.phrases(for:)`). Its greetings, level
+    /// names, reminder title and cheers are replaced by the language's own there.
     public static let english = Phrasebook(
         week: "Week",
         weekComplete: "Week complete",
@@ -429,13 +426,13 @@ extension Phrasebook {
         levelNames: [.a1_1: "Beginner", .a1_2: "Starter", .a2_1: "Explorer", .a2_2: "Traveller",
                      .b1_1: "Wanderer", .b1_2: "Talker", .b2_1: "Fluent", .b2_2: "Local"])
 
-    /// The same words with another set of cheers for Pico.
-    public func cheering(with squawks: [String]) -> Phrasebook {
+    /// These English words, with the language's own cheers, greetings, level names and reminder title.
+    public func keepingNativeWords(of native: Phrasebook) -> Phrasebook {
         Phrasebook(week: week, weekComplete: weekComplete, weekCompleteGold: weekCompleteGold, today: today, done: done,
-                   goodMorning: goodMorning, goodAfternoon: goodAfternoon, goodEvening: goodEvening, exclamationEnd: exclamationEnd,
-                   hello: hello, yes: yes, notYet: notYet, congratulations: congratulations, letsGo: letsGo, wellDone: wellDone,
-                   amazing: amazing, goalReached: goalReached, daysInARow: daysInARow, reminderTitle: reminderTitle,
-                   squawks: squawks, levelNames: levelNames)
+                   goodMorning: native.goodMorning, goodAfternoon: native.goodAfternoon, goodEvening: native.goodEvening,
+                   exclamationEnd: native.exclamationEnd, hello: native.hello, yes: yes, notYet: notYet,
+                   congratulations: congratulations, letsGo: letsGo, wellDone: wellDone, amazing: amazing, goalReached: goalReached,
+                   daysInARow: daysInARow, reminderTitle: native.reminderTitle, squawks: native.squawks, levelNames: native.levelNames)
     }
 }
 
