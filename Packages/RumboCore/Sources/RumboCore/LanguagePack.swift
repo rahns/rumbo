@@ -95,7 +95,7 @@ public struct LanguagePack: Sendable, Identifiable {
     /// The level's friendly name ("Explorador").
     public func levelName(_ band: Band) -> String { phrases.levelNames[band] ?? band.rawValue }
 
-    /// The words the app shows a learner at `learnerBand`: the language's own from A2. Below it, the
+    /// The words the app shows a learner at `learnerBand`: the language's own from A1.2. At A1.1, the
     /// interface words (week, today, done, yes / not yet, congratulations…) are English, since a beginner
     /// can't read them yet; Pico's cheers, the greetings, the level names and the reminder title stay the language's.
     public func phrases(for learnerBand: Band) -> Phrasebook {
@@ -395,8 +395,8 @@ public struct Phrasebook: Equatable, Sendable {
 }
 
 extension Band {
-    /// A1 learners see the app wholly in English: the language's own words start at A2.
-    public var usesEnglishInterface: Bool { self < .a2_1 }
+    /// A complete beginner (A1.1) sees the interface words in English; the language's own start at A1.2.
+    public var usesEnglishInterface: Bool { self < .a1_2 }
 }
 
 extension Phrasebook {

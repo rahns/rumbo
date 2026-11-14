@@ -12,7 +12,8 @@ struct StatsView: View {
                     VStack(alignment: .leading, spacing: 18) {
                         levelCard(profile)
                         RaisedCard(accent: Palette.leaf) {
-                            StrandBalanceChart(minutes: model.strandMinutesThisWeek, targets: model.snapshot(for: profile).strandTargets)
+                            StrandBalanceChart(minutes: model.strandMinutesThisWeek, targets: model.snapshot(for: profile).strandTargets,
+                                               paused: pausedStrands(profile))
                         }
                         projectionCard(profile)
                         // The level-watched chart needs a graded library with a difficulty scale.
@@ -177,5 +178,22 @@ struct StatsView: View {
         case .voiceNotes: "voice notes"
         case .calls: "live calls"
         }
+    }
+
+    /// Why each strand at 0% isn't in the plan, for the balance chart: not yet at this level ("Starts at A2.1"),
+    /// set to 0% in a custom balance, or nothing to plan (its sources are off).
+    private func pausedStrands(_ profile: LearnerProfile) -> [Strand: String] {
+        let targets = model.snapshot(for: profile).strandTargets
+        var reasons: [Strand: String] = [:]
+        for strand in Strand.allCases where (targets[strand] ?? 0) == 0 {
+            if let custom = profile.strandBalance, custom[strand] == 0 {
+                reasons[strand] = "Set to 0% in Plan balance"
+            } else if profile.strandBalance == nil, (profile.band.strandTargets[strand] ?? 0) == 0 {
+                reasons[strand] = profile.band.firstBand(including: strand).map { "Starts at \($0.rawValue)" } ?? "Not in your plan"
+            } else {
+                reasons[strand] = "Nothing to plan: its sources are off"
+            }
+        }
+        return reasons
     }
 }

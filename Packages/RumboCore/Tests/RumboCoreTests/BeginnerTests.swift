@@ -25,7 +25,8 @@ import Testing
     @Test func beginnersStudyMoreAndSpeakLess() {
         #expect(Band.a1_1.strandTargets[.languageFocused]! > Band.a1_2.strandTargets[.languageFocused]!)
         #expect(Band.a1_2.strandTargets[.languageFocused]! > Band.a2_1.strandTargets[.languageFocused]!)
-        #expect(Band.a1_1.strandTargets[.output]! < Band.a2_1.strandTargets[.output]!)
+        #expect(Band.a1_1.strandTargets[.output]! < Band.a1_2.strandTargets[.output]!)
+        #expect(Band.a1_2.strandTargets[.output]! < Band.a2_1.strandTargets[.output]!)
     }
 
     @Test func noWeeklyAnchorsAtTheVeryStart() {
@@ -54,7 +55,7 @@ import Testing
     @Test func aCompleteBeginnersDayStartsWithTheCourseAndListening() {
         let learner = LearnerSnapshot(band: .a1_1)
         let day = plan(30, learner)
-        #expect(day.task(.drillLesson)?.minutes == 5, "a five-minute Duolingo lesson, not three")
+        #expect((5...15).contains(day.task(.drillLesson)?.minutes ?? 0), "at least a five-minute Duolingo lesson: \(day.tasks.map { "\($0.kind.rawValue) \($0.minutes)" })")
         #expect(day.task(.courseTrack)?.detail == .track(1))
         #expect(day.task(.gradedWatch) != nil)
         #expect(day.totalMinutes == 30)
@@ -105,7 +106,7 @@ import Testing
 
     @Test func beginnersSeeTheAppInEnglishExceptPicosCheers() {
         for pack in LanguagePack.all {
-            let beginner = pack.phrases(for: .a1_2)
+            let beginner = pack.phrases(for: .a1_1)
             #expect(beginner.week == "Week" && beginner.today == "Today" && beginner.done == "Done!")
             // Greetings, level names and the reminder title stay in the language.
             #expect(beginner.greeting(hour: 9, name: "Ana") == pack.phrases.greeting(hour: 9, name: "Ana"))
@@ -113,11 +114,12 @@ import Testing
             #expect(beginner.yes == "Yes!" && beginner.notYet == "Not yet")
             #expect(beginner.squawks == pack.phrases.squawks, "Pico still cheers in \(pack.name)")
             #expect(pack.dateLocale(for: .a1_1).identifier == "en")
-            // From A2, the language's own words.
+            // From A1.2, the language's own words.
+            #expect(pack.phrases(for: .a1_2) == pack.phrases)
             #expect(pack.phrases(for: .a2_1) == pack.phrases)
-            #expect(pack.dateLocale(for: .b1_1).identifier == pack.localeIdentifier)
+            #expect(pack.dateLocale(for: .a1_2).identifier == pack.localeIdentifier)
         }
-        #expect(Band.a1_2.usesEnglishInterface && !Band.a2_1.usesEnglishInterface)
+        #expect(Band.a1_1.usesEnglishInterface && !Band.a1_2.usesEnglishInterface)
         #expect(Phrasebook.english.allStrings.allSatisfy { !$0.isEmpty })
     }
 
@@ -133,5 +135,21 @@ import Testing
             #expect(!extras.isEmpty && extras.allSatisfy { $0.kind.strand != .fluency }, "not offered in Keep going either")
         }
         #expect(Band.a2_1.strandTargets[.fluency]! > 0)
+    }
+
+    @Test func noSeparateSpeakingOrWritingAtA1_1() {
+        #expect(Band.a1_1.strandTargets[.output] == 0)
+        let learner = LearnerSnapshot(band: .a1_1, speakingStage: .calls)
+        for budget in DayPlanner.budgetChoices {
+            #expect(plan(budget, learner).tasks.allSatisfy { $0.kind.strand != .output }, "\(budget) min")
+        }
+        // Travel mode still plans its mission: that's the learner's own choice.
+        var traveller = learner
+        traveller.travelMode = true
+        #expect(plan(30, traveller).task(.missionTravel) != nil)
+        #expect(Band.a1_1.firstBand(including: .output) == .a1_2)
+        #expect(Band.a1_1.firstBand(including: .fluency) == .a2_1)
+        #expect(Band.a1_2.firstBand(including: .fluency) == .a2_1)
+        #expect(Band.b1_1.firstBand(including: .fluency) == .b1_1)
     }
 }

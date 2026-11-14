@@ -6,6 +6,8 @@ import SwiftUI
 struct StrandBalanceChart: View {
     let minutes: [Strand: Int]
     let targets: [Strand: Double]
+    /// Why a strand at 0% isn't in the plan ("Starts at A2.1"); it's shown greyed out with this instead.
+    var paused: [Strand: String] = [:]
 
     var body: some View {
         let total = minutes.values.reduce(0, +)
@@ -18,11 +20,37 @@ struct StrandBalanceChart: View {
                  : "Your last 7 days. The bar is your share of time; the mark is the share your level needs.")
                 .font(.rounded(.subheadline, weight: .semibold))
                 .foregroundStyle(Palette.secondaryText)
-            // A strand at 0% (fluency at A1, or a custom balance) isn't shown at all.
-            ForEach(Strand.allCases.filter { (targets[$0] ?? 0) > 0 }, id: \.self) { strand in
-                row(strand, share: total == 0 ? 0 : Double(minutes[strand] ?? 0) / Double(total))
+            ForEach(Strand.allCases, id: \.self) { strand in
+                if (targets[strand] ?? 0) > 0 {
+                    row(strand, share: total == 0 ? 0 : Double(minutes[strand] ?? 0) / Double(total))
+                } else {
+                    pausedRow(strand)
+                }
             }
         }
+    }
+
+    /// A strand at 0% (not in the plan yet, or switched off): its name and why, greyed out.
+    private func pausedRow(_ strand: Strand) -> some View {
+        let reason = paused[strand] ?? "Not in your plan"
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(strand.label)
+                Spacer(minLength: 8)
+                Text("0%")
+            }
+            .font(.rounded(.subheadline, weight: .bold))
+            Text(reason)
+                .font(.rounded(.caption, weight: .medium))
+            Capsule()
+                .fill(Palette.lilac)
+                .frame(height: 12)
+                .padding(.vertical, 4)
+        }
+        .foregroundStyle(Palette.secondaryText)
+        .opacity(0.5)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(strand.label): \(reason)")
     }
 
     private func row(_ strand: Strand, share: Double) -> some View {

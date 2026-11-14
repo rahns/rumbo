@@ -48,7 +48,7 @@ Every task belongs to exactly one strand (R1). The planner targets these shares 
 
 | Band | Input | Output | Language-focused | Fluency |
 |---|---|---|---|---|
-| A1.1 | 55% | 5% | 40% | 0% |
+| A1.1 | 55% | 0% | 45% | 0% |
 | A1.2 | 55% | 10% | 35% | 0% |
 | A2.1 | 55% | 13% | 24% | 8% |
 | A2.2 | 55% | 15% | 22% | 8% |
@@ -57,7 +57,7 @@ Every task belongs to exactly one strand (R1). The planner targets these shares 
 | B2.1 | 55% | 23% | 10% | 12% |
 | B2.2 | 55% | 25% | 8% | 12% |
 
-A strand at **0%** (fluency at A1, or one set to 0% in a custom balance) is hidden everywhere: it gets no cards, isn't offered in Keep going or Log other, and has no row on Progress → strand balance.
+A strand at **0%** (speaking & writing at A1.1, fluency at A1, or one set to 0% in a custom balance) gets no cards and isn't offered in Keep going or Log other. On Progress → strand balance its row stays, greyed out, with why: "Starts at A2.1" (`Band.firstBand(including:)`), "Set to 0% in Plan balance", or "Nothing to plan: its sources are off".
 
 **Custom plan balance** (Settings → Plan balance, `StrandBalance`): the learner can replace this split with their own, in whole percentages in steps of 5 that always add up to 100. Moving one strand scales the others to fill the rest, keeping their proportions (evenly if they were all 0). The custom split is used for every deficit (`LearnerSnapshot.strandTargets`) until the learner switches back to Rumbo's. A strand at 0% never gets a new card (step 3 and the 10-minute single task skip it). A strand the planner can't fill today (nothing eligible: say Language Transfer and Duolingo are off and no mistake cards are due, `LearnerSnapshot.canPlan`) has its share spread over the others in proportion, with the default split too; if a custom split puts everything on such strands, the band's split is used for the rest, so the plan is never left empty. Settings → Plan balance flags such a strand under its slider, and Progress → strand balance uses the same effective targets; classes/tutoring, the Duolingo warm-up, the mistake review and the travel mission are planned as usual. Tested in `StrandBalanceTests`.
 

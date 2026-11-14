@@ -25,8 +25,9 @@ public enum Band: String, CaseIterable, Codable, Sendable, Comparable {
         switch self {
         // Beginners lean on structured study (an audio course, Duolingo) while there's little they can understand
         // yet, and speak and write very little: Nation's language-focused strand is at its largest here. No fluency
-        // practice yet: there's nothing to make faster until there's something known well.
-        case .a1_1: [.input: 0.55, .output: 0.05, .languageFocused: 0.40, .fluency: 0]
+        // practice yet: there's nothing to make faster until there's something known well. At A1.1 no separate
+        // speaking or writing either: Language Transfer and Duolingo already have the learner answering out loud.
+        case .a1_1: [.input: 0.55, .output: 0, .languageFocused: 0.45, .fluency: 0]
         case .a1_2: [.input: 0.55, .output: 0.10, .languageFocused: 0.35, .fluency: 0]
         case .a2_1: [.input: 0.55, .output: 0.13, .languageFocused: 0.24, .fluency: 0.08]
         case .a2_2: [.input: 0.55, .output: 0.15, .languageFocused: 0.22, .fluency: 0.08]
@@ -50,3 +51,12 @@ public enum Strand: String, CaseIterable, Codable, Sendable {
     case languageFocused
     case fluency
 }
+
+extension Band {
+    /// The first level, from this one up, whose plan includes `strand` (A1.2 for speaking & writing, A2.1 for
+    /// fluency), or nil if none does. For "Starts at A2.1" on a strand that's at 0% for now.
+    public func firstBand(including strand: Strand) -> Band? {
+        Band.allCases.first { $0 >= self && ($0.strandTargets[strand] ?? 0) > 0 }
+    }
+}
+

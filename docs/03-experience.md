@@ -1,6 +1,6 @@
 # 3. Experience: screens, animation and the mascot
 
-> **Beginners.** At A1 the app's words that are normally in the language being learned are in English instead, apart from Pico's cheers ([10-beginners.md](10-beginners.md) §10.3).
+> **Beginners.** At A1.1 the app's interface words that are normally in the language being learned are in English instead, apart from Pico's cheers, the greetings, the level names and the reminder title ([10-beginners.md](10-beginners.md) §10.3).
 
 > **Languages.** Examples below use Spanish. Everything that names a language, its sources or its words follows the language being learned (see [09-multi-language.md](09-multi-language.md)); the app's own text is English.
 

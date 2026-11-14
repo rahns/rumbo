@@ -18,20 +18,20 @@ Can-do statements for A1.1 and A1.2 (10 each) follow the CEFR's "Basic user" des
 
 | Band | Input | Output | Language-focused | Fluency |
 |---|---|---|---|---|
-| A1.1 | 55% | 5% | 40% | 0% |
+| A1.1 | 55% | 0% | 45% | 0% |
 | A1.2 | 55% | 10% | 35% | 0% |
 | A2.1 (for comparison) | 55% | 13% | 24% | 8% |
 
 - **Listening stays at 55%.** Comprehensible input works from day one if it's easy enough (Dreaming's Superbeginner videos, children's series), and keeping one listening share means level hours stay one rule.
 - **Study is the biggest it ever gets.** With little that can be understood yet, the language-focused strand carries the early structure: Language Transfer from track 1, and Duolingo.
 - **Duolingo is real study at A1, not only a warm-up.** Its daily lesson is 5 minutes instead of 3, and it can grow to 15 minutes when grammar & vocab time has nowhere else to go (no audio course, or the course is done). This lengthening applies only below A2.1, so plans from A2 up are unchanged to the minute (`LearnerSnapshot.minuteRange`, the beginner branch in the planner's `addCard`).
-- **Speaking and writing start small.** No weekly anchors at A1.1; at A1.2, one short write and one message to a partner a week. Guided writing aims for 15–40 words in short sentences ("looking up a word or two is fine"), from 70 A1 prompts; partner messages come from 40 A1 prompts (say hello, ask a name, name a photo). The AI checker explains in English, as at every level below B2.
-- **No fluency practice at A1.** Fluency work makes what you already know faster, and a beginner doesn't know enough yet. At 0% it is hidden from the app: no fluency cards, nothing in Keep going, no "Fluency practice" in Log other and no row on Progress → strand balance. It appears from A2.1 (8%).
+- **Speaking and writing start at A1.2.** At A1.1 there are no separate speaking or writing tasks (0%): Language Transfer and Duolingo already have the learner answering out loud and typing every day, and a writing card at zero is more likely to discourage than help. Travel missions still come if the learner turns on Travel mode. From A1.2, one short write and one message to a partner a week. Guided writing aims for 15–40 words in short sentences ("looking up a word or two is fine"), from 70 A1 prompts; partner messages come from 40 A1 prompts (say hello, ask a name, name a photo). The AI checker explains in English, as at every level below B2.
+- **No fluency practice at A1.** Fluency work makes what you already know faster, and a beginner doesn't know enough yet. At 0% it gets no cards and isn't offered in Keep going or Log other; on Progress → strand balance it stays as a greyed-out row saying "Starts at A2.1" (speaking & writing at A1.1 says "Starts at A1.2"). It appears from A2.1 (8%).
 - **Later tasks wait.** Extra (intensive viewing) starts at A2.1, quick writes at B1, 4-3-2 stories and voice notes with the speaking stages, as before.
 
-## 10.3 English only at A1
+## 10.3 English at A1.1
 
-At A1 the app is wholly in English: the words it otherwise shows in the language being learned switch to English while the learner is at A1.1 or A1.2 (`Band.usesEnglishInterface`, `LanguagePack.phrases(for:)`). That's "Week 3" and "Week complete!" on the path, "Today", "Done!", "Yes!" / "Not yet" in the can-do and level-up checks, "Congratulations!", "Let's go!", "Goal reached!", "7 days in a row!", day and month names on the path, the widgets and the language-switch splash. These stay in the language: **Pico's cheers** ("¡Vamos!", "Allez !"), **the greetings** ("¡Buenos días, Ana!"), **the level names** and **the daily reminder's title**. From A2.1 everything goes back to the language's own words. The welcome screen ("¡Hola!", "¿Rumbo a dónde?") is Rumbo's brand and stays as it is.
+At A1.1 the app's interface words, otherwise shown in the language being learned, are in English (`Band.usesEnglishInterface`, `LanguagePack.phrases(for:)`). From A1.2 (usually a few months in, rather than the couple of years until A2.1) they're back in the language. That's "Week 3" and "Week complete!" on the path, "Today", "Done!", "Yes!" / "Not yet" in the can-do and level-up checks, "Congratulations!", "Let's go!", "Goal reached!", "7 days in a row!", day and month names on the path, the widgets and the language-switch splash. These stay in the language: **Pico's cheers** ("¡Vamos!", "Allez !"), **the greetings** ("¡Buenos días, Ana!"), **the level names** and **the daily reminder's title**.  The welcome screen ("¡Hola!", "¿Rumbo a dónde?") is Rumbo's brand and stays as it is.
 
 The app follows the level through `ActiveLanguage.band`, set by `AppModel` on every save and language switch; widgets get it in their snapshot (`WidgetSnapshot.band`).
 
@@ -52,7 +52,7 @@ Nothing changes for anyone already at A2.1 or above: their level isn't recalcula
 ## 10.7 Judgement calls
 
 These rest on reasoning rather than a source, and are the first things to revisit with real beginners:
-- The A1 strand shares (40% and 35% study, 5% and 10% speaking & writing).
+- The A1 strand shares (45% and 35% study, 0% and 10% speaking & writing).
 - Duolingo's longer range at A1 (5 minutes daily, up to 15).
 - No weekly writing or partner anchors at A1.1.
 - A2 as a beginner's suggested first goal.
