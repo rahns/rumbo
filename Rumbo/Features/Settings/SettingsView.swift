@@ -375,6 +375,7 @@ struct SettingsView: View {
             Text("Share")
         }
         Section {
+            NavigationLink("Credits") { CreditsView() }
             NavigationLink("Diagnostics") { DiagnosticsView() }
         } footer: {
             VStack(spacing: 4) {

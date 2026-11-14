@@ -2,7 +2,7 @@
 
 *¿Rumbo a dónde?* — A native iOS app that combines the language-learning sources you already use into one research-based daily plan, taking you from your very first words to B2 (comfortably conversational).
 
-Rumbo doesn't replace your sources. It tells you **exactly what to do today, with which source, and for how long**, then tracks it with a Duolingo-style path, a mascot, streaks, widgets and a Dynamic Island timer.
+Rumbo doesn't replace your sources. It tells you **exactly what to do today, with which source, and for how long**, then tracks it with a game-like path, a mascot, streaks, widgets and a Dynamic Island timer.
 
 **Languages:** Spanish, French.
 

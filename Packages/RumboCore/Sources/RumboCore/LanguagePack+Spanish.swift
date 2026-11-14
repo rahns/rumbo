@@ -43,7 +43,7 @@ extension LanguagePack {
                 name: "Duolingo",
                 role: "Short daily warm-up",
                 symbol: "bolt.fill",
-                what: "The green-owl app of short, game-like lessons and a daily streak.",
+                what: "An app of short, game-like lessons with a daily streak.",
                 whereToFind: "The Duolingo app and duolingo.com.",
                 links: [.init("Open duolingo.com", "https://www.duolingo.com")],
                 appURL: "duolingo://",

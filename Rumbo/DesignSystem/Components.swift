@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Duolingo-style "3D" button: a solid face over a darker bottom edge that presses down on tap.
+/// A chunky "3D" button: a solid face over a darker bottom edge that presses down on tap.
 struct ChunkyButtonStyle: ButtonStyle {
     var color: Color = Palette.coral
     var foreground: Color = .white
