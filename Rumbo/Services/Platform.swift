@@ -98,7 +98,15 @@ enum Reminders {
 
     /// Reschedules everything. Called after anything that changes the reminder settings or today's practice.
     /// `freezeNote` says, for a day, whether a freeze will have covered the day before if nothing more is logged.
-    static func refresh(for profile: LearnerProfile, practisedToday: Bool, calendar: Calendar = .current,
+    /// What's left of today's plan when it's been started but not finished, for tonight's nudge.
+    struct UnfinishedPlan {
+        let doneMinutes: Int
+        let tasksLeft: Int
+        let minutesLeft: Int
+    }
+
+    /// `unfinished` (today's plan, started but not finished) turns tonight's nudge into one about finishing it.
+    static func refresh(for profile: LearnerProfile, practisedToday: Bool, unfinished: UnfinishedPlan? = nil, calendar: Calendar = .current,
                         freezeNote: (Date) -> FreezeNote? = { _ in nil }) {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: allIDs)
@@ -126,18 +134,26 @@ enum Reminders {
                                              trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: false)))
         }
 
-        // Evening nudges for the coming week; today's is skipped once something has been logged.
+        // Evening nudges for the coming week. Once something has been logged today, today's is either
+        // about finishing a plan that's been started, or skipped (the plan's done, or there isn't one).
         for offset in 0..<nudgeDaysAhead {
+            let finishing = offset == 0 && practisedToday ? unfinished : nil
             guard let day = calendar.date(byAdding: .day, value: offset, to: now),
                   let fireDate = calendar.date(bySettingHour: nudgeHour, minute: 0, second: 0, of: day),
                   fireDate > now,
-                  !(offset == 0 && practisedToday),
+                  !(offset == 0 && practisedToday && finishing == nil),
                   // Don't nudge before the daily reminder has even had its turn.
                   profile.reminderHour < nudgeHour
             else { continue }
             let nudge = UNMutableNotificationContent()
-            nudge.title = "Pico's still awake 🌙"
-            nudge.body = "Nothing logged today yet. Even one quick lesson keeps your streak going."
+            if let finishing {
+                let tasks = finishing.tasksLeft == 1 ? "One task" : "\(finishing.tasksLeft) tasks"
+                nudge.title = "So close 🌙"
+                nudge.body = "You've done \(finishing.doneMinutes) min today. \(tasks) (about \(finishing.minutesLeft) min) and today's plan is finished."
+            } else {
+                nudge.title = "Pico's still awake 🌙"
+                nudge.body = "Nothing logged today yet. Even one quick lesson keeps your streak going."
+            }
             nudge.sound = .default
             let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
             center.add(UNNotificationRequest(identifier: "\(nudgePrefix)\(offset)", content: nudge,
