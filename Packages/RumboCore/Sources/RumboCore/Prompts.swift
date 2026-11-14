@@ -5,10 +5,11 @@ import Foundation
 /// among the rest, the date decides, so the same day always shows the same prompt.
 public enum Prompts {
     public enum Level: Sendable {
-        case a2, b1, b2
+        case a1, a2, b1, b2
 
         public init(_ band: Band) {
             switch band {
+            case .a1_1, .a1_2: self = .a1
             case .a2_1, .a2_2: self = .a2
             case .b1_1, .b1_2: self = .b1
             case .b2_1, .b2_2: self = .b2
@@ -19,6 +20,7 @@ public enum Prompts {
     /// Target word range for `write.guided` (§2.3).
     public static func wordTarget(for band: Band) -> ClosedRange<Int> {
         switch Level(band) {
+        case .a1: 15...40
         case .a2: 50...100
         case .b1: 120...180
         case .b2: 200...300
@@ -58,6 +60,6 @@ public enum Prompts {
         return pool[day % pool.count]
     }
 
-    static let writingPrompts: [Level: [String]] = [.a2: writingA2, .b1: writingB1, .b2: writingB2]
-    static let exchangePrompts: [Level: [String]] = [.a2: tandemA2, .b1: tandemB1, .b2: tandemB2]
+    static let writingPrompts: [Level: [String]] = [.a1: writingA1, .a2: writingA2, .b1: writingB1, .b2: writingB2]
+    static let exchangePrompts: [Level: [String]] = [.a1: tandemA1, .a2: tandemA2, .b1: tandemB1, .b2: tandemB2]
 }

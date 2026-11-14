@@ -1,6 +1,10 @@
-/// The six internal levels Rumbo plans for. See docs/02-learning-engine.md §2.1.
+/// The eight internal levels Rumbo plans for, from a complete beginner (A1.1, zero hours) to B2.2.
+/// See docs/02-learning-engine.md §2.1 and docs/10-beginners.md for A1.
 /// The hours each one starts at and its friendly name depend on the language (`LanguagePack.levels`, `levelName`).
 public enum Band: String, CaseIterable, Codable, Sendable, Comparable {
+    /// Complete beginners: from the first word.
+    case a1_1 = "A1.1"
+    case a1_2 = "A1.2"
     case a2_1 = "A2.1"
     case a2_2 = "A2.2"
     case b1_1 = "B1.1"
@@ -19,6 +23,10 @@ public enum Band: String, CaseIterable, Codable, Sendable, Comparable {
     /// Share of weekly minutes per strand (R1). Each row sums to 1; listening is 55% throughout.
     public var strandTargets: [Strand: Double] {
         switch self {
+        // Beginners lean on structured study (an audio course, Duolingo) while there's little they can understand
+        // yet, and speak and write very little: Nation's language-focused strand is at its largest here.
+        case .a1_1: [.input: 0.55, .output: 0.04, .languageFocused: 0.36, .fluency: 0.05]
+        case .a1_2: [.input: 0.55, .output: 0.08, .languageFocused: 0.30, .fluency: 0.07]
         case .a2_1: [.input: 0.55, .output: 0.13, .languageFocused: 0.24, .fluency: 0.08]
         case .a2_2: [.input: 0.55, .output: 0.15, .languageFocused: 0.22, .fluency: 0.08]
         case .b1_1: [.input: 0.55, .output: 0.18, .languageFocused: 0.18, .fluency: 0.09]

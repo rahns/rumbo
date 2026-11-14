@@ -107,9 +107,9 @@ public struct LevelScale: Equatable, Sendable {
     public func threshold(_ band: Band) -> Double { hours[band] ?? 0 }
 
     /// The level an amount of training hours falls into, before any can-do adjustment.
-    /// Learners below the first level's threshold are still placed in it.
+    /// The first level starts at zero hours, so everyone has one.
     public func band(forHours hours: Double) -> Band {
-        Band.allCases.last { hours >= threshold($0) } ?? .a2_1
+        Band.allCases.last { hours >= threshold($0) } ?? Band.allCases[0]
     }
 }
 
@@ -219,11 +219,12 @@ public struct GradedVideo: Equatable, Sendable {
         self.countsHours = countsHours
     }
 
-    /// The easy range for a learner whose range starts at `lowerBound`.
+    /// The easy range for a learner whose range starts at `lowerBound`. Near the bottom of the scale
+    /// (a beginner), it's the easiest window there is rather than a single point.
     public func easyRange(below lowerBound: Int) -> ClosedRange<Int> {
         let low = max(scale.lowerBound, lowerBound - easyOffset.upperBound)
-        let high = max(low, lowerBound - easyOffset.lowerBound)
-        return low...high
+        let high = max(low + windowWidth, lowerBound - easyOffset.lowerBound)
+        return low...min(high, scale.upperBound)
     }
 }
 

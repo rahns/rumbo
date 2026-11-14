@@ -60,6 +60,13 @@ public struct LearnerSnapshot: Sendable {
             ?? Dictionary(uniqueKeysWithValues: Strand.allCases.map { ($0, available.contains($0) ? 1 / Double(available.count) : 0) })
     }
 
+    /// How long a task can be for this learner. Beginners (A1) use the drill app as real study, not only a
+    /// warm-up: up to 15 minutes, 5 as the daily warm-up. Every other task keeps its usual range.
+    public func minuteRange(for kind: TaskKind) -> MinuteRange {
+        if kind == .drillLesson, band < .a2_1 { return MinuteRange(min: 3, standard: 5, max: 15) }
+        return kind.minutes
+    }
+
     /// Whether the planner has anything it can put on a card in this strand (lessons and logged-only kinds aside).
     public func canPlan(_ strand: Strand) -> Bool {
         TaskKind.allCases.contains { $0.strand == strand && isEligible($0) }

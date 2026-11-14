@@ -22,7 +22,7 @@ import Testing
         #expect(plan.totalMinutes >= budget - 4, "\(band.rawValue) \(budget) min planned only \(plan.totalMinutes)")
         #expect(Set(plan.kinds).count == plan.tasks.count, "repeated tasks must be merged")
         for task in plan.tasks {
-            #expect(task.minutes >= task.kind.minutes.min && task.minutes <= task.kind.minutes.max,
+            #expect(task.minutes >= learner.minuteRange(for: task.kind).min && task.minutes <= learner.minuteRange(for: task.kind).max,
                     "\(task.kind.rawValue) has \(task.minutes) min")
             #expect(learner.isEligible(task.kind))
         }
@@ -114,6 +114,9 @@ import Testing
     static let irregularFortnight = [15, 45, 20, 30, 10, 45, 30, 30, 15, 45, 20, 30, 10, 45]
 
     @Test(arguments: [
+        // A complete beginner: Language Transfer from track 1, nothing else done yet.
+        LearnerSnapshot(band: .a1_1),
+        LearnerSnapshot(band: .a1_2, courseLastTrack: 20),
         LearnerSnapshot(band: .a2_1, courseLastTrack: 12, seriesEpisodesWatched: 1),
         LearnerSnapshot(band: .b1_1, speakingStage: .voiceNotes, courseLastTrack: 60, seriesEpisodesWatched: 5),
         // By B2.2 the courses are done, so language-focused time comes from the mistake deck.

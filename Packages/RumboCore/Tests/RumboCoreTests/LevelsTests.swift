@@ -20,7 +20,8 @@ import Testing
     }
 
     @Test func neverLeavesTheBandRange() {
-        #expect(Placement.place(hours: 91, ownBandYes: 0, nextBandYes: 0, levels: LanguagePack.spanish.levels).band == .a2_1)
+        #expect(Placement.place(hours: 0, ownBandYes: 0, nextBandYes: 0, levels: LanguagePack.spanish.levels).band == .a1_1)
+        #expect(Placement.place(hours: 91, ownBandYes: 0, nextBandYes: 0, levels: LanguagePack.spanish.levels).band == .a1_1)
         #expect(Placement.place(hours: 3636, ownBandYes: 10, nextBandYes: 10, levels: LanguagePack.spanish.levels).band == .b2_2)
     }
 }

@@ -27,7 +27,9 @@ import Testing
     func everyPackIsComplete(pack: LanguagePack) {
         // Levels: all six, rising.
         let hours = Band.allCases.map(pack.levels.threshold)
-        #expect(hours.allSatisfy { $0 > 0 } && hours == hours.sorted() && Set(hours).count == 6, "\(pack.code) levels")
+        // A1.1 starts from zero (complete beginners); every later level at more hours than the one before.
+        #expect(hours.first == 0 && hours.dropFirst().allSatisfy { $0 > 0 }, "\(pack.code) levels")
+        #expect(hours == hours.sorted() && Set(hours).count == Band.allCases.count, "\(pack.code) levels")
         // Writing, an exchange partner and suggested content exist for every language.
         for role in [SourceKind.writing, .exchange, .suggestedContent] { #expect(pack.has(role), "\(pack.code) \(role)") }
         // A role's numbers and its wording come together.
@@ -116,7 +118,7 @@ import Testing
     /// video, audio course, learner series or drill app. The planner still fills the day.
     static let bare = LanguagePack(
         code: "xx", name: "Testish", nativeName: "Testish", flag: "🏳️", localeIdentifier: "en",
-        levels: LevelScale([.a2_1: 300, .a2_2: 500, .b1_1: 700, .b1_2: 1000, .b2_1: 1400, .b2_2: 1900]),
+        levels: LevelScale([.a1_1: 0, .a1_2: 120, .a2_1: 300, .a2_2: 500, .b1_1: 700, .b1_2: 1000, .b2_1: 1400, .b2_2: 1900]),
         sources: LanguagePack.spanish.sources.filter { [.writing, .exchange, .suggestedContent].contains($0.key) },
         course: nil, series: nil, graded: nil, drill: nil,
         anchors: LanguagePack.spanish.anchors, tutor: Tutor(focus: "agreement", languageToolCode: nil, explainInLanguageFrom: nil),
@@ -161,7 +163,7 @@ import Testing
         #expect(french.course?.minutes(track: 13) == 7)
         #expect(french.series?.episodes == 13)
         // Levels start a little later than in Spanish.
-        for band in Band.allCases {
+        for band in Band.allCases.dropFirst() {
             #expect(french.levels.threshold(band) > LanguagePack.spanish.levels.threshold(band))
             #expect(french.levels.threshold(band).truncatingRemainder(dividingBy: 10) == 0)
         }

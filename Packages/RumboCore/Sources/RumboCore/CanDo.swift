@@ -11,6 +11,31 @@ public enum CanDo {
     /// The statements every language shares; `{language}` stands for its name.
     static func shared(for band: Band) -> [String] {
         switch band {
+        // A1 from the CEFR's "Basic user" descriptors: understanding and using familiar everyday expressions.
+        case .a1_1: [
+            "I can say hello, goodbye, please and thank you.",
+            "I can say my name and where I'm from.",
+            "I can count to twenty and understand numbers when they're said slowly.",
+            "I can understand a few simple words in a video when there are pictures to help.",
+            "I can ask \"how are you?\" and answer it.",
+            "I can recognise everyday words like days of the week, colours and food.",
+            "I can read a very short sign or menu and pick out words I know.",
+            "I can say what I like with one word or a short phrase.",
+            "I can follow a very slow video made for complete beginners and get the gist.",
+            "I can write my name, my age and where I live.",
+        ]
+        case .a1_2: [
+            "I can introduce myself and ask someone their name, age and where they live.",
+            "I can order a drink or simple food and say please and thank you.",
+            "I can understand simple questions about me when people speak slowly and clearly.",
+            "I can talk about my family in short sentences.",
+            "I can follow most of a video for beginners when the speaker uses pictures and gestures.",
+            "I can say what I do every day in simple sentences.",
+            "I can ask for the price of something and understand the answer.",
+            "I can write a short, simple message, like a postcard or a text to a friend.",
+            "I can understand times, dates and prices when I hear them.",
+            "I can ask simple questions and answer them about familiar things.",
+        ]
         case .a2_1: [
             "I can follow a slow, clear video about daily life on a familiar topic.",
             "I can understand simple directions and announcements when spoken slowly.",

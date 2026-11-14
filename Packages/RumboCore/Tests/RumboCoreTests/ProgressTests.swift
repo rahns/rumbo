@@ -177,7 +177,7 @@ import Testing
     }
 
     @Test func levelHoursAreListeningMilestonesOverTheListeningShare() {
-        for (band, listening) in zip(Band.allCases, [150.0, 225, 300, 450, 600, 800]) {
+        for (band, listening) in zip(Band.allCases, [0.0, 50, 150, 225, 300, 450, 600, 800]) {
             #expect(abs(LanguagePack.spanish.levels.threshold(band) - (listening / Band.listeningShare / 10).rounded() * 10) < 0.001, "\(band.rawValue)")
             #expect(abs((band.strandTargets[.input] ?? 0) - Band.listeningShare) < 0.001)
         }

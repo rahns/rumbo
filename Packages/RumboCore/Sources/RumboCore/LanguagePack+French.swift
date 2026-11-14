@@ -13,7 +13,7 @@ extension LanguagePack {
         // Spanish's hours raised by 15%, rounded to 10. Dreaming publishes no French roadmap; its FAQ says the
         // early phase "may be slightly longer if instead of Spanish or Italian you are learning Portuguese,
         // or especially French". A judgement, to revisit if Dreaming publishes French milestones.
-        levels: LevelScale([.a2_1: 310, .a2_2: 470, .b1_1: 630, .b1_2: 940, .b2_1: 1250, .b2_2: 1670]),
+        levels: LevelScale([.a1_1: 0, .a1_2: 100, .a2_1: 310, .a2_2: 470, .b1_1: 630, .b1_2: 940, .b2_1: 1250, .b2_2: 1670]),
         sources: [
             .gradedVideo: SourceInfo(
                 name: "Dreaming French",
@@ -27,7 +27,7 @@ extension LanguagePack {
                 webURL: "https://www.dreaming.com/french"),
             .audioCourse: SourceInfo(
                 name: "Language Transfer",
-                role: "Grammar head start for A2",
+                role: "Grammar head start, from zero",
                 symbol: "headphones",
                 what: "\"Introduction to French\": a free audio course of 40 short tracks, about six and a half hours in all. A teacher guides a student to build sentences by thinking, not memorising, and you answer out loud before the student does. It's an introduction, so it gives you the main structures of French and then hands over to your other sources.",
                 whereToFind: "The free Language Transfer app or languagetransfer.org.",
@@ -116,7 +116,7 @@ extension LanguagePack {
             daysInARow: "%d jours d'affilée\u{00A0}!",
             reminderTitle: "On y va\u{00A0}?",
             squawks: ["Allez\u{00A0}!", "Bravo\u{00A0}!", "Salut\u{00A0}!", "Super\u{00A0}!", "Génial\u{00A0}!", "Courage\u{00A0}!"],
-            levelNames: [.a2_1: "Explorateur", .a2_2: "Voyageur", .b1_1: "Flâneur", .b1_2: "Bavard", .b2_1: "À l'aise", .b2_2: "Habitué"]),
+            levelNames: [.a1_1: "Débutant", .a1_2: "Apprenti", .a2_1: "Explorateur", .a2_2: "Voyageur", .b1_1: "Flâneur", .b1_2: "Bavard", .b2_1: "À l'aise", .b2_2: "Habitué"]),
         catalog: CatalogSource(
             resource: "content.fr",
             remoteURL: "https://raw.githubusercontent.com/rahns/rumbo/main/Rumbo/Resources/catalog/content.fr.json",

@@ -92,7 +92,7 @@ public struct DayPlanner: Sendable {
                 if left != right { return left > right }
                 return order[lhs]! < order[rhs]!
             }
-            .map { PlannedTask(kind: $0, minutes: builder.fixedMinutes(for: $0) ?? $0.minutes.standard, detail: builder.detail(for: $0), isAnchor: false) }
+            .map { PlannedTask(kind: $0, minutes: builder.fixedMinutes(for: $0) ?? learner.minuteRange(for: $0).standard, detail: builder.detail(for: $0), isAnchor: false) }
     }
 
     /// Records from the 6 days before `today` (today itself is what's being planned).
@@ -125,7 +125,7 @@ private struct PlanBuilder {
 
     mutating func planBusyDayWarmUp() {
         if learner.alwaysIncludeDrillApp, learner.isEligible(.drillLesson) {
-            add(.drillLesson, minutes: TaskKind.drillLesson.minutes.min)
+            add(.drillLesson, minutes: learner.minuteRange(for: .drillLesson).min)
         }
     }
 
@@ -133,7 +133,7 @@ private struct PlanBuilder {
     mutating func planWarmUp() {
         // Every day, so the Duolingo streak survives; one 3-minute lesson leaves study time for Language Transfer.
         if budget >= 15, learner.alwaysIncludeDrillApp, learner.isEligible(.drillLesson) {
-            add(.drillLesson, minutes: TaskKind.drillLesson.minutes.standard)
+            add(.drillLesson, minutes: learner.minuteRange(for: .drillLesson).standard)
         }
         if budget >= 20, learner.dueReviewCards >= 5, learner.isEligible(.reviewMistakes) {
             add(.reviewMistakes, minutes: budget >= 30 ? 5 : 3)
@@ -143,7 +143,7 @@ private struct PlanBuilder {
     /// Travel mode: a real-world mission every day, online or not, not only when speaking & writing gets a card.
     mutating func planTravelMission() {
         guard learner.travelMode, learner.isEligible(.missionTravel), !tasks.contains(where: { $0.kind == .missionTravel }) else { return }
-        let range = TaskKind.missionTravel.minutes
+        let range = learner.minuteRange(for: .missionTravel)
         let minutes = min(range.standard, remaining)
         guard minutes >= range.min else { return }
         add(.missionTravel, minutes: minutes)
@@ -175,11 +175,23 @@ private struct PlanBuilder {
                 add(kind, minutes: fixed)
                 return true
             }
-            let range = kind.minutes
+            let range = learner.minuteRange(for: kind)
             let minutes = min(min(max(wanted, range.min), range.max), remaining)
             guard minutes >= range.min else { continue }
             add(kind, minutes: minutes)
             return true
+        }
+        // A beginner's study strand often has only one source (Duolingo, already in as the warm-up): rather
+        // than leaving its share unspent, lengthen the task already planned there, within its range.
+        // Beginners only, so plans from A2 up are unchanged.
+        if learner.band < .a2_1,
+           let index = tasks.firstIndex(where: { $0.kind.strand == strand && !$0.kind.isLesson && fixedMinutes(for: $0.kind) == nil }) {
+            let headroom = learner.minuteRange(for: tasks[index].kind).max - tasks[index].minutes
+            let extra = min(headroom, max(wanted, 5), remaining)
+            if extra > 0 {
+                tasks[index].minutes += extra
+                return true
+            }
         }
         return false
     }
@@ -196,10 +208,10 @@ private struct PlanBuilder {
         guard left > 0 else { return }
         for strand in Strand.allCases.filter({ (learner.strandTargets[$0] ?? 0) > 0 }).sorted(by: { deficit($0) > deficit($1) }) {
             let fitting = candidates(for: strand).filter { kind in
-                (fixedMinutes(for: kind) ?? kind.minutes.min) <= left && !tasks.contains { $0.kind == kind }
+                (fixedMinutes(for: kind) ?? learner.minuteRange(for: kind).min) <= left && !tasks.contains { $0.kind == kind }
             }
-            if let kind = fitting.first(where: { (fixedMinutes(for: $0) ?? $0.minutes.max) >= left }) ?? fitting.first {
-                add(kind, minutes: fixedMinutes(for: kind) ?? min(left, kind.minutes.max))
+            if let kind = fitting.first(where: { (fixedMinutes(for: $0) ?? learner.minuteRange(for: $0).max) >= left }) ?? fitting.first {
+                add(kind, minutes: fixedMinutes(for: kind) ?? min(left, learner.minuteRange(for: kind).max))
                 return
             }
         }
@@ -213,7 +225,7 @@ private struct PlanBuilder {
             return deficit(left) > deficit(right)
         }
         for index in order where remaining > 0 && fixedMinutes(for: tasks[index].kind) == nil && !tasks[index].kind.isLesson {
-            let headroom = tasks[index].kind.minutes.max - tasks[index].minutes
+            let headroom = learner.minuteRange(for: tasks[index].kind).max - tasks[index].minutes
             tasks[index].minutes += min(headroom, remaining)
         }
     }

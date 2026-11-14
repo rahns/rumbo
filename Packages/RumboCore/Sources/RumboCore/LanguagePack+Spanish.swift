@@ -8,9 +8,9 @@ extension LanguagePack {
         nativeName: "Español",
         flag: "🇪🇸",
         localeIdentifier: "es",
-        // The listening-hour milestones (150 / 225 / 300 / 450 / 600 / 800, Dreaming Spanish's roadmap) divided
+        // The listening-hour milestones (0 / 50 / 150 / 225 / 300 / 450 / 600 / 800, Dreaming Spanish's roadmap) divided
         // by the plan's listening share, rounded to 10 (docs/02-learning-engine.md §2.1).
-        levels: LevelScale([.a2_1: 270, .a2_2: 410, .b1_1: 550, .b1_2: 820, .b2_1: 1090, .b2_2: 1450]),
+        levels: LevelScale([.a1_1: 0, .a1_2: 90, .a2_1: 270, .a2_2: 410, .b1_1: 550, .b1_2: 820, .b2_1: 1090, .b2_2: 1450]),
         sources: [
             .gradedVideo: SourceInfo(
                 name: "Dreaming Spanish",
@@ -24,9 +24,9 @@ extension LanguagePack {
                 webURL: "https://www.dreaming.com/spanish"),
             .audioCourse: SourceInfo(
                 name: "Language Transfer",
-                role: "Grammar skeleton, A2 to early B1",
+                role: "Grammar skeleton, from zero to early B1",
                 symbol: "headphones",
-                what: "\"Complete Spanish\": a free audio course of 90 short tracks. A teacher guides a student to build sentences by thinking, not memorising, and you answer out loud before the student does. It gives you the skeleton of Spanish grammar from A2 to early B1.",
+                what: "\"Complete Spanish\": a free audio course of 90 short tracks. A teacher guides a student to build sentences by thinking, not memorising, and you answer out loud before the student does. It starts from zero and gives you the skeleton of Spanish grammar up to early B1.",
                 whereToFind: "The free Language Transfer app or languagetransfer.org.",
                 links: [.init("Open languagetransfer.org", "https://www.languagetransfer.org")],
                 appURL: "languagetransfer://",
@@ -91,6 +91,10 @@ extension LanguagePack {
         // A daily warm-up from A2.1 to B1.2, optional at B2.1 and dropped at B2.2 (R15).
         drill: DrillApp(lastBand: .b1_2, optionalBand: .b2_1, sections: 1...10, units: 1...300),
         anchors: [
+            // Beginners: no weekly anchors at A1.1 (writing and a partner come when there's something to say);
+            // a short write and one message a week at A1.2.
+            .a1_1: AnchorTargets(writing: 0, seriesIntensiveParts: 0, seriesEpisodes: 0, exchanges: 0, fluency432: 0),
+            .a1_2: AnchorTargets(writing: 1, seriesIntensiveParts: 0, seriesEpisodes: 0, exchanges: 1, fluency432: 0),
             // Dreaming Spanish is the main input; Extra is a once-a-week change of pace.
             .a2_1: AnchorTargets(writing: 1, seriesIntensiveParts: 1, seriesEpisodes: 0, exchanges: 2, fluency432: 0),
             .a2_2: AnchorTargets(writing: 1, seriesIntensiveParts: 1, seriesEpisodes: 0, exchanges: 2, fluency432: 0),
@@ -124,7 +128,7 @@ extension LanguagePack {
             daysInARow: "¡%d días seguidos!",
             reminderTitle: "¿Rumbo a dónde?",
             squawks: ["¡Vamos!", "¡Olé!", "¡Hola!", "¡Dale!", "¡Qué bien!", "¡Ánimo!"],
-            levelNames: [.a2_1: "Explorador", .a2_2: "Viajero", .b1_1: "Andante", .b1_2: "Conversador", .b2_1: "Fluido", .b2_2: "Local"]),
+            levelNames: [.a1_1: "Novato", .a1_2: "Aprendiz", .a2_1: "Explorador", .a2_2: "Viajero", .b1_1: "Andante", .b1_2: "Conversador", .b2_1: "Fluido", .b2_2: "Local"]),
         catalog: CatalogSource(
             resource: "content",
             remoteURL: "https://raw.githubusercontent.com/rahns/rumbo/main/Rumbo/Resources/catalog/content.json",
