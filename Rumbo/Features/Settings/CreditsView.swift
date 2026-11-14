@@ -6,9 +6,6 @@ struct CreditsView: View {
     var body: some View {
         Form {
             Group {
-                Section("Rumbo") {
-                    entry("Made by Rahn", "Pico, the app icon, the plan, the writing prompts and everything else in Rumbo are its own.")
-                }
                 Section("Research and standards") {
                     entry("Common European Framework of Reference (CEFR)",
                           "The levels (A1 to B2) and the \"I can…\" self-assessment questions are adapted from the CEFR and its self-assessment grid, © Council of Europe.")
@@ -24,9 +21,6 @@ struct CreditsView: View {
                 Section("Writing feedback") {
                     entry("AI checkers", "Gemini (Google) and GroqCloud, with your own free API keys.")
                     entry("Basic checker", "LanguageTool's public API, and Apple's on-device model.")
-                }
-                Section("Apple") {
-                    entry("Icons and fonts", "SF Symbols and SF Rounded, used under Apple's licence.")
                 }
             }
             .rumboRows()
