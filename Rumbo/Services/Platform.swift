@@ -125,7 +125,7 @@ enum Reminders {
                 daily.title = "🧊 Streak freeze used"
                 daily.body = "Your \(note.streak)-day streak is safe. A little \(pack.name) today keeps it going."
             } else {
-                daily.title = pack.phrases.reminderTitle
+                daily.title = pack.phrases(for: profile.band).reminderTitle
                 daily.body = "Pico has today's plan ready. Even 10 minutes counts."
             }
             daily.sound = .default

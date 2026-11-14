@@ -29,21 +29,27 @@ Can-do statements for A1.1 and A1.2 (10 each) follow the CEFR's "Basic user" des
 - **Later tasks wait.** Extra (intensive viewing) starts at A2.1, quick writes at B1, 4-3-2 stories and voice notes with the speaking stages, as before.
 - **Easy videos** for the fluency strand are the easiest window on the scale (0–5) when the learner's own range is already near the bottom.
 
-## 10.3 Onboarding and goals
+## 10.3 English only at A1
+
+At A1 the app is wholly in English: the words it otherwise shows in the language being learned switch to English while the learner is at A1.1 or A1.2 (`Band.usesEnglishInterface`, `LanguagePack.phrases(for:)`). That's "Week 3" and "Week complete!" on the path, "Today", "Done!", the greeting ("Good morning, Ana!"), "Yes!" / "Not yet" in the can-do and level-up checks, "Congratulations!", "Let's go!", "Goal reached!", "7 days in a row!", the daily reminder's title ("Ready for today?"), the level names (Beginner, Starter, then Explorer, Traveller, Wanderer, Talker, Fluent, Local), day and month names on the path, the widgets and the language-switch splash. **Pico's cheers stay in the language** ("¡Vamos!", "Allez !"). From A2.1 everything goes back to the language's own words. The welcome screen ("¡Hola!", "¿Rumbo a dónde?") is Rumbo's brand and stays as it is.
+
+The app follows the level through `ActiveLanguage.band`, set by `AppModel` on every save and language switch; widgets get it in their snapshot (`WidgetSnapshot.band`).
+
+## 10.4 Onboarding and goals
 
 - The progress step starts with **"I'm completely new to Spanish"**. Ticking it skips the numbers and the can-do check, places the learner at A1.1, and starts every source at the beginning (videos 0–5, Language Transfer track 1, Duolingo section 1 unit 1, Extra episode 1).
 - Someone who isn't quite new answers as usual: few hours put them in A1.1 or A1.2, and the can-do check (5 statements from their level, 5 from the next) can move them up or down one.
 - Goals now include **A2** ("A first milestone…"). A learner placed in A1 is offered A2 as their first goal instead of B2, which would be years away at a usual weekly goal; they can pick a higher one, and change it any time.
 
-## 10.4 Suggested content
+## 10.5 Suggested content
 
 Both lists have at least three suggestions for A1.1 and A1.2 (`ContentCatalogTests` checks every level): children's series and songs made for learners first, then beginner podcasts. Spanish: *Plaza Sésamo*, *Pocoyó*, *Señor Wooly*, then *Peppa Pig*, *Super Easy Spanish*, *Coffee Break Spanish*. French: *Petit Ours Brun*, *Trotro*, *Alice Ayel*, then *Peppa Pig*, *Super Easy French*, *Coffee Break French*.
 
-## 10.5 Existing learners
+## 10.6 Existing learners
 
 Nothing changes for anyone already at A2.1 or above: their level isn't recalculated and their plans are the same. A learner placed at A2.1 before this, with fewer hours than A2.1 needs, stays at A2.1 (levels never go down by themselves).
 
-## 10.6 Judgement calls
+## 10.7 Judgement calls
 
 These rest on reasoning rather than a source, and are the first things to revisit with real beginners:
 - The A1 strand shares (36% and 30% study).
@@ -51,4 +57,4 @@ These rest on reasoning rather than a source, and are the first things to revisi
 - No weekly writing or partner anchors at A1.1.
 - A2 as a beginner's suggested first goal.
 - The beginner suggestions, chosen from general knowledge (well-known children's shows and learner podcasts), not yet checked level by level.
-- The level names (Novato / Aprendiz, Débutant / Apprenti).
+- The level names (Novato / Aprendiz, Débutant / Apprenti), and their English versions shown at A1.

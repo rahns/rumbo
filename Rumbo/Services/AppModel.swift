@@ -39,6 +39,8 @@ final class AppModel {
         let to: String
         /// The old language was deleted (Start over with another language set up): its flag goes up in a puff.
         var deleted = false
+        /// The learner's level in the new language, so a beginner's "Let's go!" is in English.
+        var toBand: Band = .a2_1
     }
     private(set) var languageSwitch: LanguageSwitch?
 
@@ -51,11 +53,12 @@ final class AppModel {
     func setLanguage(_ code: String, announce: Bool = false) {
         let from = languageCode
         if announce, code != from, profile != nil, profiles.contains(where: { $0.languageCode == code }) {
-            languageSwitch = LanguageSwitch(from: from, to: code)
+            languageSwitch = LanguageSwitch(from: from, to: code, toBand: profiles.first { $0.languageCode == code }?.band ?? .a2_1)
         }
         LiveActivities.endAll()
         ActiveLanguage.set(code)
         languageCode = ActiveLanguage.code
+        ActiveLanguage.setBand(profile?.band)
         selectedPlanDay = nil
         weekStartsOnSunday = profile?.weekStartsOnSunday ?? false
         catalog = ContentLibrary.load(pack)
@@ -120,6 +123,7 @@ final class AppModel {
             catalog = ContentLibrary.load(pack)
         }
         weekStartsOnSunday = profile?.weekStartsOnSunday ?? false
+        ActiveLanguage.setBand(profile?.band)
         bringProfileUpToDate()
         // No task screen is open at launch, so any timer still showing is left over from a closed app.
         LiveActivities.endAll()
@@ -275,7 +279,7 @@ final class AppModel {
         weekStartsOnSunday = false
         try? context.save()
         if let other = profiles.first {
-            languageSwitch = LanguageSwitch(from: languageCode, to: other.languageCode, deleted: true)
+            languageSwitch = LanguageSwitch(from: languageCode, to: other.languageCode, deleted: true, toBand: other.band)
             setLanguage(other.languageCode)
         }
         save()
@@ -732,7 +736,7 @@ final class AppModel {
         if after.streak > before.streak, Self.streakMilestones.contains(after.streak),
            Self.once("streak-\(after.streak)-\(Self.dayKey(calendar.startOfDay(for: .now)))") {
             streakMilestone = StreakMilestone(days: after.streak)
-            banner = Banner(title: "🔥 " + pack.phrases.streak(days: after.streak), message: streakMessage(after.streak))
+            banner = Banner(title: "🔥 " + ActiveLanguage.phrases.streak(days: after.streak), message: streakMessage(after.streak))
         }
     }
 
@@ -762,7 +766,7 @@ final class AppModel {
         switch days {
         case 7: "A whole week, every day. Pico is impressed."
         case 30: "A month of \(pack.name), every single day. That's a real habit now."
-        case 100: "100 days. Most people never get here. \(pack.phrases.amazing)"
+        case 100: "100 days. Most people never get here. \(ActiveLanguage.phrases.amazing)"
         default: "A full year of \(pack.name), every day. Pico has no words. (In any language.)"
         }
     }
@@ -1180,6 +1184,8 @@ final class AppModel {
 
     func save() {
         try? context.save()
+        // The app's words follow the learner's level (English below A2).
+        ActiveLanguage.setBand(profile?.band)
         settlePath()
         revision += 1
         publishWidgets()
@@ -1218,11 +1224,11 @@ final class AppModel {
         }
         var snapshot = WidgetSnapshot(
             updated: .now, day: today, streak: status.streak, minutesThisWeek: status.minutesThisWeek,
-            weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.pack.levelName(profile.band)) · \(profile.band.rawValue)",
+            weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.pack.levelName(profile.band, learnerAt: profile.band)) · \(profile.band.rawValue)",
             dayComplete: plan?.isComplete ?? false, hasPlan: plan != nil, tasks: tasks, mood: mood,
             suggestedMinutes: suggested, minutesToday: minutesToday,
             upcoming: (1...3).compactMap { calendar.date(byAdding: .day, value: $0, to: today) }.map { upcomingSnapshot(for: $0, profile: profile) },
-            languageCode: profile.languageCode
+            languageCode: profile.languageCode, band: profile.band.rawValue
         )
         var comparable = snapshot
         comparable.updated = lastSnapshot?.updated ?? snapshot.updated
@@ -1252,9 +1258,9 @@ final class AppModel {
         let preview = suggestedPreview(for: day, profile: profile)
         return WidgetSnapshot(
             updated: day, day: day, streak: status.streak, minutesThisWeek: status.minutesThisWeek,
-            weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.pack.levelName(profile.band)) · \(profile.band.rawValue)",
+            weeklyGoal: profile.weeklyGoalMinutes, bandLabel: "\(profile.pack.levelName(profile.band, learnerAt: profile.band)) · \(profile.band.rawValue)",
             dayComplete: false, hasPlan: false, tasks: preview.tasks, mood: profile.travelMode ? "backpacker" : "hovering",
-            suggestedMinutes: preview.minutes, minutesToday: 0, languageCode: profile.languageCode
+            suggestedMinutes: preview.minutes, minutesToday: 0, languageCode: profile.languageCode, band: profile.band.rawValue
         )
     }
 }

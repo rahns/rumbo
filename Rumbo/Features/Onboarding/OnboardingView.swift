@@ -383,9 +383,9 @@ struct OnboardingView: View {
                 .transition(.asymmetric(insertion: .scale(scale: 0.9).combined(with: .opacity),
                                         removal: .move(edge: .leading).combined(with: .opacity)))
                 HStack(spacing: 12) {
-                    Button(draft.pack.phrases.notYet) { answer(statement.text, false) }
+                    Button(draft.pack.phrases(for: draft.bandByHours).notYet) { answer(statement.text, false) }
                         .buttonStyle(ChunkySecondaryButtonStyle())
-                    Button(draft.pack.phrases.yes) { answer(statement.text, true) }
+                    Button(draft.pack.phrases(for: draft.bandByHours).yes) { answer(statement.text, true) }
                         .buttonStyle(ChunkyButtonStyle(color: Palette.leaf))
                 }
             }
@@ -492,7 +492,7 @@ struct BandBadge: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            Text(ActiveLanguage.pack.levelName(band))
+            Text(ActiveLanguage.pack.levelName(band, learnerAt: band))
                 .font(.rounded(.largeTitle, weight: .black))
             Text(band.rawValue)
                 .font(.rounded(.headline, weight: .heavy))

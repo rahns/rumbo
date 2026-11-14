@@ -94,6 +94,22 @@ public struct LanguagePack: Sendable, Identifiable {
 
     /// The level's friendly name ("Explorador").
     public func levelName(_ band: Band) -> String { phrases.levelNames[band] ?? band.rawValue }
+
+    /// The words the app shows a learner at `learnerBand`: the language's own from A2, English below it
+    /// (a beginner can't read them yet), except Pico's cheers, which are always the language's.
+    public func phrases(for learnerBand: Band) -> Phrasebook {
+        learnerBand.usesEnglishInterface ? Phrasebook.english.cheering(with: phrases.squawks) : phrases
+    }
+
+    /// A level's name as a learner at `learnerBand` sees it ("Explorador", or "Explorer" for a beginner).
+    public func levelName(_ band: Band, learnerAt learnerBand: Band) -> String {
+        phrases(for: learnerBand).levelNames[band] ?? band.rawValue
+    }
+
+    /// Day and month names on the path: the language's, or English for a beginner.
+    public func dateLocale(for learnerBand: Band) -> Locale {
+        learnerBand.usesEnglishInterface ? Locale(identifier: "en") : locale
+    }
 }
 
 /// Training hours (all practice, every minute counted) at which each level starts.
@@ -381,3 +397,45 @@ public struct Phrasebook: Equatable, Sendable {
          yes, notYet, congratulations, letsGo, wellDone, amazing, goalReached, daysInARow, reminderTitle] + squawks + Band.allCases.map { levelNames[$0] ?? "" }
     }
 }
+
+extension Band {
+    /// A1 learners see the app wholly in English: the language's own words start at A2.
+    public var usesEnglishInterface: Bool { self < .a2_1 }
+}
+
+extension Phrasebook {
+    /// The app's own words in English, for beginners (`LanguagePack.phrases(for:)`).
+    public static let english = Phrasebook(
+        week: "Week",
+        weekComplete: "Week complete",
+        weekCompleteGold: "Week complete!",
+        today: "Today",
+        done: "Done!",
+        goodMorning: "Good morning",
+        goodAfternoon: "Good afternoon",
+        goodEvening: "Good evening",
+        exclamationEnd: "!",
+        hello: "Hello!",
+        yes: "Yes!",
+        notYet: "Not yet",
+        congratulations: "Congratulations!",
+        letsGo: "Let's go!",
+        wellDone: "Well done!",
+        amazing: "Amazing!",
+        goalReached: "Goal reached!",
+        daysInARow: "%d days in a row!",
+        reminderTitle: "Ready for today?",
+        squawks: ["Let's go!", "Nice!", "Hello!", "Yay!", "Great!", "Keep going!"],
+        levelNames: [.a1_1: "Beginner", .a1_2: "Starter", .a2_1: "Explorer", .a2_2: "Traveller",
+                     .b1_1: "Wanderer", .b1_2: "Talker", .b2_1: "Fluent", .b2_2: "Local"])
+
+    /// The same words with another set of cheers for Pico.
+    public func cheering(with squawks: [String]) -> Phrasebook {
+        Phrasebook(week: week, weekComplete: weekComplete, weekCompleteGold: weekCompleteGold, today: today, done: done,
+                   goodMorning: goodMorning, goodAfternoon: goodAfternoon, goodEvening: goodEvening, exclamationEnd: exclamationEnd,
+                   hello: hello, yes: yes, notYet: notYet, congratulations: congratulations, letsGo: letsGo, wellDone: wellDone,
+                   amazing: amazing, goalReached: goalReached, daysInARow: daysInARow, reminderTitle: reminderTitle,
+                   squawks: squawks, levelNames: levelNames)
+    }
+}
+

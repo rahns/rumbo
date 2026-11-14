@@ -39,8 +39,10 @@ struct WidgetSnapshot: Codable, Equatable {
     var upcoming: [WidgetSnapshot]? = nil
     /// The language being learned, for the widget's own words ("¡Hecho!"). Optional for older snapshots (Spanish).
     var languageCode: String? = nil
+    /// The learner's level, so a beginner's widget is in English too. Optional for older snapshots.
+    var band: String? = nil
 
-    var phrases: Phrasebook { LanguagePack.pack(for: languageCode).phrases }
+    var phrases: Phrasebook { LanguagePack.pack(for: languageCode).phrases(for: band.flatMap(Band.init(rawValue:)) ?? .a2_1) }
 
     var isSuggestion: Bool { !hasPlan && suggestedMinutes != nil && !tasks.isEmpty }
 

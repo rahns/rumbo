@@ -162,12 +162,12 @@ struct LevelTimeline: View {
     private func style(for stop: Stop, afterTarget: Bool) -> Style {
         switch stop {
         case .now:
-            return Style(symbol: "location.fill", color: Palette.coral, title: "Now · \(ActiveLanguage.pack.levelName(band))",
+            return Style(symbol: "location.fill", color: Palette.coral, title: "Now · \(ActiveLanguage.levelName(band))",
                          date: "\(Int(hours)) h", subtitle: "\(band.rawValue), training hours so far")
         case .level(let level, let date):
             let isGoal = level == goalBand
             return Style(symbol: isGoal ? "star.fill" : "trophy.fill", color: afterTarget ? Palette.secondaryText : Palette.leaf,
-                         title: isGoal ? "\(ActiveLanguage.pack.levelName(level)) · \(level.rawValue) · your \(goal) goal" : "\(ActiveLanguage.pack.levelName(level)) · \(level.rawValue)",
+                         title: isGoal ? "\(ActiveLanguage.levelName(level)) · \(level.rawValue) · your \(goal) goal" : "\(ActiveLanguage.levelName(level)) · \(level.rawValue)",
                          date: date.formatted(.dateTime.month(.abbreviated).year()),
                          subtitle: "At \(Int(ActiveLanguage.pack.levels.threshold(level))) training hours · \(Self.distance(to: date))")
         case .target(let date):
@@ -186,7 +186,7 @@ struct LevelTimeline: View {
         if hours >= ActiveLanguage.pack.levels.threshold(goalBand) {
             return "\(need). At your pace you'll have about \(Int(hours)) h by then, so you're on track."
         }
-        return "\(need). At your pace you'll have about \(Int(hours)) h by then, which is \(ActiveLanguage.pack.levelName(expected)) (\(expected.rawValue))."
+        return "\(need). At your pace you'll have about \(Int(hours)) h by then, which is \(ActiveLanguage.levelName(expected)) (\(expected.rawValue))."
     }
 
     /// "in 4 months", "in 2 years".

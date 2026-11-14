@@ -10,8 +10,21 @@ enum ActiveLanguage {
     /// The active language's pack. Spanish until a language has been chosen.
     private(set) static var pack = LanguagePack.pack(for: UserDefaults.standard.string(forKey: defaultsKey))
 
+    /// The learner's level in that language. Below A2 the app's words are English (`Band.usesEnglishInterface`).
+    private(set) static var band: Band = .a2_1
+
     static var code: String { pack.code }
-    static var phrases: Phrasebook { pack.phrases }
+    /// The words to show: the language's from A2, English for a beginner (Pico's cheers stay the language's).
+    static var phrases: Phrasebook { pack.phrases(for: band) }
+    static var dateLocale: Locale { pack.dateLocale(for: band) }
+
+    /// A level's name as the learner sees it.
+    static func levelName(_ level: Band) -> String { pack.levelName(level, learnerAt: band) }
+
+    /// Called by the app whenever the learner's level may have changed (and by widgets from their snapshot).
+    static func setBand(_ band: Band?) {
+        self.band = band ?? .a2_1
+    }
     /// The language's name in English, for sentences ("A little Spanish today…").
     static var name: String { pack.name }
 

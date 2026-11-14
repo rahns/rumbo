@@ -240,14 +240,14 @@ struct PathView: View {
     private func leftChips(fullLevel: Bool, doneText: String?, todayDone: Bool) -> some View {
         HStack(spacing: 8) {
             if let profile = model.profile {
-                Text(fullLevel ? "\(ActiveLanguage.pack.levelName(profile.band)) · \(profile.band.rawValue)" : profile.band.rawValue)
+                Text(fullLevel ? "\(ActiveLanguage.levelName(profile.band)) · \(profile.band.rawValue)" : profile.band.rawValue)
                     .font(.rounded(.subheadline, weight: .heavy))
                     .foregroundStyle(.white)
                     .padding(.vertical, 6)
                     .padding(.horizontal, 12)
                     .background(Capsule().fill(Palette.coral))
                     .fixedSize()
-                    .accessibilityLabel("\(ActiveLanguage.pack.levelName(profile.band)), \(profile.band.rawValue)")
+                    .accessibilityLabel("\(ActiveLanguage.levelName(profile.band)), \(profile.band.rawValue)")
             }
             if todayDone {
                 Group {
@@ -713,7 +713,7 @@ struct MilestoneRow: View {
                 .background(Circle().fill(Palette.sun.opacity(0.75)))
                 .background(Circle().fill(Palette.sun.edge()).opacity(0.75).offset(y: 5))
             VStack(spacing: 2) {
-                Text("\(ActiveLanguage.pack.levelName(milestone.band)) · \(milestone.band.rawValue)")
+                Text("\(ActiveLanguage.levelName(milestone.band)) · \(milestone.band.rawValue)")
                     .font(.rounded(.headline, weight: .black))
                     .foregroundStyle(Palette.ink)
                 Text("around \(milestone.expectedDate.formatted(.dateTime.month(.wide).year()))")
@@ -739,7 +739,7 @@ struct FurtherAheadCard: View {
                     .foregroundStyle(Palette.ink)
                 ForEach(milestones) { milestone in
                     HStack {
-                        Text("\(ActiveLanguage.pack.levelName(milestone.band)) · \(milestone.band.rawValue)")
+                        Text("\(ActiveLanguage.levelName(milestone.band)) · \(milestone.band.rawValue)")
                         Spacer()
                         Text("around \(milestone.expectedDate.formatted(.dateTime.month(.abbreviated).year()))")
                             .foregroundStyle(Palette.secondaryText)
@@ -847,7 +847,7 @@ struct DaySummarySheet: View {
 /// Day names on the path in the language being learned: for Spanish, "Lun 26" on nodes and
 /// "Lunes 26 de octubre" on a day's summary.
 enum PathDate {
-    private static var locale: Locale { ActiveLanguage.pack.locale }
+    private static var locale: Locale { ActiveLanguage.dateLocale }
 
     static func shortDay(_ date: Date) -> String {
         date.formatted(.dateTime.weekday(.abbreviated).day().locale(locale)).capitalizedFirstLetter

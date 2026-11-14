@@ -102,4 +102,22 @@ import Testing
         #expect(LevelGate.isOpen(band: .a1_1, hours: 90, lastFailedAttempt: nil, today: today, levels: levels))
         #expect(!LevelGate.isOpen(band: .a1_1, hours: 89, lastFailedAttempt: nil, today: today, levels: levels))
     }
+
+    @Test func beginnersSeeTheAppInEnglishExceptPicosCheers() {
+        for pack in LanguagePack.all {
+            let beginner = pack.phrases(for: .a1_2)
+            #expect(beginner.week == "Week" && beginner.today == "Today" && beginner.done == "Done!")
+            #expect(beginner.greeting(hour: 9, name: "Ana") == "Good morning, Ana!")
+            #expect(beginner.yes == "Yes!" && beginner.notYet == "Not yet")
+            #expect(beginner.squawks == pack.phrases.squawks, "Pico still cheers in \(pack.name)")
+            #expect(pack.levelName(.a2_1, learnerAt: .a1_1) == "Explorer")
+            #expect(pack.dateLocale(for: .a1_1).identifier == "en")
+            // From A2, the language's own words.
+            #expect(pack.phrases(for: .a2_1) == pack.phrases)
+            #expect(pack.levelName(.a2_1, learnerAt: .a2_1) == pack.levelName(.a2_1))
+            #expect(pack.dateLocale(for: .b1_1).identifier == pack.localeIdentifier)
+        }
+        #expect(Band.a1_2.usesEnglishInterface && !Band.a2_1.usesEnglishInterface)
+        #expect(Phrasebook.english.allStrings.allSatisfy { !$0.isEmpty })
+    }
 }

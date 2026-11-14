@@ -70,11 +70,11 @@ struct GateView: View {
         VStack(spacing: 20) {
             Spacer()
             PicoView(mood: .hovering, size: 120)
-            Text("Ready for \(ActiveLanguage.pack.levelName(next))?")
+            Text("Ready for \(ActiveLanguage.levelName(next))?")
                 .font(.rounded(.largeTitle, weight: .black))
                 .foregroundStyle(Palette.ink)
                 .multilineTextAlignment(.center)
-            Text("You've reached \(Int(ActiveLanguage.pack.levels.threshold(next))) training hours. Answer 10 quick questions honestly. Seven \"\(model.pack.phrases.yes)\" and you level up.")
+            Text("You've reached \(Int(ActiveLanguage.pack.levels.threshold(next))) training hours. Answer 10 quick questions honestly. Seven \"\(ActiveLanguage.phrases.yes)\" and you level up.")
                 .font(.rounded(.body, weight: .medium))
                 .foregroundStyle(Palette.secondaryText)
                 .multilineTextAlignment(.center)
@@ -100,9 +100,9 @@ struct GateView: View {
             }
             Spacer()
             HStack(spacing: 12) {
-                Button(model.pack.phrases.notYet) { answer(false) }
+                Button(ActiveLanguage.phrases.notYet) { answer(false) }
                     .buttonStyle(ChunkySecondaryButtonStyle())
-                Button(model.pack.phrases.yes) { answer(true) }
+                Button(ActiveLanguage.phrases.yes) { answer(true) }
                     .buttonStyle(ChunkyButtonStyle(color: Palette.leaf))
             }
         }
@@ -112,7 +112,7 @@ struct GateView: View {
         VStack(spacing: 20) {
             Spacer()
             PicoView(mood: .proud, size: 130, celebrate: confetti)
-            Text(model.pack.phrases.congratulations)
+            Text(ActiveLanguage.phrases.congratulations)
                 .font(.rounded(.largeTitle, weight: .black))
                 .foregroundStyle(Palette.ink)
             BandBadge(band: next)
@@ -121,7 +121,7 @@ struct GateView: View {
                 .foregroundStyle(Palette.secondaryText)
                 .multilineTextAlignment(.center)
             Spacer()
-            Button(model.pack.phrases.letsGo) { dismiss() }
+            Button(ActiveLanguage.phrases.letsGo) { dismiss() }
                 .buttonStyle(ChunkyButtonStyle(color: Palette.leaf))
         }
         .sensoryFeedback(.success, trigger: stage)

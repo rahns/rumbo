@@ -65,7 +65,7 @@ struct LanguageSwitchSplash: View {
                 .frame(height: 260)
 
                 VStack(spacing: 8) {
-                    Text(to.phrases.letsGo)
+                    Text(to.phrases(for: change.toBand).letsGo)
                         .font(.rounded(.largeTitle, weight: .black))
                         .foregroundStyle(Palette.ink)
                     Text(change.deleted ? "\(from.name) deleted · back to \(to.name)" : "Now learning \(to.name)")
