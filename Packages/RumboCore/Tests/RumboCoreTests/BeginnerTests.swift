@@ -185,4 +185,30 @@ import Testing
         learner.alwaysIncludeDrillApp = false
         #expect(plan(20, learner).task(.courseTrack) != nil)
     }
+
+    @Test func sourcesSayWhenTheirLevelBringsThemIn() {
+        let pack = LanguagePack.spanish
+        #expect(pack.levelNote(for: .learnerSeries, at: .a1_1) == "Starts at A2.1")
+        #expect(pack.levelNote(for: .learnerSeries, at: .a1_2) == "Starts at A2.1")
+        #expect(pack.levelNote(for: .learnerSeries, at: .a2_1) == nil)
+        #expect(pack.levelNote(for: .learnerSeries, at: .b2_1) == "Not planned from B2.1")
+        #expect(pack.levelNote(for: .writing, at: .a1_1) == "Starts at A1.2")
+        #expect(pack.levelNote(for: .exchange, at: .a1_1) == "Starts at A1.2")
+        #expect(pack.levelNote(for: .writing, at: .a1_2) == nil)
+        #expect(pack.levelNote(for: .drillApp, at: .b2_1) == nil, "optional at B2.1")
+        #expect(pack.levelNote(for: .drillApp, at: .b2_2) == "Not planned from B2.2")
+        for role in [SourceKind.gradedVideo, .audioCourse, .suggestedContent] {
+            #expect(Band.allCases.allSatisfy { pack.levelNote(for: role, at: $0) == nil })
+        }
+        // The note agrees with the planner: a source with a note never has a task in the plan.
+        let planner = DayPlanner(calendar: TestCalendar.utc)
+        for band in Band.allCases {
+            let learner = LearnerSnapshot(band: band, speakingStage: .calls, keepDrillAppLate: true, dueReviewCards: 8)
+            for budget in DayPlanner.budgetChoices {
+                for task in planner.plan(budget: budget, learner: learner, history: [], today: today).tasks {
+                    if let role = task.kind.source { #expect(pack.levelNote(for: role, at: band) == nil, "\(band.rawValue) \(task.kind.rawValue)") }
+                }
+            }
+        }
+    }
 }

@@ -124,7 +124,8 @@ struct StatsView: View {
     private func coursesCard(_ profile: LearnerProfile) -> some View {
         let pack = profile.pack
         // Only the sources this language has and the learner uses.
-        let sources = profile.enabledSources.filter(pack.has)
+        // Only the sources this language has, the learner uses, and their level includes now.
+        let sources = profile.enabledSources.filter { pack.has($0) && pack.levelNote(for: $0, at: profile.band) == nil }
         return RaisedCard(accent: Palette.leaf) {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Your sources")

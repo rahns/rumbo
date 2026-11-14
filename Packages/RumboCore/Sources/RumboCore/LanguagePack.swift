@@ -102,6 +102,34 @@ public struct LanguagePack: Sendable, Identifiable {
         learnerBand.usesEnglishInterface ? Phrasebook.english.keepingNativeWords(of: phrases) : phrases
     }
 
+    /// The levels at which a source's tasks can be planned, judged by level alone (not by progress such as a
+    /// finished course, nor by settings). Writing and an exchange partner come with speaking & writing (from A1.2);
+    /// the learner series with its intensive and extensive levels; the drill app up to its optional level.
+    public func plannedLevels(for role: SourceKind) -> [Band] {
+        guard has(role) else { return [] }
+        switch role {
+        case .learnerSeries:
+            guard let series else { return [] }
+            return Band.allCases.filter { series.intensiveBands.contains($0) || series.extensiveBands.contains($0) }
+        case .drillApp:
+            guard let drill else { return [] }
+            return Band.allCases.filter { $0 <= drill.lastBand || $0 == drill.optionalBand }
+        case .writing, .exchange:
+            return Band.allCases.filter { ($0.strandTargets[.output] ?? 0) > 0 }
+        case .gradedVideo, .audioCourse, .suggestedContent:
+            return Band.allCases
+        }
+    }
+
+    /// For a source its level leaves out of the plan: "Starts at A2.1", or "Not planned from B2.2" once it's
+    /// behind the learner. Nil when the source is part of the plan at `band`.
+    public func levelNote(for role: SourceKind, at band: Band) -> String? {
+        let levels = plannedLevels(for: role)
+        guard !levels.isEmpty, !levels.contains(band) else { return nil }
+        if let start = levels.first(where: { $0 > band }) { return "Starts at \(start.rawValue)" }
+        return "Not planned from \(band.rawValue)"
+    }
+
     /// Day and month names on the path: the language's, or English for a beginner.
     public func dateLocale(for learnerBand: Band) -> Locale {
         learnerBand.usesEnglishInterface ? Locale(identifier: "en") : locale

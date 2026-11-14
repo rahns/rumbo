@@ -79,11 +79,19 @@ struct SettingsView: View {
                     Button {
                         sourceInfo = source
                     } label: {
-                        HStack(spacing: 6) {
-                            Text(SourceCopy.name(source)).foregroundStyle(Palette.ink)
-                            Image(systemName: "info.circle")
-                                .font(.rounded(.caption, weight: .bold))
-                                .foregroundStyle(Palette.secondaryText)
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 6) {
+                                Text(SourceCopy.name(source)).foregroundStyle(Palette.ink)
+                                Image(systemName: "info.circle")
+                                    .font(.rounded(.caption, weight: .bold))
+                                    .foregroundStyle(Palette.secondaryText)
+                            }
+                            // A source the learner's level leaves out for now: "Starts at A2.1".
+                            if let note = profile.pack.levelNote(for: source, at: profile.band) {
+                                Text(note)
+                                    .font(.rounded(.caption, weight: .medium))
+                                    .foregroundStyle(Palette.secondaryText)
+                            }
                         }
                     }
                     .buttonStyle(.borderless)
