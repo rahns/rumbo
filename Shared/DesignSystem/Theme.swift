@@ -4,8 +4,8 @@ import UIKit
 
 /// Color tokens from docs/03-experience.md §3.2. Each has a light and a dark value.
 enum Palette {
-    static let coral = dynamic(light: 0xF25C4A, dark: 0xFF6E5C)
-    static let ink = dynamic(light: 0x1E2A4A, dark: 0xE9ECF7)
+    static let coral = dynamic(light: 0xEE6A50, dark: 0xFF7A60)
+    static let ink = dynamic(light: 0x1A2E52, dark: 0xE9ECF7)
     static let sun = dynamic(light: 0xFFBE1A, dark: 0xFFC83D)
     static let leaf = dynamic(light: 0x5BC236, dark: 0x6BD144)
     static let sky = dynamic(light: 0x2FA6EE, dark: 0x4DB5F5)
@@ -16,14 +16,14 @@ enum Palette {
     static let lavender = dynamic(light: 0xA98BEB, dark: 0xB69CF2)
     static let cream = dynamic(light: 0xFFF3D6, dark: 0x3A3320)
 
-    /// App background: soft off-white by day, Dreaming-style navy by night.
-    static let background = dynamic(light: 0xF7F8FC, dark: 0x141B30)
-    static let card = dynamic(light: 0xFFFFFF, dark: 0x1E2A4A)
-    static let cardEdge = dynamic(light: 0xE3E6F0, dark: 0x0F1526)
+    /// App background: soft off-white by day, deep navy by night.
+    static let background = dynamic(light: 0xF7F8FC, dark: 0x12203A)
+    static let card = dynamic(light: 0xFFFFFF, dark: 0x1A2E52)
+    static let cardEdge = dynamic(light: 0xE3E6F0, dark: 0x0E1730)
     static let secondaryText = dynamic(light: 0x5D6C7B, dark: 0xA8B1C9)
     /// Dark text for bright backgrounds that stay bright in dark mode (sun, white speech bubbles).
     /// `ink` turns light in dark mode, so it can't be used there.
-    static let inkOnBright = Color(uiColor: UIColor(hex: 0x1E2A4A))
+    static let inkOnBright = Color(uiColor: UIColor(hex: 0x1A2E52))
 
     private static func dynamic(light: UInt32, dark: UInt32) -> Color {
         Color(uiColor: UIColor { traits in
@@ -77,7 +77,7 @@ extension Strand {
     /// Light-mode colour as hex, for places that can't use dynamic colours (the Live Activity, widgets).
     var hex: UInt32 {
         switch self {
-        case .input: 0xF25C4A
+        case .input: 0xEE6A50
         case .output: 0x2FA6EE
         case .languageFocused: 0x5BC236
         case .fluency: 0xFFBE1A

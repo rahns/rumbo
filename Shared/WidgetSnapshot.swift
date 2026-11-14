@@ -58,7 +58,7 @@ struct WidgetSnapshot: Codable, Equatable {
         tasks: [
             TaskLine(title: "Duolingo warm-up", symbol: "bolt.fill", minutes: 5, done: true, colorHex: 0x5BC236),
             TaskLine(title: "Language Transfer", symbol: "headphones", minutes: 10, done: false, colorHex: 0x5BC236),
-            TaskLine(title: "Dreaming Spanish", symbol: "play.tv.fill", minutes: 15, done: false, colorHex: 0xF25C4A),
+            TaskLine(title: "Dreaming Spanish", symbol: "play.tv.fill", minutes: 15, done: false, colorHex: 0xEE6A50),
         ],
         mood: "hovering"
     )

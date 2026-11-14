@@ -169,7 +169,7 @@ final class DiagnosticsModel {
 
     func startTestTimer() {
         let now = Date.now
-        let attributes = RumboTimerAttributes(taskTitle: "Dreaming Spanish", sourceSymbol: "play.tv.fill", colorHex: 0xF25C4A)
+        let attributes = RumboTimerAttributes(taskTitle: "Dreaming Spanish", sourceSymbol: "play.tv.fill", colorHex: 0xEE6A50)
         let state = RumboTimerAttributes.ContentState(startedAt: now, endsAt: now.addingTimeInterval(10 * 60))
         do {
             _ = try Activity.request(attributes: attributes, content: .init(state: state, staleDate: nil))

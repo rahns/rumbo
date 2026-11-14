@@ -13,37 +13,37 @@
 
 ## 3.2 Visual language
 
-Rumbo takes a light nod from the two apps it sits between, without copying either: **Duolingo's** playful, tactile game feel, and **Dreaming Spanish's** warm coral-and-navy calm. The tactile, game-like parts lean Duolingo; everything to do with watching and listening leans Dreaming.
+Playful and tactile, with game-like feedback on every tap, set in a warm coral-and-navy calm.
 
 ### Palette
 
-| Token | Hex | Role | Nod to |
-|---|---|---|---|
-| `coral` | `#F25C4A` | Brand primary, Input strand, primary buttons | Dreaming's coral (`#FA594B`), shifted slightly warmer |
-| `ink` | `#1E2A4A` | Text, dark surfaces, dark-mode background base | Dreaming's navy (`#1F2847`) |
-| `sun` | `#FFBE1A` | Streak flame, celebrations | Both apps' yellows (Dreaming `#FFB805`) |
-| `lavender` | `#A98BEB` | All-in-one lessons (they span three strands) | Pastel purple, apart from the four strand colours |
-| `leaf` | `#5BC236` | Success, completed nodes, Language-focused strand | Duolingo's green |
-| `sky` | `#2FA6EE` | Output strand, links | Duolingo's blue |
-| `lilac` | `#DEE4FF` | Soft card backgrounds, unselected chips (light mode) | Dreaming's pale periwinkle |
-| `cream` | `#FFF3D6` | Highlight panels, Pico's speech bubbles | Dreaming's cream |
+| Token | Hex | Role |
+|---|---|---|
+| `coral` | `#EE6A50` | Brand primary, Input strand, primary buttons |
+| `ink` | `#1A2E52` | Text, dark surfaces, dark-mode background base |
+| `sun` | `#FFBE1A` | Streak flame, celebrations |
+| `lavender` | `#A98BEB` | All-in-one lessons (they span three strands) |
+| `leaf` | `#5BC236` | Success, completed nodes, Language-focused strand |
+| `sky` | `#2FA6EE` | Output strand, links |
+| `lilac` | `#DEE4FF` | Soft card backgrounds, unselected chips (light mode) |
+| `cream` | `#FFF3D6` | Highlight panels, Pico's speech bubbles |
 
 Strand accents: **Input = coral, Output = sky, Language-focused = leaf, Fluency = sun.**
 
 ### Elements
 
-| Element | Choice | Nod to |
-|---|---|---|
-| Buttons | Chunky "3D" buttons: a solid face over a darker bottom edge (4 pt) that presses down on tap with a quick spring | Duolingo |
-| Path nodes | Round, raised nodes with the same pressable bottom edge; locked nodes are flat and grey | Duolingo |
-| Input cards (Dreaming, Extra, podcasts) | Rounded, ink-on-lilac or coral-on-ink cards with a thumbnail feel, calm and spacious | Dreaming |
-| Level badges | Small animated badge per band, like Dreaming's animated level icons | Dreaming |
-| Progress | Thick rounded progress bars with a highlight stripe | Duolingo |
-| Type | SF Pro Rounded throughout (`.fontDesign(.rounded)` at the root, rounded navigation titles), heavy weights for headings and numbers | Duolingo's rounded type |
-| Surfaces | Continuous-corner cards, glass tab bar (iOS 27 Liquid Glass) | iOS |
-| Light/dark | Both from the start. Dark mode uses `ink` as the base, which reads as Dreaming's night-time look. | |
+| Element | Choice |
+|---|---|
+| Buttons | Chunky "3D" buttons: a solid face over a darker bottom edge (4 pt) that presses down on tap with a quick spring |
+| Path nodes | Round, raised nodes with the same pressable bottom edge; locked nodes are flat and grey |
+| Input cards | Rounded, ink-on-lilac or coral-on-ink cards with a thumbnail feel, calm and spacious |
+| Level badges | Small animated badge per band |
+| Progress | Thick rounded progress bars with a highlight stripe |
+| Type | SF Pro Rounded throughout (`.fontDesign(.rounded)` at the root, rounded navigation titles), heavy weights for headings and numbers |
+| Surfaces | Continuous-corner cards, glass tab bar (iOS 27 Liquid Glass) |
+| Light/dark | Both from the start. Dark mode uses `ink` as the base. |
 
-Brand names, logos, mascots and exact colors from either app are never used.
+No other app's brand names, logos, mascots or colours are used in Rumbo's own design.
 
 ## 3.3 The mascot: Pico 🐦
 

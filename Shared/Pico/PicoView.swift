@@ -153,7 +153,7 @@ enum PicoDrawing {
     }
 
     static let navyHigh = hex(0x3E5290)
-    static let navy = hex(0x1E2A4A)
+    static let navy = hex(0x1A2E52)
     static let navyLow = hex(0x121A33)
     static let wingTop = hex(0x2E3F72)
     static let featherLine = hex(0x4A5C94)
@@ -163,7 +163,7 @@ enum PicoDrawing {
     static let amberLine = hex(0xE0A82E)
     static let bibEdge = hex(0xC9922A)
     static let orange = hex(0xFF8A3D)
-    static let coral = hex(0xF25C4A)
+    static let coral = hex(0xEE6A50)
     static let coralDark = hex(0xC8392B)
     static let sky = hex(0x6CC4FA)
     static let skyDark = hex(0x2F7FCC)
