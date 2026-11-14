@@ -810,9 +810,11 @@ struct DaySummarySheet: View {
             Text(PathDate.longDay(date))
                 .font(.rounded(.title2, weight: .black))
                 .foregroundStyle(Palette.ink)
-            Text(minutes == 0 ? "Nothing logged that day." : "\(minutes) minutes\(plan?.isComplete == true ? " · day complete" : "")")
+            // "Day complete" in green only for a green day; a yellow day's note below says why it isn't.
+            let complete = plan?.isComplete == true && !isPartlyDone
+            Text(minutes == 0 ? "Nothing logged that day." : "\(minutes) minutes\(complete ? " · day complete" : "")")
                 .font(.rounded(.headline, weight: .bold))
-                .foregroundStyle(plan?.isComplete == true ? Palette.leaf : Palette.secondaryText)
+                .foregroundStyle(complete ? Palette.leaf : Palette.secondaryText)
             // A yellow dot: some practice, but less than the weekly goal needed that day.
             if isPartlyDone {
                 // Laid out like the task rows below (icon in a 28-point column, 12 points before the text), so they line up.
